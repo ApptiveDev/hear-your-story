@@ -38,6 +38,18 @@ final joinControllerProvider =
       JoinController.new,
     );
 
+/// 방금 연결됐는지. 연결 완료 화면을 한 번 보여주고 홈으로 보낸다.
+class JustPaired extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void mark() => state = true;
+}
+
+final justPairedProvider = NotifierProvider.autoDispose<JustPaired, bool>(
+  JustPaired.new,
+);
+
 /// 이미 연결된 상태라 페어링 화면을 건너뛰어야 하는 오류인지 (자녀의 초대 숫자 발급)
 bool isAlreadyPaired(Object error) =>
     error is ApiException && error.errorCode == 'ALREADY_PAIRED';

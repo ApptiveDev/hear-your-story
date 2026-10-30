@@ -42,6 +42,10 @@ class PairingPage extends ConsumerWidget {
               );
               return const SizedBox.shrink();
             }
+            // 방금 연결됐으면 축하 화면을 먼저 보여준다
+            if (ref.watch(justPairedProvider)) {
+              return _PairedView(role: user.role);
+            }
             return user.role == UserRole.child
                 ? const _ChildInviteView()
                 : const _ParentJoinView();
@@ -113,7 +117,7 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
       final paired = await ref.read(pairingRepositoryProvider).isPaired();
       if (paired && mounted) {
         _poll?.cancel();
-        context.go('/today');
+        ref.read(justPairedProvider.notifier).mark();
       }
     } catch (e) {
       // 로그인 만료면 가입 화면으로, 잠깐의 네트워크 오류는 다음 확인 때 다시 시도한다.
@@ -254,10 +258,7 @@ class _InviteContent extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Flexible(
-              child: Text(
-                '부모님이 연결하면 자동으로 넘어가요.',
-                style: theme.textTheme.bodyMedium,
-              ),
+              child: Text('연결되면 자동으로 넘어가요.', style: theme.textTheme.bodyMedium),
             ),
           ],
         ),
@@ -310,7 +311,7 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
     ref.listen(joinControllerProvider, (_, next) {
       final e = next.error;
       if (next.value == true) {
-        context.go('/today');
+        ref.read(justPairedProvider.notifier).mark();
       } else if (e != null) {
         handleSessionExpired(context, ref, e);
       }
@@ -397,6 +398,59 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
                   ),
                 )
               : const Text('연결하기'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Figma "페어링 완료": 연결을 축하하고 첫 질문으로 안내한다.
+class _PairedView extends StatelessWidget {
+  const _PairedView({required this.role});
+  final UserRole role;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final partner = role == UserRole.child ? '부모님과' : '자녀와';
+    return ListView(
+      padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
+      children: [
+        const SizedBox(height: 120),
+        Center(
+          child: Container(
+            width: 120,
+            height: 120,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.base, width: 3),
+            ),
+            child: const ExcludeSemantics(
+              child: Text('💞', style: TextStyle(fontSize: 56)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            '연결 되었어요!',
+            textAlign: TextAlign.center,
+            style: textTheme.headlineMedium,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '이제 $partner\n매일 서로의 이야기를 들어보아요',
+          textAlign: TextAlign.center,
+          style: textTheme.bodyLarge,
+        ),
+        const SizedBox(height: 48),
+        FilledButton(
+          onPressed: () => context.go('/today'),
+          child: const Text('시작하기'),
         ),
       ],
     );

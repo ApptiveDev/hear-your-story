@@ -73,7 +73,7 @@ void main() {
       );
 
       expect(find.text('482 913'), findsOneWidget);
-      expect(find.text('부모님이 연결하면 자동으로 넘어가요.'), findsOneWidget);
+      expect(find.text('연결되면 자동으로 넘어가요.'), findsOneWidget);
     });
 
     testWidgets('부모님께 보내기를 누르면 숫자와 방법을 담아 공유 창을 연다', (tester) async {
@@ -107,14 +107,20 @@ void main() {
       expect(find.text('보내기를 열지 못했어요. 숫자를 복사해서 보내 주세요.'), findsOneWidget);
     });
 
-    testWidgets('부모님이 연결하면 오늘 화면으로 넘어간다', (tester) async {
+    testWidgets('부모님이 연결하면 연결 완료 화면을 거쳐 오늘 화면으로 넘어간다', (tester) async {
       final dataSource = FakePairingDataSource(pairedAfterChecks: 2);
       await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
 
       await tester.pump(const Duration(seconds: 3)); // 첫 확인: 아직
-      expect(find.text('오늘 화면'), findsNothing);
+      expect(find.text('연결 되었어요!'), findsNothing);
 
       await tester.pump(const Duration(seconds: 3)); // 두 번째 확인: 연결됨
+      await tester.pumpAndSettle();
+      expect(find.text('연결 되었어요!'), findsOneWidget);
+      expect(find.textContaining('이제 부모님과'), findsOneWidget);
+      expect(find.text('오늘 화면'), findsNothing);
+
+      await tester.tap(find.text('시작하기'));
       await tester.pumpAndSettle();
       expect(find.text('오늘 화면'), findsOneWidget);
     });
@@ -161,7 +167,7 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
 
-      expect(find.text('오늘 화면'), findsOneWidget);
+      expect(find.text('연결 되었어요!'), findsOneWidget);
     });
 
     testWidgets('이미 연결된 자녀는 바로 오늘 화면으로 넘어간다', (tester) async {
@@ -200,7 +206,7 @@ void main() {
       expect(_button(tester).onPressed, isNotNull);
     });
 
-    testWidgets('연결에 성공하면 오늘 화면으로 넘어간다', (tester) async {
+    testWidgets('연결에 성공하면 연결 완료 화면을 거쳐 오늘 화면으로 넘어간다', (tester) async {
       final dataSource = FakePairingDataSource();
       await _pump(tester, user: _user(UserRole.parent), dataSource: dataSource);
 
@@ -210,10 +216,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dataSource.joinedCodes, ['482913']);
+      expect(find.text('연결 되었어요!'), findsOneWidget);
+      expect(find.textContaining('이제 자녀와'), findsOneWidget);
+
+      await tester.tap(find.text('시작하기'));
+      await tester.pumpAndSettle();
       expect(find.text('오늘 화면'), findsOneWidget);
     });
 
-    testWidgets('이미 연결돼 있으면 오늘 화면으로 넘어간다', (tester) async {
+    testWidgets('이미 연결돼 있으면 연결된 것으로 본다', (tester) async {
       await _pump(
         tester,
         user: _user(UserRole.parent),
@@ -227,7 +238,7 @@ void main() {
       await tester.tap(find.text('연결하기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('오늘 화면'), findsOneWidget);
+      expect(find.text('연결 되었어요!'), findsOneWidget);
     });
 
     testWidgets('자녀가 이미 다른 분과 연결된 숫자면 머물며 안내한다', (tester) async {

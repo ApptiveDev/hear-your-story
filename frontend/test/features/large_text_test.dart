@@ -34,7 +34,11 @@ AppUser _user(UserRole role) => AppUser(
   pairingStatus: PairingStatus.unpaired,
 );
 
-Future<void> _pumpPairing(WidgetTester tester, UserRole role) async {
+Future<void> _pumpPairing(
+  WidgetTester tester,
+  UserRole role, {
+  int pairedAfterChecks = 99,
+}) async {
   final router = GoRouter(
     initialLocation: '/pairing',
     routes: [
@@ -47,7 +51,7 @@ Future<void> _pumpPairing(WidgetTester tester, UserRole role) async {
       overrides: [
         currentUserProvider.overrideWith((ref) async => _user(role)),
         pairingDataSourceProvider.overrideWithValue(
-          FakePairingDataSource(pairedAfterChecks: 99),
+          FakePairingDataSource(pairedAfterChecks: pairedAfterChecks),
         ),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -106,6 +110,15 @@ void main() {
         _phoneWithTextScale(tester, scale);
         await _pumpPairing(tester, UserRole.child);
         expect(find.text('482 913'), findsOneWidget);
+      });
+
+      testWidgets('연결 완료', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        await _pumpPairing(tester, UserRole.child, pairedAfterChecks: 1);
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pump();
+        expect(find.text('연결 되었어요!'), findsOneWidget);
+        await tester.ensureVisible(find.text('시작하기'));
       });
 
       testWidgets('부모 숫자 입력', (tester) async {
