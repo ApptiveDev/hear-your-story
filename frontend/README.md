@@ -101,7 +101,7 @@ lib/
 | `/child-answer` | 자녀 답변 | C 정우영 |
 | `/stories` | 지난 이야기 | C 정우영 |
 
-전체 역할 분담은 [`AGENTS.md`](AGENTS.md) 8장을 따릅니다.
+전체 팀 구성은 루트 [`README.md`](../README.md#팀)를 참고합니다.
 
 ## Mock 데이터
 
