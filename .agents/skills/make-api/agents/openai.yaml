@@ -1,0 +1,7 @@
+interface:
+  display_name: "Make API"
+  short_description: "API를 백엔드에 구현하거나 Flutter에 연동합니다"
+  default_prompt: "Use $make-api to implement or integrate one API across the requested backend or Flutter scope."
+
+policy:
+  allow_implicit_invocation: false
