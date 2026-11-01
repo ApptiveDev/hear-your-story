@@ -1,6 +1,6 @@
 ---
 name: make-api
-description: Implement or change one backend API endpoint in this repository with its contract, authorization, persistence, tests, and frontend impact synchronized.
+description: 이 저장소의 백엔드 API 엔드포인트 하나를 계약·권한·영속성·테스트·프론트 영향과 함께 구현하거나 변경한다. `/make-api`와 엔드포인트 또는 요구사항으로 명시적으로 호출한다. 프론트 전용 작업, 광범위한 구조 변경, 미확정 기획에는 사용하지 않는다.
 argument-hint: "[endpoint 또는 요구사항]"
 disable-model-invocation: true
 ---

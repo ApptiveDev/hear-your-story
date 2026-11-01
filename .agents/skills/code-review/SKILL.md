@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review proposed changes in this repository for merge risk. Use when the user asks to review a PR, branch, commit, diff, staged or unstaged changes, or asks whether changes are ready to merge. Do not use for implementing fixes, general code explanations, or reviewing unchanged code.
+description: 이 저장소의 변경 사항을 병합 위험 관점에서 검토한다. PR, 브랜치, 커밋, diff, staged·unstaged 변경 리뷰나 병합 가능 여부 확인에 사용한다. 수정 구현, 일반 코드 설명, 변경되지 않은 코드 검토에는 사용하지 않는다.
 ---
 
 # Code Review

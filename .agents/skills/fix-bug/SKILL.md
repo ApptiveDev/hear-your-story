@@ -1,6 +1,6 @@
 ---
 name: fix-bug
-description: Diagnose and fix a reproducible defect in this repository. Use when the user reports broken, incorrect, regressed, or failing behavior and wants it fixed. Do not use for new features, broad refactors, review-only requests, or routine CI setup unless the CI failure itself is the reported defect.
+description: 이 저장소에서 재현 가능한 버그를 진단하고 수정한다. 오동작, 회귀, 실패 동작의 수정을 요청할 때 사용한다. 신규 기능, 광범위한 리팩터링, 리뷰 전용 요청, 일반 CI 설정에는 사용하지 않는다.
 ---
 
 # Fix Bug
