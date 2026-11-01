@@ -39,6 +39,7 @@ flutter test                                         # Unit·Widget 테스트
   사용한다. 확정되지 않은 공개 정책(건너뛰기 `SKIPPED` 등)은 임의로 구현하지 않는다.
 - 서명 URL은 만료 시 화면 provider를 갱신하지 말고 새 URL만 다시 받아 재생한다
   (`AudioPlaybackCard`의 `onRefresh`).
+- 질문 `audioUrl`은 안내 음성이 준비될 때까지 `null`이다. `null`이면 재생 버튼을 숨긴다.
 
 ## 화면 상태와 에러 처리
 
@@ -59,6 +60,8 @@ flutter test                                         # Unit·Widget 테스트
 - 부모 화면의 모든 기능은 홈에서 3번 누르기 안에 끝난다. 단계를 늘리면 먼저 공유한다.
 - 상태를 색에만 의존하지 않고 글과 아이콘을 함께 쓴다. 미응답을 재촉·죄책감으로
   표현하지 않는다.
+- 녹음 업로드 중에는 앱을 닫지 말라고 안내한다. 앱이 백그라운드로 가면 녹음·업로드·
+  폴링을 멈추고, 돌아오면 상태를 다시 조회한다.
 
 ## 보안
 
@@ -73,7 +76,7 @@ flutter test                                         # Unit·Widget 테스트
 - 버그 수정은 가능하면 실패하는 테스트를 먼저 추가한 뒤 최소 범위로 고친다.
 - 화면 테스트는 폰 크기(`test/helpers/phone_size.dart`)로 그리고, 새 화면은
   `test/features/large_text_test.dart`의 글씨 1.3·2배 검사에 추가한다.
-- 화면 변경은 에뮬레이터나 웹(Mock)에서 직접 확인하고, 하지 못했으면 PR에 적는다.
+- 화면 변경은 에뮬레이터나 실기기에서 직접 확인하고, 하지 못했으면 PR에 적는다.
 
 ## Frontend Code Review Rules
 

@@ -111,16 +111,22 @@ lib/
 |---|---|
 | `user_parent.json` | 5.1 가입 응답 |
 | `user_child.json` | 5.1 변형 (role=CHILD) |
+| `pair_invitation.json` | 5.2 초대 코드 발급 |
+| `pair_joined.json` | 5.3 초대 코드 참여 (연결 완료) |
+| `today_waiting_for_both.json` | 5.4 변형 (둘 다 답하기 전) |
 | `today_waiting_for_child.json` | 5.4 부모만 답한 상태 |
 | `today_waiting_for_parent.json` | 5.4 변형 (자녀만 답한 상태, `partnerAnswer` 생략) |
 | `today_revealed.json` | 5.4 공개 후 |
+| `today_parent_revealed.json` | 5.4 변형 (부모 관점 공개 답변) |
+| `recording_uploaded.json` | 5.5 업로드 접수 |
 | `recording_processing.json` | 5.6 처리 중 |
 | `recording_failed.json` | 5.6 실패 |
-| `recording_uploaded.json` | 5.5 업로드 접수 |
 | `recording_ready.json` | 5.6 변형 (처리 완료) |
-| `today_parent_revealed.json` | 5.4 변형 (부모 관점 공개 답변) |
+| `child_answer_submitted.json` | 5.7 자녀 답변 제출 |
 | `answer_audio_ready.json` | 5.8 TTS 준비 완료 |
 | `stories_first_page.json` | 5.9 지난 이야기 |
+| `stories_empty.json` | 5.9 변형 (이야기 없음) |
+| `stories_paged_1.json`, `stories_paged_2.json` | 5.9 변형 (다음 페이지가 있는 목록) |
 
 - 필드명과 enum 값은 계약 문서와 정확히 일치해야 합니다.
 - 계약이 바뀌면 DTO와 Mock을 같은 PR에서 함께 수정합니다.
