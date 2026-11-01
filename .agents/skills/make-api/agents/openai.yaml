@@ -1,7 +1,7 @@
 interface:
   display_name: "Make API"
-  short_description: "계약·보안·테스트를 포함해 백엔드 API를 구현합니다"
-  default_prompt: "Use $make-api to implement one backend API endpoint with its contract and tests."
+  short_description: "API를 백엔드에 구현하거나 Flutter에 연동합니다"
+  default_prompt: "Use $make-api to implement or integrate one API across the requested backend or Flutter scope."
 
 policy:
   allow_implicit_invocation: false
