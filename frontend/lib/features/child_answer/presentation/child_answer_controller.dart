@@ -17,6 +17,7 @@ class ChildAnswerSubmitState {
     this.errorMessage,
     this.fieldErrorMessage,
     this.isLocked = false,
+    this.isSessionExpired = false,
   });
 
   final SubmitStatus status;
@@ -32,6 +33,9 @@ class ChildAnswerSubmitState {
 
   /// 409 ANSWER_LOCKED: 이미 공개되어 수정할 수 없음
   final bool isLocked;
+
+  /// 401: 로그인이 만료되어 화면이 가입 화면으로 보낸다
+  final bool isSessionExpired;
 
   bool get isSubmitting => status == SubmitStatus.submitting;
 }
@@ -99,6 +103,13 @@ class ChildAnswerController extends Notifier<ChildAnswerSubmitState> {
   }
 
   ChildAnswerSubmitState _failureFrom(ApiException e) {
+    if (e.statusCode == 401) {
+      return ChildAnswerSubmitState(
+        status: SubmitStatus.failure,
+        result: state.result,
+        isSessionExpired: true,
+      );
+    }
     switch (e.errorCode) {
       case 'ANSWER_LOCKED':
         return ChildAnswerSubmitState(
@@ -113,7 +124,7 @@ class ChildAnswerController extends Notifier<ChildAnswerSubmitState> {
           result: state.result,
           fieldErrorMessage: validationMessage,
         );
-      default: // 네트워크, 401, 403, 429, 5xx → 공통 안내 문구
+      default: // 네트워크, 403, 429, 5xx → 공통 안내 문구
         return ChildAnswerSubmitState(
           status: SubmitStatus.failure,
           result: state.result,

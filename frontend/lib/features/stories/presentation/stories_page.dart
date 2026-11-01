@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/error_retry_view.dart';
+import '../../onboarding/presentation/session.dart';
 import 'stories_controller.dart';
 import 'widgets/story_card.dart';
 
@@ -11,6 +12,11 @@ class StoriesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(storiesControllerProvider, (_, next) {
+      final e = next.error;
+      if (e != null) handleSessionExpired(context, ref, e);
+    });
+
     final stories = ref.watch(storiesControllerProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('지난 이야기')),
