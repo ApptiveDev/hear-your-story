@@ -134,6 +134,11 @@ class ChildAnswerController extends Notifier<ChildAnswerSubmitState> {
   }
 }
 
+/// 로그인 만료(401)로 가입 화면에 갔을 때 쓰던 글을 assignmentId별로 잠시 보관한다.
+/// 같은 역할로 다시 가입하면 같은 계정·같은 질문으로 돌아오므로 답변 화면이 되살린다.
+/// 앱을 끄면 사라진다.
+final childAnswerDraftProvider = Provider<Map<String, String>>((ref) => {});
+
 final childAnswerControllerProvider =
     NotifierProvider.autoDispose<ChildAnswerController, ChildAnswerSubmitState>(
       ChildAnswerController.new,

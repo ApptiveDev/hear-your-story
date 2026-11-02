@@ -25,7 +25,10 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
   @override
   void initState() {
     super.initState();
-    _text = TextEditingController(text: widget.args.initialText ?? '');
+    final draft = ref
+        .read(childAnswerDraftProvider)
+        .remove(widget.args.assignmentId);
+    _text = TextEditingController(text: draft ?? widget.args.initialText ?? '');
     _text.addListener(_onTextChanged);
   }
 
@@ -98,6 +101,7 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
     if (prev?.status == SubmitStatus.failure) return;
 
     if (next.isSessionExpired) {
+      ref.read(childAnswerDraftProvider)[widget.args.assignmentId] = _text.text;
       handleSessionExpired(context, ref, ApiException(statusCode: 401));
       return;
     }
