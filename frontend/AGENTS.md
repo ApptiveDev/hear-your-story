@@ -265,7 +265,5 @@ PR 본문에 영향 받는 화면을 적는다.
   에러 표에는 없다.
 - 로그인 사용자 정보를 다시 조회하는 API(`GET /users/me`)가 없다. 앱 재실행 후 역할과
   페어링 여부는 가입 응답을 저장해 두거나 `GET /today`의 `409 PAIR_NOT_FOUND`로 판단한다.
-- `lib/core/network/dio_provider.dart`는 401에서 토큰만 지운다. 가입 화면으로 보내는
-  router redirect는 아직 없다.
 - 백엔드 질문 seed는 2026-09-24 ~ 2026-10-02 9일치다. 그 이후 날짜는
   `404 TODAY_ASSIGNMENT_NOT_FOUND`가 난다.
