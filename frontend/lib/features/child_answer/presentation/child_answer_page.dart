@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_exception.dart';
+import '../../onboarding/presentation/session.dart';
 import '../domain/answer_validator.dart';
 import 'child_answer_args.dart';
 import 'child_answer_controller.dart';
@@ -23,7 +25,10 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
   @override
   void initState() {
     super.initState();
-    _text = TextEditingController(text: widget.args.initialText ?? '');
+    final draft = ref
+        .read(childAnswerDraftProvider)
+        .remove(widget.args.assignmentId);
+    _text = TextEditingController(text: draft ?? widget.args.initialText ?? '');
     _text.addListener(_onTextChanged);
   }
 
@@ -94,6 +99,12 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
   ) {
     if (next.status != SubmitStatus.failure) return;
     if (prev?.status == SubmitStatus.failure) return;
+
+    if (next.isSessionExpired) {
+      ref.read(childAnswerDraftProvider)[widget.args.assignmentId] = _text.text;
+      handleSessionExpired(context, ref, ApiException(statusCode: 401));
+      return;
+    }
 
     final message = next.errorMessage;
     if (message != null) {

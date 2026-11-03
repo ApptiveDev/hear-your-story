@@ -80,8 +80,13 @@ class StoriesController extends AsyncNotifier<StoriesState> {
           hasNext: page.hasNext,
         ),
       );
-    } on ApiException {
+    } on ApiException catch (e, st) {
       if (!ref.mounted) return;
+      // 로그인 만료는 화면이 가입 화면으로 보내도록 에러 상태로 둔다
+      if (e.statusCode == 401) {
+        state = AsyncError(e, st);
+        return;
+      }
       state = AsyncData(
         StoriesState(
           items: current.items,
