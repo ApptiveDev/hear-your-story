@@ -211,7 +211,8 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 24),
-                if (widget.args.questionAudioUrl != null)
+                // 말하는 동안에는 쓰지 않으므로 숨겨서 큰 글씨에서도 멈춤 버튼이 보이게 한다
+                if (widget.args.questionAudioUrl != null && !c.isCapturing)
                   AudioPlaybackCard(
                     key: _audioKey,
                     source: PlaybackSource(widget.args.questionAudioUrl!),

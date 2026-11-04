@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_record/core/widgets/audio_playback_card.dart';
+import 'package:life_record/core/theme/app_theme.dart';
 import 'package:life_record/features/recording/presentation/recording_args.dart';
 import 'package:life_record/features/recording/presentation/recording_controller.dart';
 import 'package:life_record/features/recording/presentation/recording_page.dart';
@@ -89,6 +91,48 @@ void main() {
     await tester.pump();
     expect(find.textContaining('녹음 중'), findsOneWidget);
     expect(recorder.resumes, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('글씨를 키워도 말하는 동안 멈춤 버튼이 화면 안에 있다', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1080 / 411;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    const withAudio = RecordingArgs(
+      assignmentId: 'asg_1',
+      questionText: '어릴 때 가장 좋아했던 놀이는 무엇이었나요?',
+      questionAudioUrl: 'https://signed.example.com/question.mp3',
+    );
+    final controller = RecordingController(
+      args: withAudio,
+      repository: FakeRecordingRepository(),
+      recorder: FakeRecorder(),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: RecordingPage(args: withAudio, controller: controller),
+        ),
+      ),
+    );
+    expect(find.byType(AudioPlaybackCard), findsOneWidget);
+
+    await controller.start();
+    await tester.pump();
+    expect(find.byType(AudioPlaybackCard), findsNothing);
+    final height =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    expect(tester.getRect(find.text('잠깐 멈추기')).bottom, lessThan(height));
+
+    await controller.pause();
+    await tester.pump();
+    expect(find.byType(AudioPlaybackCard), findsNothing);
+    expect(tester.getRect(find.text('처음부터 다시 말하기')).bottom, lessThan(height));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
