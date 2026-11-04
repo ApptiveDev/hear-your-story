@@ -174,6 +174,117 @@ void main() {
     expect(controller.canRetryUpload, isFalse);
   });
 
+  group('일시정지', () {
+    testWidgets('멈춘 시간은 빼고, 실제 녹음 시간 합계가 60초면 끝나서 파일 하나를 보낸다', (tester) async {
+      await tester.runAsync(() async {
+        await controller.start();
+        now = now.add(const Duration(seconds: 20));
+        await controller.pause();
+        expect(controller.phase, RecordingPhase.paused);
+        expect(controller.elapsedSeconds, 20);
+
+        now = now.add(const Duration(minutes: 5)); // 멈춘 동안은 세지 않는다
+        await controller.resume();
+        expect(controller.phase, RecordingPhase.recording);
+        now = now.add(const Duration(seconds: 15));
+        await controller.pause();
+        expect(controller.elapsedSeconds, 35);
+
+        await controller.resume();
+        now = now.add(const Duration(seconds: 24));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(controller.elapsedSeconds, 59);
+        expect(repository.keys, isEmpty);
+
+        now = now.add(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      });
+
+      expect(recorder.pauses, 2);
+      expect(recorder.resumes, 2);
+      expect(recorder.starts, 1);
+      expect(recorder.stops, 1);
+      expect(repository.keys, hasLength(1));
+    });
+
+    testWidgets('멈춘 상태에서 보내면 바로 업로드한다', (tester) async {
+      await controller.start();
+      await controller.pause();
+      await controller.stop();
+      expect(recorder.stops, 1);
+      expect(repository.keys, hasLength(1));
+    });
+
+    testWidgets('멈춘 상태에서는 전화 같은 방해 알림으로 녹음이 끝나지 않는다', (tester) async {
+      await controller.start();
+      await controller.pause();
+      recorder.interruptionController.add(null);
+      await tester.pump();
+      expect(controller.phase, RecordingPhase.paused);
+      expect(recorder.stops, 0);
+    });
+
+    testWidgets('멈춘 상태로 앱을 내리면 파일로 남기고 보내지 않는다', (tester) async {
+      await controller.start();
+      await controller.pause();
+      controller.setForeground(false);
+      await tester.pump();
+      expect(recorder.stops, 1);
+      expect(controller.hasDraft, isTrue);
+      expect(repository.keys, isEmpty);
+    });
+
+    testWidgets('앱이 내려가 있으면 이어서 녹음하지 않는다', (tester) async {
+      await controller.start();
+      await controller.pause();
+      controller.setForeground(false);
+      await tester.pump();
+      await controller.resume();
+      expect(recorder.resumes, 0);
+    });
+
+    testWidgets('멈추기에 실패하면 지금까지의 녹음을 파일로 남긴다', (tester) async {
+      recorder.pauseError = Exception('pause 실패');
+      await controller.start();
+      await controller.pause();
+      expect(recorder.stops, 1);
+      expect(controller.hasDraft, isTrue);
+      expect(controller.phase, RecordingPhase.draft);
+    });
+
+    testWidgets('이어서 녹음에 실패하면 지금까지의 녹음을 파일로 남긴다', (tester) async {
+      recorder.resumeError = Exception('resume 실패');
+      await controller.start();
+      await controller.pause();
+      await controller.resume();
+      expect(recorder.stops, 1);
+      expect(controller.hasDraft, isTrue);
+    });
+
+    testWidgets('이어서 녹음을 기다리는 사이 끝내면 시간을 다시 재지 않는다', (tester) async {
+      recorder.resumeGate = Completer();
+      await controller.start();
+      await controller.pause();
+      final resuming = controller.resume();
+      await controller.stop();
+      recorder.resumeGate!.complete();
+      await resuming;
+      now = now.add(const Duration(seconds: 70));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(recorder.stops, 1);
+      expect(repository.keys, hasLength(1));
+    });
+
+    testWidgets('두 번 눌러도 한 번만 멈추고 이어진다', (tester) async {
+      await controller.start();
+      await Future.wait([controller.pause(), controller.pause()]);
+      expect(recorder.pauses, 1);
+      await Future.wait([controller.resume(), controller.resume()]);
+      expect(recorder.resumes, 1);
+      await controller.stop(); // 녹음 타이머 정리
+    });
+  });
+
   test('파일 크기와 길이 경계를 검사한다', () {
     expect(
       const RecordedClip(

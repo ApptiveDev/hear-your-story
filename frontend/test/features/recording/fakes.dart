@@ -6,8 +6,13 @@ import 'package:life_record/features/recording/domain/recording_repository.dart'
 class FakeRecorder implements RecorderService {
   bool permission = true;
   int starts = 0;
+  int pauses = 0;
+  int resumes = 0;
   int stops = 0;
   int disposals = 0;
+  Object? pauseError;
+  Object? resumeError;
+  Completer<void>? resumeGate;
   Completer<void>? startGate;
   final interruptionController = StreamController<void>.broadcast();
   RecordedClip clip = const RecordedClip(
@@ -24,6 +29,19 @@ class FakeRecorder implements RecorderService {
   Future<void> start() async {
     starts++;
     await startGate?.future;
+  }
+
+  @override
+  Future<void> pause() async {
+    pauses++;
+    if (pauseError != null) throw pauseError!;
+  }
+
+  @override
+  Future<void> resume() async {
+    resumes++;
+    await resumeGate?.future;
+    if (resumeError != null) throw resumeError!;
   }
 
   @override

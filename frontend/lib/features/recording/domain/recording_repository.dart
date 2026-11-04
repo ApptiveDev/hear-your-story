@@ -15,6 +15,10 @@ abstract class RecorderService {
   Stream<void> get interruptions;
   Future<bool> hasPermission();
   Future<void> start();
+
+  /// 같은 파일에 이어서 녹음할 수 있게 잠시 멈춘다. 멈춘 시간은 길이에 넣지 않는다.
+  Future<void> pause();
+  Future<void> resume();
   Future<RecordedClip> stop();
   Future<void> discard();
   Future<void> dispose();

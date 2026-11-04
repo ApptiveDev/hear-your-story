@@ -94,13 +94,13 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
 
   Future<void> _leave() async {
     if (_askingLeave) return;
-    if (_controller.busy && _controller.phase != RecordingPhase.recording) {
+    if (_controller.busy && !_controller.isCapturing) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('녹음을 저장하고 있어요. 잠시 기다려 주세요.')),
       );
       return;
     }
-    if (_controller.phase == RecordingPhase.recording || _controller.hasDraft) {
+    if (_controller.isCapturing || _controller.hasDraft) {
       _askingLeave = true;
       final leave = await showDialog<bool>(
         context: context,
@@ -148,6 +148,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
       widget.args.canRecord ? '편하게 이야기해 주세요.' : '이미 공개된 답변이에요.',
     RecordingPhase.requestingPermission => '마이크를 준비하고 있어요.',
     RecordingPhase.recording => '녹음 중 · ${_controller.elapsedSeconds}초 / 60초',
+    RecordingPhase.paused => '잠깐 멈췄어요 · ${_controller.elapsedSeconds}초 / 60초',
     RecordingPhase.stopping => '녹음을 저장하고 있어요.',
     RecordingPhase.draft => '녹음을 보낼 준비가 됐어요.',
     RecordingPhase.uploading =>
@@ -165,6 +166,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     builder: (context, _) {
       final c = _controller;
       final recording = c.phase == RecordingPhase.recording;
+      final paused = c.phase == RecordingPhase.paused;
       return PopScope(
         canPop: _allowLeave || (!c.busy && !c.hasDraft),
         onPopInvokedWithResult: (didPop, _) {
@@ -199,6 +201,8 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                 Icon(
                   recording
                       ? Icons.mic
+                      : paused
+                      ? Icons.pause_circle_outline
                       : c.phase == RecordingPhase.ready
                       ? Icons.check_circle_outline
                       : Icons.mic_none,
@@ -232,12 +236,32 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                   Text(c.result!.summaryText!),
                 ],
                 const SizedBox(height: 24),
-                if (recording)
+                if (recording) ...[
                   FilledButton.icon(
                     onPressed: c.stop,
                     icon: const Icon(Icons.stop),
                     label: const Text('그만 말하고 보내기'),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: c.pause,
+                    icon: const Icon(Icons.pause),
+                    label: const Text('잠깐 멈추기'),
+                  ),
+                ],
+                if (paused) ...[
+                  FilledButton.icon(
+                    onPressed: c.resume,
+                    icon: const Icon(Icons.mic),
+                    label: const Text('이어서 말하기'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: c.stop,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('그만 말하고 보내기'),
+                  ),
+                ],
                 if (c.canRetryUpload)
                   FilledButton.icon(
                     onPressed: c.retryUpload,

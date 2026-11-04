@@ -12,6 +12,7 @@ enum RecordingPhase {
   idle,
   requestingPermission,
   recording,
+  paused,
   stopping,
   draft,
   uploading,
@@ -60,6 +61,7 @@ class RecordingController extends ChangeNotifier {
   Timer? _pollTimer;
   Timer? _deadlineTimer;
   DateTime? _startedAt;
+  Duration _recordedBefore = Duration.zero; // 일시정지 전까지 녹음한 시간
   DateTime? _pollStartedAt;
   int _pollGeneration = 0;
   Future<void>? _operation;
@@ -68,9 +70,14 @@ class RecordingController extends ChangeNotifier {
   bool get busy => const [
     RecordingPhase.requestingPermission,
     RecordingPhase.recording,
+    RecordingPhase.paused,
     RecordingPhase.stopping,
     RecordingPhase.uploading,
   ].contains(phase);
+
+  /// 녹음이 진행 중이거나 일시정지되어 아직 파일이 만들어지지 않은 상태
+  bool get isCapturing =>
+      phase == RecordingPhase.recording || phase == RecordingPhase.paused;
   bool get hasDraft => _clip != null;
   bool get canStart => args.canRecord && !locked && !busy;
   bool get canRetryUpload =>
@@ -118,6 +125,7 @@ class RecordingController extends ChangeNotifier {
       await _recorder.start();
       if (_disposed) return;
       elapsedSeconds = 0;
+      _recordedBefore = Duration.zero;
       _startedAt = _now();
       phase = RecordingPhase.recording;
       _emit();
@@ -125,18 +133,67 @@ class RecordingController extends ChangeNotifier {
         await _stopAndUpload(upload: false);
         return;
       }
-      _recordTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-        elapsedSeconds = _now().difference(_startedAt!).inSeconds.clamp(0, 60);
-        _emit();
-        if (elapsedSeconds >= 60) unawaited(stop());
-      });
+      _startRecordTimer();
     } catch (error) {
       _fail(error, fallback: '녹음을 시작하지 못했어요. 마이크를 확인하고 다시 시도해 주세요.');
     }
   }
 
-  Future<void> stop() {
+  Duration get _recordedTotal =>
+      _recordedBefore + _now().difference(_startedAt!);
+
+  void _startRecordTimer() {
+    _recordTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      elapsedSeconds = _recordedTotal.inSeconds.clamp(0, 60);
+      _emit();
+      if (elapsedSeconds >= 60) unawaited(stop());
+    });
+  }
+
+  Future<void> pause() {
     if (phase != RecordingPhase.recording || _disposed) return Future.value();
+    return _operation = _pause();
+  }
+
+  Future<void> _pause() async {
+    _recordTimer?.cancel();
+    _recordedBefore = _recordedTotal;
+    elapsedSeconds = _recordedBefore.inSeconds.clamp(0, 60);
+    phase = RecordingPhase.paused;
+    _emit();
+    try {
+      await _recorder.pause();
+    } catch (_) {
+      if (_disposed) return;
+      // 멈추지 못하면 녹음이 계속되므로 지금까지의 녹음을 파일로 남긴다.
+      await _stopAndUpload(upload: false);
+    }
+  }
+
+  Future<void> resume() {
+    if (phase != RecordingPhase.paused || !_foreground || _disposed) {
+      return Future.value();
+    }
+    return _operation = _resume();
+  }
+
+  Future<void> _resume() async {
+    phase = RecordingPhase.recording;
+    _startedAt = _now();
+    _emit();
+    try {
+      await _recorder.resume();
+      // 기다리는 사이 녹음을 끝냈으면 시간을 다시 재지 않는다.
+      if (_disposed || phase != RecordingPhase.recording) return;
+      _startRecordTimer();
+    } catch (_) {
+      if (_disposed) return;
+      await _stopAndUpload(upload: false);
+    }
+  }
+
+  Future<void> stop() {
+    if (!isCapturing || _disposed) return Future.value();
     return _operation = _stopAndUpload(upload: _foreground);
   }
 
@@ -267,9 +324,7 @@ class RecordingController extends ChangeNotifier {
     _foreground = foreground;
     if (!foreground) {
       _stopPolling();
-      if (phase == RecordingPhase.recording) {
-        _operation = _stopAndUpload(upload: false);
-      }
+      if (isCapturing) _operation = _stopAndUpload(upload: false);
     } else if (!busy && !hasDraft && recordingId != null) {
       refreshStatus();
     }
