@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
 import '../storage/token_storage.dart';
+import 'session_expired_signal.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final storage = ref.read(tokenStorageProvider);
@@ -23,11 +24,12 @@ final dioProvider = Provider<Dio>((ref) {
         }
         handler.next(options);
       },
-      onError: (e, handler) async {
-        if (e.response?.statusCode == 401) {
-          await storage.clear(); // 가입 화면 이동은 router에서 처리
-        }
+      onError: (e, handler) {
         handler.next(e);
+        if (e.response?.statusCode == 401) {
+          // 토큰·사용자 정보 정리와 가입 화면 이동은 앱 최상단(App)이 한다
+          ref.read(sessionExpiredSignalProvider.notifier).emit();
+        }
       },
     ),
   );
