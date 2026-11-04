@@ -275,6 +275,50 @@ void main() {
       expect(repository.keys, hasLength(1));
     });
 
+    testWidgets('이어서 녹음을 기다리는 사이 끝낸 뒤 실패해도 보낸 녹음을 그대로 둔다', (tester) async {
+      recorder.resumeGate = Completer();
+      recorder.resumeError = Exception('resume 실패');
+      await controller.start();
+      await controller.pause();
+      final resuming = controller.resume();
+      await controller.stop();
+      recorder.resumeGate!.complete();
+      await resuming;
+      expect(recorder.stops, 1);
+      expect(controller.phase, RecordingPhase.ready);
+      expect(controller.message, isNot(contains('저장하지 못했어요')));
+    });
+
+    testWidgets('멈추기를 기다리는 사이 끝낸 뒤 실패해도 보낸 녹음을 그대로 둔다', (tester) async {
+      recorder.pauseGate = Completer();
+      recorder.pauseError = Exception('pause 실패');
+      await controller.start();
+      final pausing = controller.pause();
+      await controller.stop();
+      recorder.pauseGate!.complete();
+      await pausing;
+      expect(recorder.stops, 1);
+      expect(controller.phase, RecordingPhase.ready);
+    });
+
+    testWidgets('기다리던 이어가기가 실패해도 새로 시작한 녹음은 끊지 않는다', (tester) async {
+      recorder.resumeGate = Completer();
+      recorder.resumeError = Exception('resume 실패');
+      await controller.start();
+      await controller.pause();
+      final resuming = controller.resume();
+      controller.setForeground(false);
+      await tester.pump();
+      controller.setForeground(true);
+      await controller.start();
+      expect(controller.phase, RecordingPhase.recording);
+      recorder.resumeGate!.complete();
+      await resuming;
+      expect(recorder.stops, 1);
+      expect(controller.phase, RecordingPhase.recording);
+      await controller.stop();
+    });
+
     testWidgets('처음부터 다시 말하면 시간을 0부터 재고 이전 녹음은 보내지 않는다', (tester) async {
       await controller.start();
       now = now.add(const Duration(seconds: 30));

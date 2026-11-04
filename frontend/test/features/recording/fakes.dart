@@ -12,6 +12,7 @@ class FakeRecorder implements RecorderService {
   int disposals = 0;
   Object? pauseError;
   Object? resumeError;
+  Completer<void>? pauseGate;
   Completer<void>? resumeGate;
   Completer<void>? startGate;
   final interruptionController = StreamController<void>.broadcast();
@@ -34,6 +35,7 @@ class FakeRecorder implements RecorderService {
   @override
   Future<void> pause() async {
     pauses++;
+    await pauseGate?.future;
     if (pauseError != null) throw pauseError!;
   }
 

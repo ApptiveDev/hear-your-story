@@ -64,6 +64,7 @@ class RecordingController extends ChangeNotifier {
   Duration _recordedBefore = Duration.zero; // 일시정지 전까지 녹음한 시간
   DateTime? _pollStartedAt;
   int _pollGeneration = 0;
+  int _captureGeneration = 0; // 녹음을 끝내거나 새로 시작할 때마다 늘린다
   Future<void>? _operation;
   StreamSubscription<void>? _interruptions;
 
@@ -101,6 +102,7 @@ class RecordingController extends ChangeNotifier {
   }
 
   Future<void> _start() async {
+    _captureGeneration++;
     _stopPolling();
     phase = RecordingPhase.requestingPermission;
     message = null;
@@ -161,10 +163,12 @@ class RecordingController extends ChangeNotifier {
     elapsedSeconds = _recordedBefore.inSeconds.clamp(0, 60);
     phase = RecordingPhase.paused;
     _emit();
+    final generation = _captureGeneration;
     try {
       await _recorder.pause();
     } catch (_) {
-      if (_disposed) return;
+      // 기다리는 사이 이미 끝낸 녹음이면 결과를 덮어쓰지 않는다.
+      if (_disposed || generation != _captureGeneration) return;
       // 멈추지 못하면 녹음이 계속되므로 지금까지의 녹음을 파일로 남긴다.
       await _stopAndUpload(upload: false);
     }
@@ -181,13 +185,19 @@ class RecordingController extends ChangeNotifier {
     phase = RecordingPhase.recording;
     _startedAt = _now();
     _emit();
+    final generation = _captureGeneration;
     try {
       await _recorder.resume();
       // 기다리는 사이 녹음을 끝냈으면 시간을 다시 재지 않는다.
-      if (_disposed || phase != RecordingPhase.recording) return;
+      if (_disposed ||
+          generation != _captureGeneration ||
+          phase != RecordingPhase.recording) {
+        return;
+      }
       _startRecordTimer();
     } catch (_) {
-      if (_disposed) return;
+      // 기다리는 사이 이미 끝낸 녹음이면 결과를 덮어쓰지 않는다.
+      if (_disposed || generation != _captureGeneration) return;
       await _stopAndUpload(upload: false);
     }
   }
@@ -206,6 +216,7 @@ class RecordingController extends ChangeNotifier {
   }
 
   Future<void> _stopAndUpload({required bool upload}) async {
+    _captureGeneration++;
     _recordTimer?.cancel();
     phase = RecordingPhase.stopping;
     _emit();
