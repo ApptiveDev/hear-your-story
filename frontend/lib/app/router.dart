@@ -12,6 +12,7 @@ import '../features/today/presentation/today_page.dart';
 import '../core/config/app_config.dart';
 import '../features/child_answer/presentation/child_answer_args.dart';
 import '../features/child_answer/presentation/child_answer_page.dart';
+import '../features/stories/presentation/stories_calendar_page.dart';
 import '../features/stories/presentation/stories_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -67,6 +68,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/stories',
         builder: (context, state) => const StoriesPage(),
+        routes: [
+          GoRoute(
+            path: 'calendar',
+            // 월별 조회가 확정되기 전 실제 서버에서는 열지 않는다.
+            redirect: (context, state) =>
+                AppConfig.storiesMonthApi ? null : '/stories',
+            builder: (context, state) => const StoriesCalendarPage(),
+          ),
+        ],
       ), // C
     ],
   );

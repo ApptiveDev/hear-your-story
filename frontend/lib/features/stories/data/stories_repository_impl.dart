@@ -18,4 +18,10 @@ class StoriesRepositoryImpl implements StoriesRepository {
     );
     return StoriesDto.pageFromJson(json);
   }
+
+  @override
+  Future<List<Story>> fetchMonth(String month) async {
+    final json = await _dataSource.fetchStoriesByMonth(month);
+    return StoriesDto.pageFromJson(json).items;
+  }
 }
