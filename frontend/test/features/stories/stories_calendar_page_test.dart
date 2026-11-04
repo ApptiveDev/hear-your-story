@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,6 +80,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('질문 2'), findsOneWidget);
+  });
+
+  testWidgets('화면 읽어주기(TalkBack)로도 이야기가 있는 날만 고를 수 있다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpPage(tester, twoStories());
+
+    final empty = tester.getSemantics(day('11월 3일'));
+    expect(empty.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+
+    final story = tester.getSemantics(day('11월 2일, 이야기 있음'));
+    expect(story.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    story.owner!.performAction(story.id, SemanticsAction.tap);
+    await tester.pumpAndSettle();
+
+    expect(find.text('질문 1'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('이전 달로 갔다가 돌아오면 고른 날짜가 남아 있다', (tester) async {

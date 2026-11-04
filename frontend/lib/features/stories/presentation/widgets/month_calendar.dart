@@ -89,7 +89,8 @@ class _DayCell extends StatelessWidget {
     return Semantics(
       button: hasStory,
       selected: selected,
-      excludeSemantics: true,
+      excludeSemantics: true, // 안쪽 InkWell의 탭도 지워지므로 여기에 다시 연결한다
+      onTap: hasStory ? onTap : null,
       label: '$month월 $day일${hasStory ? ', 이야기 있음' : ''}',
       child: Padding(
         padding: const EdgeInsets.all(2),
