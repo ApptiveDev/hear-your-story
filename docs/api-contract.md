@@ -2,8 +2,9 @@
 
 이 문서는 Flutter와 Spring Boot 사이의 **단일 API 계약(source of truth)**이다.
 프론트는 이 문서의 예시 JSON으로 Mock을 만들고, 백엔드는 동일한 필드와 상태값을
-구현한다. `확정`으로 표시된 계약만 구현 기준으로 사용하고, `초안`은 Mock 화면과
-회의 자료에만 사용한다.
+구현한다. `확정`으로 표시된 계약만 현재 구현 기준으로 사용한다. `초안`은 이후
+개발을 위한 요구사항이며, 프론트와 백엔드 구현·테스트·Mock이 함께 준비되기 전에는
+실제 endpoint를 호출하거나 현재 응답 모델에 적용하지 않는다.
 
 - Base URL: `/api/v1`
 - 인증: `Authorization: Bearer {accessToken}`
@@ -29,7 +30,28 @@
 enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다. 프론트는 항상 서버의
 `revealStatus`와 `canViewPartnerAnswer`만 신뢰한다.
 
-### 1.1 재로그인·기록 복구 — 초안
+### 1.1 출시 준비 기능 — 개발 초안
+
+다음 기능은 요구사항만 합의한 **미구현 초안**이다. 현재 서버와 앱이 지원하는
+계약으로 간주하지 않는다.
+
+| 기능 | 현재 동작 | 구현 PR에서 함께 변경할 항목 |
+|---|---|---|
+| `GET /stories?month=YYYY-MM` | 서버는 `cursor`와 `limit`만 처리한다. `month`를 보내도 월별 필터가 적용되지 않는다. | 백엔드 Controller·조회·검증·테스트, 프론트 모델·DataSource·Mock·테스트 |
+| `PUT /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 저장·권한·DTO·테스트, 프론트 모델·업로드·Mock·테스트 |
+| `DELETE /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 삭제·권한·테스트, 프론트 삭제 흐름·Mock·테스트 |
+| `DELETE /recordings/{recordingId}`와 삭제된 답변 응답 | 삭제 endpoint와 `availability=DELETED` 응답이 미구현이며, 현재 프론트는 `recordingId`와 `processingStatus`를 필수 문자열로 파싱한다. | 백엔드 삭제·nullable DTO·테스트, 프론트 nullable 모델·재생 차단·Mock·파싱 테스트 |
+| `DELETE /users/me` | 미구현 | 백엔드 비활성화·삭제 작업·테스트, 프론트 세션 정리·Mock·테스트 |
+
+이 기능에만 쓰이는 `availability`, `myPhoto`, `partnerPhoto`, `parentPhoto`,
+`childPhoto`, `AnswerAvailability`와 사진·삭제 관련 `errorCode`도 모두 초안이다.
+확정 endpoint의 예시 JSON에 표시되어 있더라도 현재 응답에는 포함되지 않는다.
+
+각 기능은 루트 `AGENTS.md`의 API 계약 변경 절차에 따라 `[API]` Issue에 현재·제안
+JSON을 기록하고 프론트·백엔드 담당자가 확인한 뒤, 구현과 같은 PR에서 해당 항목을
+`확정`으로 바꾼다. 그전에는 월별 조회를 호출하거나 `DELETED` 응답을 내려서는 안 된다.
+
+### 1.2 재로그인·기록 복구 — 초안
 
 재로그인과 계정 복구는 추가 회의 전까지 **초안**이다. 프론트는 5.14의 상태와
 예시 JSON으로 화면·Mock을 만들 수 있지만 실제 endpoint를 호출하거나 기존 가입
@@ -129,6 +151,9 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 - 업로드 필드명: `audioFile`
 - 원본은 비공개 R2 bucket에 저장한다. DB에는 공개 URL이 아닌 object key를
   저장하고, 조회 시 만료 시간이 짧은 signed URL을 반환한다.
+
+다음 일시정지 요구사항은 프론트 개발 초안이다.
+
 - 일시정지·이어 녹음은 Flutter 앱 내부 동작이다. 여러 번 일시정지하더라도 앱은
   재생 가능한 `.m4a` 파일 **하나**를 만들고 기존 업로드 API를 한 번 호출한다.
 - 60초 제한은 일시정지한 시간을 제외한 실제 녹음 시간의 합으로 계산한다.
@@ -171,7 +196,7 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 }
 ```
 
-### 2.9 사진 파일
+### 2.9 사진 파일 — 초안, 미구현
 
 - 부모와 자녀는 각 assignment에 본인이 올린 사진을 최대 1장 보관한다.
 - 허용 MIME: `image/jpeg`, `image/png`, `image/webp`
@@ -193,7 +218,7 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 | `ProcessingStatus` | `UPLOADED`, `STT_PROCESSING`, `STT_DONE`, `LLM_PROCESSING`, `READY`, `FAILED` |
 | `TtsStatus` | `NOT_REQUESTED`, `PROCESSING`, `READY`, `FAILED` |
 | `RevealStatus` | `WAITING_FOR_PARENT`, `WAITING_FOR_CHILD`, `WAITING_FOR_BOTH`, `REVEALED` |
-| `AnswerAvailability` | `AVAILABLE`, `DELETED` |
+| `AnswerAvailability` (초안) | `AVAILABLE`, `DELETED` |
 
 `SKIPPED`는 공개 정책 회의에 대비해 enum에 예약하지만, 확정 전에는 클라이언트가
 건너뛰기 버튼을 노출하지 않는다.
@@ -212,14 +237,12 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 | 7 | `PUT /assignments/{assignmentId}/child-answer` | 자녀 | 텍스트 답변 신규 제출·수정 |
 | 8 | `GET /answers/{answerId}/audio` | 부모 | 자녀 답변 TTS 상태·재생 URL 조회 |
 | 9 | `GET /stories?cursor=&limit=` | 공통 | 공개된 지난 이야기 목록 |
-| 10 | `GET /stories?month=YYYY-MM` | 공통 | 한 달의 공개된 지난 이야기 조회 |
-| 11 | `PUT /assignments/{assignmentId}/my-photo` | 공통 | 본인 사진 첨부·교체 |
-| 12 | `DELETE /assignments/{assignmentId}/my-photo` | 공통 | 본인 사진 삭제 |
-| 13 | `DELETE /recordings/{recordingId}` | 부모 | 본인 원본 음성과 파생 데이터 삭제 |
-| 14 | `DELETE /users/me` | 공통 | 회원 탈퇴와 본인 데이터 삭제 요청 |
 
 `GET /questions/today`와 `GET /today?pairId=`는 제거한다. 오늘 화면은 `GET
 /today` 하나로 통합하고 Pair는 인증 사용자로부터 서버가 결정한다.
+
+추가 개발 예정 endpoint는 확정 목록에 포함하지 않는다. 요구사항과 현재 구현의
+차이는 1.1과 각 `초안` 상세 절을 따른다.
 
 ## 5. API 상세와 Mock JSON
 
@@ -595,7 +618,10 @@ GET 요청에서는 TTS를 새로 생성하지 않는다. 자녀 답변 제출 �
 같다. signed URL이 만료되면 프론트는 저장된 URL을 재사용하지 않고 이 API를 다시
 호출한다.
 
-#### 월별 조회 모드 — `GET /stories?month=2026-11`
+#### 월별 조회 모드 — `GET /stories?month=2026-11` — 초안, 미구현
+
+현재 백엔드는 `month`를 처리하지 않는다. 아래 계약은 백엔드와 프론트가 함께
+구현되는 PR에서 확정하기 위한 개발 요구사항이며, 그전에는 호출하지 않는다.
 
 - `month` 형식은 `YYYY-MM`이고 기준 시간대는 `Asia/Seoul`이다.
 - `month`와 `cursor`·`limit`은 함께 보내지 않는다. 함께 보내면
@@ -607,7 +633,7 @@ GET 요청에서는 TTS를 새로 생성하지 않는다. 자녀 답변 제출 �
 - 캘린더는 `assignedDate`로 날짜를 표시하고, 날짜 선택 시 같은 item을 상세 카드에
   전달한다. 프론트가 공개 여부를 다시 계산하지 않는다.
 
-### 5.10 본인 사진 첨부·교체 — `PUT /assignments/{assignmentId}/my-photo`
+### 5.10 본인 사진 첨부·교체 — `PUT /assignments/{assignmentId}/my-photo` — 초안, 미구현
 
 부모·자녀 공통 API다. 인증 사용자 역할로 사진 소유자를 결정하며 role이나 userId를
 body로 받지 않는다. 같은 assignment에 다시 호출하면 기존 사진을 교체한다.
@@ -636,13 +662,17 @@ photoFile: family-photo.jpg
 - 새 파일과 썸네일 저장이 모두 성공한 뒤 기존 파일을 삭제한다.
 - 사진 업로드 실패는 기존 음성·텍스트 답변 제출 상태를 변경하지 않는다.
 
-### 5.11 본인 사진 삭제 — `DELETE /assignments/{assignmentId}/my-photo`
+### 5.11 본인 사진 삭제 — `DELETE /assignments/{assignmentId}/my-photo` — 초안, 미구현
 
 인증 사용자가 해당 assignment에 올린 사진과 썸네일을 삭제하고 `204 No Content`를
 반환한다. 사진이 없으면 `404 PHOTO_NOT_FOUND`, 다른 사람 리소스면
 `403 RESOURCE_ACCESS_DENIED`다. 음성·텍스트 답변과 이야기 자체는 유지한다.
 
-### 5.12 부모 녹음 삭제 — `DELETE /recordings/{recordingId}`
+### 5.12 부모 녹음 삭제 — `DELETE /recordings/{recordingId}` — 초안, 미구현
+
+현재 백엔드에는 이 삭제 endpoint가 없고, 현재 프론트 DTO의 `recordingId`와
+`processingStatus`는 non-nullable 문자열이다. 아래 nullable 응답은 양쪽 구현과
+파싱 테스트가 함께 반영되기 전에는 서버가 반환하지 않는다.
 
 녹음을 제출한 부모만 호출할 수 있다. 성공하면 원본 음성, STT 원문, LLM 정리본과
 관련 저장소 객체를 삭제하고 `204 No Content`를 반환한다. 질문, 자녀 답변과 사진은
@@ -666,7 +696,7 @@ photoFile: family-photo.jpg
 프론트는 삭제된 음성의 재생·재발급을 시도하지 않고 안내 문구만 표시한다. 다른
 부모의 녹음 또는 본인 Pair 밖의 녹음은 `403 RESOURCE_ACCESS_DENIED`다.
 
-### 5.13 회원 탈퇴 — `DELETE /users/me`
+### 5.13 회원 탈퇴 — `DELETE /users/me` — 초안, 미구현
 
 성공하면 인증 사용자의 계정과 본인이 올린 음성·텍스트·사진의 삭제 작업을 시작하고
 `202 Accepted`를 반환한다. Pair는 즉시 비활성화하며 상대방이 올린 원본 데이터는
@@ -773,4 +803,4 @@ frontend/
 |---|---|---|
 | 2026-09-24 | v0 | MVP API 분리, 공통 규칙·전체 요청/응답·Mock 계약 확정 |
 | 2026-09-28 | v0 | 공통 오류 표와 `POST /pairs/join` 실패 응답에 `INVITE_CODE_NOT_FOUND`, `INVITE_CODE_EXPIRED`, `PAIR_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` 추가 (백엔드 구현과 맞춤) |
-| 2026-11-04 | v0.1 | 월별 지난 이야기, 사진 첨부·삭제, 녹음 삭제, 회원 탈퇴 계약과 재로그인·기록 복구 초안 추가 |
+| 2026-11-04 | v0.1 | 월별 지난 이야기, 사진 첨부·삭제, 녹음 삭제, 회원 탈퇴, 재로그인·기록 복구 요구사항을 미구현 초안으로 추가 |
