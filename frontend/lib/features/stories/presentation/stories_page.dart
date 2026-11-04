@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../onboarding/presentation/session.dart';
@@ -19,7 +21,18 @@ class StoriesPage extends ConsumerWidget {
 
     final stories = ref.watch(storiesControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('지난 이야기')),
+      appBar: AppBar(
+        title: const Text('지난 이야기'),
+        actions: [
+          if (AppConfig.storiesMonthApi)
+            TextButton.icon(
+              // push: 카드의 음성 새로고침이 이 화면의 목록 provider를 쓴다.
+              onPressed: () => context.push('/stories/calendar'),
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('달력'),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: stories.when(
           loading: () => const Center(child: CircularProgressIndicator()),

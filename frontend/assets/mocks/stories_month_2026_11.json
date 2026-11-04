@@ -1,0 +1,81 @@
+{
+  "items": [
+    {
+      "storyId": "story_month_01",
+      "assignmentId": "asg_month_01",
+      "assignedDate": "2026-11-02",
+      "question": {
+        "id": "qst_101",
+        "text": "가장 기억에 남는 여행지는 어디인가요?",
+        "category": "TRAVEL"
+      },
+      "parentAnswer": {
+        "recordingId": "rec_month_01",
+        "processingStatus": "READY",
+        "originalAudioUrl": "https://signed.example.com/rec_month_01.m4a?expires=...",
+        "originalAudioExpiresAt": "2026-11-02T23:50:00+09:00",
+        "sttText": "제주도가 제일 기억에 남아. 신혼여행으로 갔었거든.",
+        "summaryText": "젊은 시절 다녀온 제주도가 가장 기억에 남으신대요.",
+        "processingNotice": null
+      },
+      "childAnswer": {
+        "answerId": "ans_month_01",
+        "text": "저는 가족끼리 갔던 강릉 바다가 기억나요.",
+        "ttsStatus": "READY"
+      },
+      "revealedAt": "2026-11-02T21:30:00+09:00"
+    },
+    {
+      "storyId": "story_month_02",
+      "assignmentId": "asg_month_02",
+      "assignedDate": "2026-11-05",
+      "question": {
+        "id": "qst_102",
+        "text": "처음 받은 월급으로 무엇을 하셨나요?",
+        "category": "WORK"
+      },
+      "parentAnswer": {
+        "recordingId": "rec_month_02",
+        "processingStatus": "FAILED",
+        "originalAudioUrl": "https://signed.example.com/rec_month_02.m4a?expires=...",
+        "originalAudioExpiresAt": "2026-11-05T23:50:00+09:00",
+        "sttText": null,
+        "summaryText": null,
+        "processingNotice": "음성 정리는 실패했지만 원본 녹음은 안전하게 저장되었습니다."
+      },
+      "childAnswer": {
+        "answerId": "ans_month_02",
+        "text": "저는 부모님께 내복을 사 드렸어요.",
+        "ttsStatus": "READY"
+      },
+      "revealedAt": "2026-11-05T21:30:00+09:00"
+    },
+    {
+      "storyId": "story_month_03",
+      "assignmentId": "asg_month_03",
+      "assignedDate": "2026-11-18",
+      "question": {
+        "id": "qst_103",
+        "text": "요즘 가장 듣고 싶은 말은 무엇인가요?",
+        "category": "FAMILY"
+      },
+      "parentAnswer": {
+        "recordingId": "rec_month_03",
+        "processingStatus": "READY",
+        "originalAudioUrl": "https://signed.example.com/rec_month_03.m4a?expires=...",
+        "originalAudioExpiresAt": "2026-11-18T23:50:00+09:00",
+        "sttText": "밥 잘 먹고 다닌다는 말이 제일 듣고 싶지.",
+        "summaryText": "요즘은 밥 잘 챙겨 먹고 있다는 말이 가장 듣고 싶으시대요.",
+        "processingNotice": null
+      },
+      "childAnswer": {
+        "answerId": "ans_month_03",
+        "text": "저는 고생했다는 말이 듣고 싶어요.",
+        "ttsStatus": "READY"
+      },
+      "revealedAt": "2026-11-18T21:30:00+09:00"
+    }
+  ],
+  "nextCursor": null,
+  "hasNext": false
+}

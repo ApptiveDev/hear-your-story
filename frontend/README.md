@@ -127,6 +127,7 @@ lib/
 | `stories_first_page.json` | 5.9 지난 이야기 |
 | `stories_empty.json` | 5.9 변형 (이야기 없음) |
 | `stories_paged_1.json`, `stories_paged_2.json` | 5.9 변형 (다음 페이지가 있는 목록) |
+| `stories_month_2026_11.json` | 5.9 월별 조회 초안 (2026년 11월, 다른 달은 `stories_empty.json`) |
 
 - 필드명과 enum 값은 계약 문서와 정확히 일치해야 합니다.
 - 계약이 바뀌면 DTO와 Mock을 같은 PR에서 함께 수정합니다.

@@ -7,6 +7,9 @@ import '../../../core/network/api_exception.dart';
 
 abstract class StoriesDataSource {
   Future<Map<String, dynamic>> fetchStories({String? cursor, int limit = 20});
+
+  /// [month]는 `YYYY-MM`. 계약상 cursor·limit과 함께 보내지 않는다.
+  Future<Map<String, dynamic>> fetchStoriesByMonth(String month);
 }
 
 class MockStoriesDataSource implements StoriesDataSource {
@@ -45,6 +48,21 @@ class MockStoriesDataSource implements StoriesDataSource {
         file = 'stories_first_page';
     }
 
+    return _load(file);
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchStoriesByMonth(String month) async {
+    await Future.delayed(delay); // 로딩 화면 확인용
+    if (failWith != null) throw failWith!;
+    if (scenario == 'NETWORK') throw ApiException();
+
+    // 예시 데이터는 2026년 11월뿐이고 다른 달은 이야기가 없는 달로 둔다.
+    final hasStories = scenario != 'empty' && month == '2026-11';
+    return _load(hasStories ? 'stories_month_2026_11' : 'stories_empty');
+  }
+
+  Future<Map<String, dynamic>> _load(String file) async {
     final raw = await rootBundle.loadString('assets/mocks/$file.json');
     return jsonDecode(raw) as Map<String, dynamic>;
   }
@@ -64,6 +82,16 @@ class ApiStoriesDataSource implements StoriesDataSource {
         '/stories',
         queryParameters: {'limit': limit, 'cursor': ?cursor},
       );
+      return res.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchStoriesByMonth(String month) async {
+    try {
+      final res = await _dio.get('/stories', queryParameters: {'month': month});
       return res.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDio(e);

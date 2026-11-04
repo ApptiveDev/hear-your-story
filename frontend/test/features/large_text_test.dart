@@ -8,11 +8,14 @@ import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/domain/app_user.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/pairing/presentation/pairing_page.dart';
+import 'package:life_record/features/stories/data/stories_providers.dart';
+import 'package:life_record/features/stories/presentation/stories_calendar_page.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
 import 'package:life_record/features/today/presentation/today_page.dart';
 
 import 'onboarding/fake_auth_data_source.dart';
 import 'pairing/fake_pairing_data_source.dart';
+import 'stories/fake_stories_repository.dart';
 import 'today/today_fixtures.dart';
 
 /// 부모님 휴대폰처럼 글씨를 키워도 A 화면(가입·페어링·홈)이 넘치지 않는지 본다.
@@ -127,6 +130,28 @@ void main() {
         await tester.enterText(find.byType(TextField), '482913');
         await tester.pump();
         expect(find.text('자녀와 연결해요'), findsOneWidget);
+      });
+
+      testWidgets('이야기 달력', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        final repo = FakeStoriesRepository(
+          {},
+          months: {
+            '2026-11': [testStory('1', assignedDate: DateTime(2026, 11, 28))],
+          },
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
+            child: MaterialApp(
+              home: StoriesCalendarPage(now: () => DateTime(2026, 11, 30)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('2026년 11월'), findsOneWidget);
+        await tester.scrollUntilVisible(find.text('질문 1'), 200);
+        expect(find.text('질문 1'), findsOneWidget);
       });
 
       final todayCases = <String, Map<String, dynamic> Function()>{
