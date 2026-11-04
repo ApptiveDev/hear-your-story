@@ -192,6 +192,14 @@ class RecordingController extends ChangeNotifier {
     }
   }
 
+  /// 멈춘 녹음을 버리고 처음부터 다시 녹음한다.
+  Future<void> restart() {
+    if (phase != RecordingPhase.paused || !_foreground || _disposed) {
+      return Future.value();
+    }
+    return _operation = _start(); // 녹음기가 시작할 때 이전 녹음을 지운다
+  }
+
   Future<void> stop() {
     if (!isCapturing || _disposed) return Future.value();
     return _operation = _stopAndUpload(upload: _foreground);

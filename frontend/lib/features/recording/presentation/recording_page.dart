@@ -92,6 +92,27 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     await _controller.start();
   }
 
+  Future<void> _restart() async {
+    final restart = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('처음부터 다시 말할까요?'),
+        content: const Text('지금까지 말한 내용은 지워져요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('그대로 두기'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('다시 말하기'),
+          ),
+        ],
+      ),
+    );
+    if (restart == true && mounted) await _controller.restart();
+  }
+
   Future<void> _leave() async {
     if (_askingLeave) return;
     if (_controller.busy && !_controller.isCapturing) {
@@ -260,6 +281,12 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                     onPressed: c.stop,
                     icon: const Icon(Icons.stop),
                     label: const Text('그만 말하고 보내기'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: _restart,
+                    icon: const Icon(Icons.replay),
+                    label: const Text('처음부터 다시 말하기'),
                   ),
                 ],
                 if (c.canRetryUpload)

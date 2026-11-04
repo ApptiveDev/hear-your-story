@@ -275,6 +275,39 @@ void main() {
       expect(repository.keys, hasLength(1));
     });
 
+    testWidgets('처음부터 다시 말하면 시간을 0부터 재고 이전 녹음은 보내지 않는다', (tester) async {
+      await controller.start();
+      now = now.add(const Duration(seconds: 30));
+      await controller.pause();
+      expect(controller.elapsedSeconds, 30);
+
+      await controller.restart();
+      expect(controller.phase, RecordingPhase.recording);
+      expect(controller.elapsedSeconds, 0);
+      expect(recorder.starts, 2);
+      expect(recorder.stops, 0);
+      expect(repository.keys, isEmpty);
+
+      // 앞의 30초는 합계에 들어가지 않는다
+      now = now.add(const Duration(seconds: 40));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(controller.elapsedSeconds, 40);
+      expect(repository.keys, isEmpty);
+      await controller.stop();
+    });
+
+    testWidgets('녹음 중이거나 앱이 내려가 있으면 처음부터 다시 시작하지 않는다', (tester) async {
+      await controller.start();
+      await controller.restart();
+      expect(recorder.starts, 1);
+
+      await controller.pause();
+      controller.setForeground(false);
+      await tester.pump();
+      await controller.restart();
+      expect(recorder.starts, 1);
+    });
+
     testWidgets('두 번 눌러도 한 번만 멈추고 이어진다', (tester) async {
       await controller.start();
       await Future.wait([controller.pause(), controller.pause()]);

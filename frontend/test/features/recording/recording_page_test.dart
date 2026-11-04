@@ -94,6 +94,51 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('처음부터 다시 말하기는 한 번 더 묻고 나서 다시 시작한다', (tester) async {
+    final recorder = FakeRecorder();
+    final controller = RecordingController(
+      args: args,
+      repository: FakeRecordingRepository(),
+      recorder: recorder,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: RecordingPage(args: args, controller: controller),
+        ),
+      ),
+    );
+    await controller.start();
+    await controller.pause();
+    await tester.pump();
+
+    Future<void> tapRestart() async {
+      await tester.ensureVisible(find.text('처음부터 다시 말하기'));
+      await tester.pump();
+      await tester.tap(find.text('처음부터 다시 말하기'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await tapRestart();
+    expect(find.text('지금까지 말한 내용은 지워져요.'), findsOneWidget);
+    await tester.tap(find.text('그대로 두기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(controller.phase, RecordingPhase.paused);
+    expect(recorder.starts, 1);
+
+    await tapRestart();
+    await tester.tap(find.text('다시 말하기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('녹음 중 · 0초'), findsOneWidget);
+    expect(recorder.starts, 2);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
   testWidgets('멈춘 상태에서 뒤로 가면 저장되지 않는다고 묻는다', (tester) async {
     final controller = RecordingController(
       args: args,
