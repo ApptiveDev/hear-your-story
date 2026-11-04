@@ -24,7 +24,7 @@ class StoriesCalendarPage extends ConsumerStatefulWidget {
 class _StoriesCalendarPageState extends ConsumerState<StoriesCalendarPage> {
   late final DateTime _thisMonth;
   late DateTime _month;
-  DateTime? _selected;
+  final _selectedDays = <String, int>{}; // 달마다 고른 날짜
 
   @override
   void initState() {
@@ -47,15 +47,10 @@ class _StoriesCalendarPageState extends ConsumerState<StoriesCalendarPage> {
   /// 이 달에서 고른 날짜. 고른 적이 없으면 가장 최근 이야기를 보여준다.
   int? _selectedDay(List<Story> stories) {
     if (stories.isEmpty) return null;
-    final picked = _selected;
-    if (picked != null &&
-        picked.year == _month.year &&
-        picked.month == _month.month) {
-      return picked.day;
-    }
-    return stories
-        .map((story) => story.assignedDate.day)
-        .reduce((a, b) => a > b ? a : b);
+    return _selectedDays[_monthKey] ??
+        stories
+            .map((story) => story.assignedDate.day)
+            .reduce((a, b) => a > b ? a : b);
   }
 
   @override
@@ -86,9 +81,7 @@ class _StoriesCalendarPageState extends ConsumerState<StoriesCalendarPage> {
               month: _month,
               storyDays: {for (final s in stories) s.assignedDate.day},
               selectedDay: selectedDay,
-              onSelect: (day) => setState(
-                () => _selected = DateTime(_month.year, _month.month, day),
-              ),
+              onSelect: (day) => setState(() => _selectedDays[_monthKey] = day),
             ),
             const SizedBox(height: 24),
             month.when(

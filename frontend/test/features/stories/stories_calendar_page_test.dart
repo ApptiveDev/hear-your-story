@@ -14,6 +14,7 @@ import 'package:life_record/features/stories/domain/story.dart';
 import 'package:life_record/features/stories/presentation/stories_calendar_page.dart';
 import 'package:life_record/features/stories/presentation/stories_page.dart';
 
+import '../../helpers/phone_size.dart';
 import 'fake_stories_repository.dart';
 
 void main() {
@@ -35,10 +36,7 @@ void main() {
     FakeStoriesRepository repo, {
     bool settle = true,
   }) async {
-    // 달력과 카드가 한 화면에 들어오도록 폰보다 세로로 길게 둔다
-    tester.view.physicalSize = const Size(1080, 4000);
-    tester.view.devicePixelRatio = 1080 / 411;
-    addTearDown(tester.view.reset);
+    usePhoneSize(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
@@ -108,6 +106,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2026년 10월'), findsOneWidget);
     expect(find.text('질문 3'), findsOneWidget);
+    await tester.tap(day('10월 7일, 이야기 있음'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('다음 달'));
     await tester.pumpAndSettle();
@@ -177,6 +177,7 @@ void main() {
   });
 
   testWidgets('로그인이 만료되면(401) 가입 화면으로 보낸다', (tester) async {
+    usePhoneSize(tester);
     FlutterSecureStorage.setMockInitialValues({
       'access_token': 'test-token',
       'current_user': jsonEncode({
@@ -211,6 +212,7 @@ void main() {
   });
 
   testWidgets('지난 이야기 화면의 달력 버튼으로 들어가고 뒤로 돌아온다', (tester) async {
+    usePhoneSize(tester);
     final repo = FakeStoriesRepository({
       null: const StoryPage(items: [], nextCursor: null, hasNext: false),
     });
