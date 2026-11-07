@@ -58,6 +58,8 @@ Java 들여쓰기·공백·줄바꿈·import 순서는 Spotless가 전담한다.
 - 테스트는 `application-test.yaml`의 H2를 사용하며 운영 데이터나 외부 서비스에
   연결하지 않는다.
 - 테이블·컬럼·제약조건 변경은 운영 영향과 migration 방법을 먼저 확인한다.
+- 스키마 변경은 `src/main/resources/db/migration`에 새 Flyway 버전 파일로 추가하고
+  이미 적용된 migration 파일은 수정하지 않는다. Hibernate는 `validate`로 유지한다.
 - 데이터·volume 삭제, schema 초기화 등 복구가 어려운 작업은 명시적 승인 없이
   실행하지 않는다.
 - 중복 제출과 상태 전이는 애플리케이션 검사만 믿지 말고 transaction·DB 제약과

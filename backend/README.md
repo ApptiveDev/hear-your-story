@@ -50,10 +50,16 @@ Spring Boot는 `.env`를 자동으로 읽지 않는다. IntelliJ로 실행한다
 | `OPENAI_TRANSCRIPTION_MODEL`, `OPENAI_SUMMARY_MODEL` | STT·이야기 정리 모델 |
 | `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE` | 자녀 답변 음성 합성 모델·목소리 |
 | `JPA_SHOW_SQL` | 로컬 SQL 출력 여부, 기본 `false` |
-| `JPA_DDL_AUTO` | 로컬 기본 `update`; 운영 배포 전 migration 도구로 교체 |
+| `JPA_DDL_AUTO` | 기본 `validate`; Flyway 적용 결과와 Entity 매핑이 같은지 검사 |
 
 실제 `.env`, API key, 비밀번호는 커밋하지 않는다. 전체 형식은
 [`.env.example`](.env.example)을 복사해 사용한다.
+
+### 데이터베이스 마이그레이션
+
+애플리케이션 시작 시 Flyway가 `src/main/resources/db/migration`의 SQL을 버전 순서대로
+적용하고 Hibernate는 결과 스키마를 검증만 한다. 테이블이나 컬럼을 변경할 때는 이미
+적용된 파일을 수정하지 말고 다음 버전의 `V{번호}__설명.sql`을 추가한다.
 
 ### 실제 음성 처리 활성화
 
