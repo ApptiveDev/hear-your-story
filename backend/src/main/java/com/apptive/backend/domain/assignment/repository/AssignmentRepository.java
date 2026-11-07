@@ -48,4 +48,19 @@ public interface AssignmentRepository extends JpaRepository<Assignment, String> 
 		@Param("cursorId") String cursorId,
 		Pageable pageable
 	);
+
+	@Query("""
+		select a from Assignment a
+		join fetch a.question
+		where a.familyPair.id = :pairId
+		  and a.assignedDate between :startDate and :endDate
+		  and exists (select r.id from Recording r where r.assignment = a)
+		  and exists (select ca.id from ChildAnswer ca where ca.assignment = a)
+		order by a.assignedDate asc, a.id asc
+		""")
+	List<Assignment> findRevealedByMonth(
+		@Param("pairId") String pairId,
+		@Param("startDate") LocalDate startDate,
+		@Param("endDate") LocalDate endDate
+	);
 }

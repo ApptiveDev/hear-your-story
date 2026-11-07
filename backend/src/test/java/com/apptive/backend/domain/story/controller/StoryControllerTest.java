@@ -129,6 +129,53 @@ class StoryControllerTest {
 	}
 
 	@Test
+	void returnsRevealedStoriesForMonthOldestFirstWithoutPagination() throws Exception {
+		mockMvc.perform(get("/api/v1/stories")
+				.param("month", "2000-01")
+				.header("Authorization", bearer(parent)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(2))
+			.andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_old"))
+			.andExpect(jsonPath("$.items[1].assignmentId").value("asg_story_new"))
+			.andExpect(jsonPath("$.nextCursor").doesNotExist())
+			.andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void emptyMonthReturnsEmptyItems() throws Exception {
+		mockMvc.perform(get("/api/v1/stories")
+				.param("month", "2000-02")
+				.header("Authorization", bearer(child)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items").isEmpty())
+			.andExpect(jsonPath("$.nextCursor").doesNotExist())
+			.andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void invalidMonthOrMixedPaginationReturnsValidationError() throws Exception {
+		mockMvc.perform(get("/api/v1/stories")
+				.param("month", "2000-1")
+				.header("Authorization", bearer(parent)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+
+		mockMvc.perform(get("/api/v1/stories")
+				.param("month", "2000-01")
+				.param("cursor", "cursor")
+				.header("Authorization", bearer(parent)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+
+		mockMvc.perform(get("/api/v1/stories")
+				.param("month", "2000-01")
+				.param("limit", "20")
+				.header("Authorization", bearer(parent)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+	}
+
+	@Test
 	void unpairedUserCannotReadStories() throws Exception {
 		User unpaired = userRepository.save(new User(
 			"usr_story_unpaired",

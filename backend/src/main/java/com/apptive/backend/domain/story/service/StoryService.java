@@ -1,6 +1,9 @@
 package com.apptive.backend.domain.story.service;
 
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -35,6 +38,7 @@ public class StoryService {
 
 	private static final int DEFAULT_LIMIT = 20;
 	private static final int MAX_LIMIT = 50;
+	private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM");
 
 	private final FamilyPairRepository familyPairRepository;
 	private final AssignmentRepository assignmentRepository;
@@ -58,10 +62,15 @@ public class StoryService {
 
 	@Transactional(readOnly = true)
 	public StoryPageResponse getStories(
+		String month,
 		String encodedCursor,
 		Integer requestedLimit,
 		AuthenticatedUser authenticatedUser
 	) {
+		if (month != null) {
+			return getStoriesByMonth(month, encodedCursor, requestedLimit, authenticatedUser);
+		}
+
 		int limit = requestedLimit == null ? DEFAULT_LIMIT : requestedLimit;
 		if (limit < 1 || limit > MAX_LIMIT) {
 			throw new ApiException(ErrorCode.VALIDATION_ERROR);
@@ -81,6 +90,44 @@ public class StoryService {
 
 		boolean hasNext = fetched.size() > limit;
 		List<Assignment> page = hasNext ? fetched.subList(0, limit) : fetched;
+		if (page.isEmpty()) {
+			return new StoryPageResponse(List.of(), null, false);
+		}
+
+		return toResponse(page, hasNext);
+	}
+
+	private StoryPageResponse getStoriesByMonth(
+		String month,
+		String encodedCursor,
+		Integer requestedLimit,
+		AuthenticatedUser authenticatedUser
+	) {
+		if (encodedCursor != null || requestedLimit != null) {
+			throw new ApiException(ErrorCode.VALIDATION_ERROR);
+		}
+
+		YearMonth yearMonth;
+		try {
+			if (!month.matches("\\d{4}-(0[1-9]|1[0-2])")) {
+				throw new DateTimeParseException("Invalid month", month, 0);
+			}
+			yearMonth = YearMonth.parse(month, MONTH_FORMATTER);
+		} catch (DateTimeParseException exception) {
+			throw new ApiException(ErrorCode.VALIDATION_ERROR);
+		}
+
+		FamilyPair pair = familyPairRepository.findByMemberId(authenticatedUser.userId())
+			.orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
+		List<Assignment> assignments = assignmentRepository.findRevealedByMonth(
+			pair.getId(),
+			yearMonth.atDay(1),
+			yearMonth.atEndOfMonth()
+		);
+		return toResponse(assignments, false);
+	}
+
+	private StoryPageResponse toResponse(List<Assignment> page, boolean hasNext) {
 		if (page.isEmpty()) {
 			return new StoryPageResponse(List.of(), null, false);
 		}
