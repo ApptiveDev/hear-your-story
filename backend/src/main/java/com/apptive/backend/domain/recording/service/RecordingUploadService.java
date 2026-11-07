@@ -90,9 +90,7 @@ public class RecordingUploadService {
 				recording = existing;
 			}
 			Recording saved = recordingRepository.save(recording);
-			if (previousObjectKey != null && !previousObjectKey.equals(newObjectKey)) {
-				recordingStorage.delete(previousObjectKey);
-			}
+			eventPublisher.publishEvent(new RecordingFileChangedEvent(newObjectKey, previousObjectKey));
 			eventPublisher.publishEvent(new RecordingUploadedEvent(saved.getId(), processingVersion));
 			return toResponse(saved);
 		} catch (RuntimeException exception) {
