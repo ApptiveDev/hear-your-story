@@ -13,6 +13,9 @@ import jakarta.persistence.UniqueConstraint;
 
 import com.apptive.backend.domain.user.entity.User;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "family_pairs", uniqueConstraints = {
         @UniqueConstraint(name = "uk_family_pairs_parent", columnNames = "parent_id"),
@@ -44,19 +47,4 @@ public class FamilyPair {
 		this.pairedAt = pairedAt;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public User getParent() {
-		return parent;
-	}
-
-	public User getChild() {
-		return child;
-	}
-
-	public OffsetDateTime getPairedAt() {
-		return pairedAt;
-	}
 }

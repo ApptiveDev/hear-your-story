@@ -44,6 +44,12 @@ Java 들여쓰기·공백·줄바꿈·import 순서는 Spotless가 전담한다.
   같은 PR에서 확인한다.
 - 외부 OpenAI·R2 연동은 인터페이스 경계를 유지하고 단위 테스트에서 실제 외부
   서비스를 호출하지 않는다.
+- Spring Bean의 생성자가 `final` 의존성 대입만 담당하면
+  `@RequiredArgsConstructor`를 사용한다. `@Value`·`@Qualifier` 같은 파라미터
+  어노테이션이나 초기화·검증 로직이 필요하면 명시적 생성자를 유지한다.
+- Entity의 기존 공개 API가 모든 필드의 단순 getter라면 `@Getter`를 사용한다.
+  계산·변환 getter와 의도적으로 숨긴 필드는 명시적으로 유지하며 Entity에
+  `@Data`나 클래스 단위 `@Setter`를 사용하지 않는다.
 
 ## 데이터베이스
 

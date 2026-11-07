@@ -15,6 +15,9 @@ import jakarta.persistence.UniqueConstraint;
 
 import com.apptive.backend.domain.assignment.entity.Assignment;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "recordings", uniqueConstraints = @UniqueConstraint(name = "uk_recordings_assignment", columnNames = "assignment_id"))
 public class Recording {
@@ -128,67 +131,4 @@ public class Recording {
 		this.updatedAt = now;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public Assignment getAssignment() {
-		return assignment;
-	}
-
-	public String getObjectKey() {
-		return objectKey;
-	}
-
-	public String getOriginalFilename() {
-		return originalFilename;
-	}
-
-	public String getContentType() {
-		return contentType;
-	}
-
-	public long getSizeBytes() {
-		return sizeBytes;
-	}
-
-	public String getIdempotencyKey() {
-		return idempotencyKey;
-	}
-
-	public String getProcessingVersion() {
-		return processingVersion;
-	}
-
-	public ProcessingStatus getProcessingStatus() {
-		return processingStatus;
-	}
-
-	public String getSttText() {
-		return sttText;
-	}
-
-	public String getSummaryText() {
-		return summaryText;
-	}
-
-	public String getFailedStage() {
-		return failedStage;
-	}
-
-	public String getFailureCode() {
-		return failureCode;
-	}
-
-	public String getProcessingNotice() {
-		return processingNotice;
-	}
-
-	public OffsetDateTime getSubmittedAt() {
-		return submittedAt;
-	}
-
-	public OffsetDateTime getUpdatedAt() {
-		return updatedAt;
-	}
 }

@@ -22,6 +22,9 @@ import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class ChildAnswerService {
 
@@ -33,17 +36,6 @@ public class ChildAnswerService {
 	private final IdGenerator idGenerator;
 	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
-
-	public ChildAnswerService(AssignmentRepository assignmentRepository, ChildAnswerRepository childAnswerRepository,
-	    RecordingRepository recordingRepository, IdGenerator idGenerator, Clock clock,
-	    ApplicationEventPublisher eventPublisher) {
-		this.assignmentRepository = assignmentRepository;
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingRepository = recordingRepository;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-		this.eventPublisher = eventPublisher;
-	}
 
 	@Transactional
 	public ChildAnswerResponse put(String assignmentId, String rawText, AuthenticatedUser authenticatedUser) {

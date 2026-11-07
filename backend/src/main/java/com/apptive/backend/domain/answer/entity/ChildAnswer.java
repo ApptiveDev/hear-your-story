@@ -15,6 +15,9 @@ import jakarta.persistence.UniqueConstraint;
 
 import com.apptive.backend.domain.assignment.entity.Assignment;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "child_answers", uniqueConstraints = @UniqueConstraint(name = "uk_child_answers_assignment", columnNames = "assignment_id"))
 public class ChildAnswer {
@@ -90,39 +93,4 @@ public class ChildAnswer {
 		this.updatedAt = updatedAt;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public Assignment getAssignment() {
-		return assignment;
-	}
-
-	public String getText() {
-		return text;
-	}
-
-	public TtsStatus getTtsStatus() {
-		return ttsStatus;
-	}
-
-	public String getTtsObjectKey() {
-		return ttsObjectKey;
-	}
-
-	public String getTtsVersion() {
-		return ttsVersion;
-	}
-
-	public String getTtsProcessingNotice() {
-		return ttsProcessingNotice;
-	}
-
-	public OffsetDateTime getSubmittedAt() {
-		return submittedAt;
-	}
-
-	public OffsetDateTime getUpdatedAt() {
-		return updatedAt;
-	}
 }

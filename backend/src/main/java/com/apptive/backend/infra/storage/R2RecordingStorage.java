@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
 
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -24,6 +25,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+@RequiredArgsConstructor
 @Component
 @ConditionalOnProperty(name = "app.storage.type", havingValue = "r2")
 public class R2RecordingStorage implements RecordingStorage {
@@ -32,13 +34,6 @@ public class R2RecordingStorage implements RecordingStorage {
 	private final S3Presigner presigner;
 	private final R2Properties properties;
 	private final Clock clock;
-
-	public R2RecordingStorage(S3Client s3Client, S3Presigner presigner, R2Properties properties, Clock clock) {
-		this.s3Client = s3Client;
-		this.presigner = presigner;
-		this.properties = properties;
-		this.clock = clock;
-	}
 
 	@Override
 	public String store(String recordingId, MultipartFile file) {

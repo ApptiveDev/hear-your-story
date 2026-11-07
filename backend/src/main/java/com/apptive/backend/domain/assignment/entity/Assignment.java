@@ -15,6 +15,9 @@ import jakarta.persistence.UniqueConstraint;
 import com.apptive.backend.domain.pair.entity.FamilyPair;
 import com.apptive.backend.domain.question.entity.Question;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "assignments", uniqueConstraints = @UniqueConstraint(name = "uk_assignments_pair_date", columnNames = {
         "pair_id", "assigned_date"}))
@@ -50,23 +53,4 @@ public class Assignment {
 		this.createdAt = createdAt;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public FamilyPair getFamilyPair() {
-		return familyPair;
-	}
-
-	public Question getQuestion() {
-		return question;
-	}
-
-	public LocalDate getAssignedDate() {
-		return assignedDate;
-	}
-
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
 }

@@ -32,6 +32,9 @@ import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class TodayService {
 
@@ -44,21 +47,6 @@ public class TodayService {
 	private final RevealPolicy revealPolicy;
 	private final IdGenerator idGenerator;
 	private final Clock clock;
-
-	public TodayService(FamilyPairRepository familyPairRepository, AssignmentRepository assignmentRepository,
-	    QuestionRepository questionRepository, ChildAnswerRepository childAnswerRepository,
-	    RecordingRepository recordingRepository, RecordingStorage recordingStorage, RevealPolicy revealPolicy,
-	    IdGenerator idGenerator, Clock clock) {
-		this.familyPairRepository = familyPairRepository;
-		this.assignmentRepository = assignmentRepository;
-		this.questionRepository = questionRepository;
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingRepository = recordingRepository;
-		this.recordingStorage = recordingStorage;
-		this.revealPolicy = revealPolicy;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-	}
 
 	@Transactional
 	public TodayResponse getToday(AuthenticatedUser authenticatedUser) {

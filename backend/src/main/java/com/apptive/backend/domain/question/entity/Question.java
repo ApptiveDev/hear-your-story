@@ -7,6 +7,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "questions")
 public class Question {
@@ -46,27 +49,4 @@ public class Question {
 		this.active = active;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public LocalDate getScheduledDate() {
-		return scheduledDate;
-	}
-
-	public String getText() {
-		return text;
-	}
-
-	public String getCategory() {
-		return category;
-	}
-
-	public String getAudioUrl() {
-		return audioUrl;
-	}
-
-	public boolean isActive() {
-		return active;
-	}
 }

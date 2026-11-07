@@ -12,6 +12,9 @@ import jakarta.persistence.Table;
 
 import com.apptive.backend.domain.user.entity.User;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "pair_invitations")
 public class PairInvitation {
@@ -52,27 +55,4 @@ public class PairInvitation {
 		this.usedAt = usedAt;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public User getChild() {
-		return child;
-	}
-
-	public String getInviteCode() {
-		return inviteCode;
-	}
-
-	public OffsetDateTime getExpiresAt() {
-		return expiresAt;
-	}
-
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public OffsetDateTime getUsedAt() {
-		return usedAt;
-	}
 }

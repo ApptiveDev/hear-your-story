@@ -14,16 +14,14 @@ import com.apptive.backend.domain.recording.entity.Recording;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class RecordingStatusService {
 
 	private final RecordingRepository recordingRepository;
 	private final Clock clock;
-
-	public RecordingStatusService(RecordingRepository recordingRepository, Clock clock) {
-		this.recordingRepository = recordingRepository;
-		this.clock = clock;
-	}
 
 	@Transactional(readOnly = true)
 	public RecordingStatusResponse get(String recordingId, AuthenticatedUser authenticatedUser) {

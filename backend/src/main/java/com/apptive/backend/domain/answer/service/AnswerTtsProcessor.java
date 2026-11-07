@@ -7,19 +7,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.apptive.backend.infra.storage.RecordingStorage;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Component
 public class AnswerTtsProcessor {
 
 	private final AnswerTtsStatusService statusService;
 	private final SpeechSynthesizer speechSynthesizer;
 	private final RecordingStorage recordingStorage;
-
-	public AnswerTtsProcessor(AnswerTtsStatusService statusService, SpeechSynthesizer speechSynthesizer,
-	    RecordingStorage recordingStorage) {
-		this.statusService = statusService;
-		this.speechSynthesizer = speechSynthesizer;
-		this.recordingStorage = recordingStorage;
-	}
 
 	@Async("recordingTaskExecutor")
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

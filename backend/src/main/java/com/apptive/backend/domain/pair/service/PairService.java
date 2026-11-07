@@ -22,6 +22,9 @@ import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class PairService {
 
@@ -34,17 +37,6 @@ public class PairService {
 	private final InviteCodeGenerator inviteCodeGenerator;
 	private final IdGenerator idGenerator;
 	private final Clock clock;
-
-	public PairService(UserRepository userRepository, FamilyPairRepository familyPairRepository,
-	    PairInvitationRepository invitationRepository, InviteCodeGenerator inviteCodeGenerator, IdGenerator idGenerator,
-	    Clock clock) {
-		this.userRepository = userRepository;
-		this.familyPairRepository = familyPairRepository;
-		this.invitationRepository = invitationRepository;
-		this.inviteCodeGenerator = inviteCodeGenerator;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-	}
 
 	@Transactional
 	public InvitationResponse createInvitation(AuthenticatedUser authenticatedUser) {
