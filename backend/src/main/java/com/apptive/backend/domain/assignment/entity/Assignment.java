@@ -16,13 +16,8 @@ import com.apptive.backend.domain.pair.entity.FamilyPair;
 import com.apptive.backend.domain.question.entity.Question;
 
 @Entity
-@Table(
-	name = "assignments",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_assignments_pair_date",
-		columnNames = {"pair_id", "assigned_date"}
-	)
-)
+@Table(name = "assignments", uniqueConstraints = @UniqueConstraint(name = "uk_assignments_pair_date", columnNames = {
+        "pair_id", "assigned_date"}))
 public class Assignment {
 
 	@Id
@@ -46,13 +41,8 @@ public class Assignment {
 	protected Assignment() {
 	}
 
-	public Assignment(
-		String id,
-		FamilyPair familyPair,
-		Question question,
-		LocalDate assignedDate,
-		OffsetDateTime createdAt
-	) {
+	public Assignment(String id, FamilyPair familyPair, Question question, LocalDate assignedDate,
+	    OffsetDateTime createdAt) {
 		this.id = id;
 		this.familyPair = familyPair;
 		this.question = question;

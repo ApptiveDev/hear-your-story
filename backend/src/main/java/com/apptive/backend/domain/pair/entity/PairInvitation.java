@@ -39,13 +39,8 @@ public class PairInvitation {
 	protected PairInvitation() {
 	}
 
-	public PairInvitation(
-		String id,
-		User child,
-		String inviteCode,
-		OffsetDateTime expiresAt,
-		OffsetDateTime createdAt
-	) {
+	public PairInvitation(String id, User child, String inviteCode, OffsetDateTime expiresAt,
+	    OffsetDateTime createdAt) {
 		this.id = id;
 		this.child = child;
 		this.inviteCode = inviteCode;

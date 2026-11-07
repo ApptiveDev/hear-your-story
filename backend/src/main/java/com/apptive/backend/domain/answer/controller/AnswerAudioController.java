@@ -21,10 +21,8 @@ public class AnswerAudioController {
 	}
 
 	@GetMapping("/{answerId}/audio")
-	public AnswerAudioResponse get(
-		@PathVariable String answerId,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
+	public AnswerAudioResponse get(@PathVariable String answerId,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return answerAudioService.get(answerId, authenticatedUser);
 	}
 }

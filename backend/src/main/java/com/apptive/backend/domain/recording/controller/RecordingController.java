@@ -25,17 +25,11 @@ public class RecordingController {
 	}
 
 	@PutMapping(path = "/{assignmentId}/parent-recording", consumes = "multipart/form-data")
-	public ResponseEntity<RecordingUploadResponse> put(
-		@PathVariable String assignmentId,
-		@RequestPart("audioFile") MultipartFile audioFile,
-		@RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
-		return ResponseEntity.accepted().body(recordingUploadService.put(
-			assignmentId,
-			audioFile,
-			idempotencyKey,
-			authenticatedUser
-		));
+	public ResponseEntity<RecordingUploadResponse> put(@PathVariable String assignmentId,
+	    @RequestPart("audioFile") MultipartFile audioFile,
+	    @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return ResponseEntity.accepted()
+		    .body(recordingUploadService.put(assignmentId, audioFile, idempotencyKey, authenticatedUser));
 	}
 }

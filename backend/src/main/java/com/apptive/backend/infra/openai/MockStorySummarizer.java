@@ -6,11 +6,7 @@ import org.springframework.stereotype.Component;
 import com.apptive.backend.domain.recording.service.StorySummarizer;
 
 @Component
-@ConditionalOnProperty(
-	name = "app.audio-processing.mode",
-	havingValue = "mock",
-	matchIfMissing = true
-)
+@ConditionalOnProperty(name = "app.audio-processing.mode", havingValue = "mock", matchIfMissing = true)
 public class MockStorySummarizer implements StorySummarizer {
 
 	@Override

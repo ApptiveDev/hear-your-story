@@ -18,6 +18,9 @@
 ```bash
 ./gradlew bootRun                         # 로컬 서버 실행
 ./gradlew test                            # 전체 테스트
+./gradlew spotlessApply                   # Java 형식 자동 수정
+./gradlew spotlessCheck                   # Java 형식 검사
+./gradlew checkstyleMain checkstyleTest    # Java 린트 검사
 ./gradlew test --tests "패키지.클래스명"   # 특정 테스트
 ./gradlew check --no-daemon               # PR 전 전체 검증·CI 기준
 docker compose up -d                      # 로컬 PostgreSQL 실행
@@ -25,6 +28,10 @@ docker compose up -d                      # 로컬 PostgreSQL 실행
 
 작업 완료 전에는 최소 `./gradlew check --no-daemon`을 실행한다. 실행하지 못하면
 이유와 미검증 범위를 보고한다.
+
+Java 들여쓰기·공백·줄바꿈·import 순서는 Spotless가 전담한다. Checkstyle에
+중복 스타일 규칙을 추가하지 않는다. 설정과 IntelliJ 사용법은 `README.md`의
+포맷·린트 자동화 절을 따른다.
 
 ## 구현 원칙
 

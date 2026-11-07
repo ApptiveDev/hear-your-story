@@ -18,10 +18,7 @@ public class OpenAiConfig {
 		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
 		requestFactory.setConnectTimeout(properties.effectiveConnectTimeout());
 		requestFactory.setReadTimeout(properties.effectiveReadTimeout());
-		return RestClient.builder()
-			.baseUrl(properties.baseUrl())
-			.requestFactory(requestFactory)
-			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
-			.build();
+		return RestClient.builder().baseUrl(properties.baseUrl()).requestFactory(requestFactory)
+		    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey()).build();
 	}
 }

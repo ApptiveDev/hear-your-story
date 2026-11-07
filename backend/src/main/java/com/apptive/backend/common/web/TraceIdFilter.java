@@ -16,11 +16,8 @@ public class TraceIdFilter extends OncePerRequestFilter {
 	public static final String TRACE_ID_HEADER = "X-Trace-Id";
 
 	@Override
-	protected void doFilterInternal(
-		HttpServletRequest request,
-		HttpServletResponse response,
-		FilterChain filterChain
-	) throws ServletException, IOException {
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+	    throws ServletException, IOException {
 		String traceId = UUID.randomUUID().toString();
 		request.setAttribute(TRACE_ID_ATTRIBUTE, traceId);
 		response.setHeader(TRACE_ID_HEADER, traceId);

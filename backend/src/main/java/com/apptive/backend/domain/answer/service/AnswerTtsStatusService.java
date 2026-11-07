@@ -25,10 +25,8 @@ public class AnswerTtsStatusService {
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
 	public AnswerTtsSource findSource(String answerId, String ttsVersion) {
-		return childAnswerRepository.findById(answerId)
-			.filter(answer -> answer.hasTtsVersion(ttsVersion))
-			.map(answer -> new AnswerTtsSource(answer.getText()))
-			.orElse(null);
+		return childAnswerRepository.findById(answerId).filter(answer -> answer.hasTtsVersion(ttsVersion))
+		    .map(answer -> new AnswerTtsSource(answer.getText())).orElse(null);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -43,8 +41,7 @@ public class AnswerTtsStatusService {
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void markFailed(String answerId, String ttsVersion) {
-		childAnswerRepository.findByIdForUpdate(answerId)
-			.filter(answer -> answer.hasTtsVersion(ttsVersion))
-			.ifPresent(answer -> answer.markTtsFailed(FAILURE_NOTICE, OffsetDateTime.now(clock)));
+		childAnswerRepository.findByIdForUpdate(answerId).filter(answer -> answer.hasTtsVersion(ttsVersion))
+		    .ifPresent(answer -> answer.markTtsFailed(FAILURE_NOTICE, OffsetDateTime.now(clock)));
 	}
 }

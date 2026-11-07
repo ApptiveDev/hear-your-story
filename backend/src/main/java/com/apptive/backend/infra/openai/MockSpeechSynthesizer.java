@@ -8,11 +8,7 @@ import org.springframework.stereotype.Component;
 import com.apptive.backend.domain.answer.service.SpeechSynthesizer;
 
 @Component
-@ConditionalOnProperty(
-	name = "app.audio-processing.mode",
-	havingValue = "mock",
-	matchIfMissing = true
-)
+@ConditionalOnProperty(name = "app.audio-processing.mode", havingValue = "mock", matchIfMissing = true)
 public class MockSpeechSynthesizer implements SpeechSynthesizer {
 
 	@Override

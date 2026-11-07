@@ -16,13 +16,7 @@ import jakarta.persistence.UniqueConstraint;
 import com.apptive.backend.domain.assignment.entity.Assignment;
 
 @Entity
-@Table(
-	name = "recordings",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_recordings_assignment",
-		columnNames = "assignment_id"
-	)
-)
+@Table(name = "recordings", uniqueConstraints = @UniqueConstraint(name = "uk_recordings_assignment", columnNames = "assignment_id"))
 public class Recording {
 
 	@Id
@@ -79,31 +73,15 @@ public class Recording {
 	protected Recording() {
 	}
 
-	public Recording(
-		String id,
-		Assignment assignment,
-		String objectKey,
-		String originalFilename,
-		String contentType,
-		long sizeBytes,
-		String idempotencyKey,
-		String processingVersion,
-		OffsetDateTime now
-	) {
+	public Recording(String id, Assignment assignment, String objectKey, String originalFilename, String contentType,
+	    long sizeBytes, String idempotencyKey, String processingVersion, OffsetDateTime now) {
 		this.id = id;
 		this.assignment = assignment;
 		replaceFile(objectKey, originalFilename, contentType, sizeBytes, idempotencyKey, processingVersion, now);
 	}
 
-	public void replaceFile(
-		String objectKey,
-		String originalFilename,
-		String contentType,
-		long sizeBytes,
-		String idempotencyKey,
-		String processingVersion,
-		OffsetDateTime now
-	) {
+	public void replaceFile(String objectKey, String originalFilename, String contentType, long sizeBytes,
+	    String idempotencyKey, String processingVersion, OffsetDateTime now) {
 		this.objectKey = objectKey;
 		this.originalFilename = originalFilename;
 		this.contentType = contentType;

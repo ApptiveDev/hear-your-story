@@ -33,25 +33,12 @@ public class Question {
 	protected Question() {
 	}
 
-	public Question(
-		String id,
-		LocalDate scheduledDate,
-		String text,
-		String category,
-		String audioUrl,
-		boolean active
-	) {
+	public Question(String id, LocalDate scheduledDate, String text, String category, String audioUrl, boolean active) {
 		this.id = id;
 		updateFromSeed(scheduledDate, text, category, audioUrl, active);
 	}
 
-	public void updateFromSeed(
-		LocalDate scheduledDate,
-		String text,
-		String category,
-		String audioUrl,
-		boolean active
-	) {
+	public void updateFromSeed(LocalDate scheduledDate, String text, String category, String audioUrl, boolean active) {
 		this.scheduledDate = scheduledDate;
 		this.text = text;
 		this.category = category;

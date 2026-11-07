@@ -19,9 +19,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.domain.answer.repository.ChildAnswerRepository;
 import com.apptive.backend.domain.assignment.entity.Assignment;
@@ -35,6 +32,8 @@ import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -90,119 +89,77 @@ class ChildAnswerControllerTest {
 		FamilyPair pair = familyPairRepository.save(new FamilyPair("pair_answer", parent, child, now));
 		LocalDate today = LocalDate.now(clock);
 		Question question = questionRepository.findByScheduledDateAndActiveTrue(today)
-			.orElseGet(() -> new Question(
-				"qst_answer",
-				today,
-				"오늘 어떤 일이 있었나요?",
-				"DAILY",
-				null,
-				true
-			));
+		    .orElseGet(() -> new Question("qst_answer", today, "오늘 어떤 일이 있었나요?", "DAILY", null, true));
 		question.updateFromSeed(today, "오늘 어떤 일이 있었나요?", "DAILY", null, true);
 		questionRepository.save(question);
-		assignment = assignmentRepository.save(new Assignment(
-			"asg_answer",
-			pair,
-			question,
-			today,
-			now
-		));
+		assignment = assignmentRepository.save(new Assignment("asg_answer", pair, question, today, now));
 	}
 
 	@Test
 	void revealedChildAnswerCannotBeUpdated() throws Exception {
-		putAnswer(child, assignment.getId(), "최초 답변")
-			.andExpect(status().isOk());
+		putAnswer(child, assignment.getId(), "최초 답변").andExpect(status().isOk());
 		OffsetDateTime now = OffsetDateTime.now(clock);
-		recordingRepository.save(new Recording(
-			"rec_answer_locked",
-			assignment,
-			"recordings/rec_answer_locked/audio.m4a",
-			"audio.m4a",
-			"audio/mp4",
-			12,
-			"locked-upload",
-			"locked-version",
-			now
-		));
+		recordingRepository
+		    .save(new Recording("rec_answer_locked", assignment, "recordings/rec_answer_locked/audio.m4a", "audio.m4a",
+		        "audio/mp4", 12, "locked-upload", "locked-version", now));
 
-		putAnswer(child, assignment.getId(), "공개 후 수정")
-			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.errorCode").value("ANSWER_LOCKED"));
+		putAnswer(child, assignment.getId(), "공개 후 수정").andExpect(status().isConflict())
+		    .andExpect(jsonPath("$.errorCode").value("ANSWER_LOCKED"));
 	}
 
 	@Test
 	void childCreatesAndUpdatesOneAnswerForAssignment() throws Exception {
-		MvcResult created = putAnswer(child, assignment.getId(), "  첫 번째 답변  ")
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.answerId").isNotEmpty())
-			.andExpect(jsonPath("$.assignmentId").value(assignment.getId()))
-			.andExpect(jsonPath("$.text").value("첫 번째 답변"))
-			.andExpect(jsonPath("$.submissionStatus").value("SUBMITTED"))
-			.andExpect(jsonPath("$.ttsStatus").value("PROCESSING"))
-			.andExpect(jsonPath("$.submittedAt").isNotEmpty())
-			.andExpect(jsonPath("$.updatedAt").isNotEmpty())
-			.andReturn();
+		MvcResult created = putAnswer(child, assignment.getId(), "  첫 번째 답변  ").andExpect(status().isOk())
+		    .andExpect(jsonPath("$.answerId").isNotEmpty())
+		    .andExpect(jsonPath("$.assignmentId").value(assignment.getId()))
+		    .andExpect(jsonPath("$.text").value("첫 번째 답변")).andExpect(jsonPath("$.submissionStatus").value("SUBMITTED"))
+		    .andExpect(jsonPath("$.ttsStatus").value("PROCESSING")).andExpect(jsonPath("$.submittedAt").isNotEmpty())
+		    .andExpect(jsonPath("$.updatedAt").isNotEmpty()).andReturn();
 		JsonNode createdBody = objectMapper.readTree(created.getResponse().getContentAsByteArray());
 
-		putAnswer(child, assignment.getId(), "수정된 답변")
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.answerId").value(createdBody.get("answerId").asText()))
-			.andExpect(jsonPath("$.text").value("수정된 답변"))
-			.andExpect(jsonPath("$.submittedAt").value(createdBody.get("submittedAt").asText()));
+		putAnswer(child, assignment.getId(), "수정된 답변").andExpect(status().isOk())
+		    .andExpect(jsonPath("$.answerId").value(createdBody.get("answerId").asText()))
+		    .andExpect(jsonPath("$.text").value("수정된 답변"))
+		    .andExpect(jsonPath("$.submittedAt").value(createdBody.get("submittedAt").asText()));
 
 		org.assertj.core.api.Assertions.assertThat(childAnswerRepository.count()).isEqualTo(1);
 	}
 
 	@Test
 	void parentCannotSubmitChildAnswer() throws Exception {
-		putAnswer(parent, assignment.getId(), "부모가 대신 쓴 답변")
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.errorCode").value("ROLE_NOT_ALLOWED"));
+		putAnswer(parent, assignment.getId(), "부모가 대신 쓴 답변").andExpect(status().isForbidden())
+		    .andExpect(jsonPath("$.errorCode").value("ROLE_NOT_ALLOWED"));
 	}
 
 	@Test
 	void childCannotSubmitToAnotherPairAssignment() throws Exception {
-		User otherChild = userRepository.save(new User(
-			"usr_answer_other_child",
-			"다른 자녀",
-			Role.CHILD,
-			"answer-other-child",
-			OffsetDateTime.now(clock)
-		));
+		User otherChild = userRepository.save(
+		    new User("usr_answer_other_child", "다른 자녀", Role.CHILD, "answer-other-child", OffsetDateTime.now(clock)));
 
-		putAnswer(otherChild, assignment.getId(), "권한 없는 답변")
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.errorCode").value("PAIR_ACCESS_DENIED"));
+		putAnswer(otherChild, assignment.getId(), "권한 없는 답변").andExpect(status().isForbidden())
+		    .andExpect(jsonPath("$.errorCode").value("PAIR_ACCESS_DENIED"));
 	}
 
 	@Test
 	void invalidTextReturnsValidationError() throws Exception {
-		putAnswer(child, assignment.getId(), "   ")
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		putAnswer(child, assignment.getId(), "   ").andExpect(status().isBadRequest())
+		    .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
-		putAnswer(child, assignment.getId(), "가".repeat(1001))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		putAnswer(child, assignment.getId(), "가".repeat(1001)).andExpect(status().isBadRequest())
+		    .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 	}
 
 	@Test
 	void missingAssignmentReturnsNotFound() throws Exception {
-		putAnswer(child, "asg_missing", "답변")
-			.andExpect(status().isNotFound())
-			.andExpect(jsonPath("$.errorCode").value("ASSIGNMENT_NOT_FOUND"));
+		putAnswer(child, "asg_missing", "답변").andExpect(status().isNotFound())
+		    .andExpect(jsonPath("$.errorCode").value("ASSIGNMENT_NOT_FOUND"));
 	}
 
-	private org.springframework.test.web.servlet.ResultActions putAnswer(
-		User user,
-		String assignmentId,
-		String text
-	) throws Exception {
+	private org.springframework.test.web.servlet.ResultActions putAnswer(User user, String assignmentId, String text)
+	    throws Exception {
 		return mockMvc.perform(put("/api/v1/assignments/{assignmentId}/child-answer", assignmentId)
-			.header("Authorization", bearer(user))
-			.contentType(MediaType.APPLICATION_JSON)
-			.content(objectMapper.writeValueAsString(new AnswerBody(text))));
+		    .header("Authorization", bearer(user)).contentType(MediaType.APPLICATION_JSON)
+		    .content(objectMapper.writeValueAsString(new AnswerBody(text))));
 	}
 
 	private String bearer(User user) {

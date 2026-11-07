@@ -14,15 +14,9 @@ import com.apptive.backend.infra.openai.OpenAiStorySummarizer;
 import com.apptive.backend.infra.storage.R2RecordingStorage;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
-@SpringBootTest(properties = {
-	"app.storage.type=r2",
-	"app.r2.account-id=test-account",
-	"app.r2.access-key-id=test-access-key",
-	"app.r2.secret-access-key=test-secret-key",
-	"app.r2.bucket-name=test-bucket",
-	"app.audio-processing.mode=openai",
-	"app.openai.api-key=test-openai-key"
-})
+@SpringBootTest(properties = {"app.storage.type=r2", "app.r2.account-id=test-account",
+        "app.r2.access-key-id=test-access-key", "app.r2.secret-access-key=test-secret-key",
+        "app.r2.bucket-name=test-bucket", "app.audio-processing.mode=openai", "app.openai.api-key=test-openai-key"})
 @ActiveProfiles("test")
 class ExternalAudioIntegrationConfigurationTest {
 

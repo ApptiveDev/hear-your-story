@@ -25,11 +25,8 @@ public class ChildAnswerController {
 	}
 
 	@PutMapping("/{assignmentId}/child-answer")
-	public ChildAnswerResponse put(
-		@PathVariable String assignmentId,
-		@Valid @RequestBody PutChildAnswerRequest request,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
+	public ChildAnswerResponse put(@PathVariable String assignmentId, @Valid @RequestBody PutChildAnswerRequest request,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return childAnswerService.put(assignmentId, request.text(), authenticatedUser);
 	}
 }

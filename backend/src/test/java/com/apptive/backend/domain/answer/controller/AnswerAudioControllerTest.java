@@ -69,77 +69,37 @@ class AnswerAudioControllerTest {
 		parent = userRepository.save(new User("usr_tts_parent", "부모", Role.PARENT, "tts-parent", now));
 		child = userRepository.save(new User("usr_tts_child", "자녀", Role.CHILD, "tts-child", now));
 		FamilyPair pair = familyPairRepository.save(new FamilyPair("pair_tts", parent, child, now));
-		Question question = questionRepository.save(new Question(
-			"qst_tts",
-			assignedDate,
-			"기억에 남는 음식은 무엇인가요?",
-			"MEMORY",
-			null,
-			true
-		));
-		Assignment assignment = assignmentRepository.save(new Assignment(
-			"asg_tts",
-			pair,
-			question,
-			assignedDate,
-			now
-		));
-		answer = new ChildAnswer(
-			"ans_tts",
-			assignment,
-			"저는 김치수제비가 기억나요.",
-			TtsStatus.PROCESSING,
-			"tts-version",
-			now,
-			now
-		);
+		Question question = questionRepository
+		    .save(new Question("qst_tts", assignedDate, "기억에 남는 음식은 무엇인가요?", "MEMORY", null, true));
+		Assignment assignment = assignmentRepository.save(new Assignment("asg_tts", pair, question, assignedDate, now));
+		answer = new ChildAnswer("ans_tts", assignment, "저는 김치수제비가 기억나요.", TtsStatus.PROCESSING, "tts-version", now,
+		    now);
 		answer.markTtsReady("tts/ans_tts/audio.mp3", now);
 		childAnswerRepository.save(answer);
-		recordingRepository.save(new Recording(
-			"rec_tts",
-			assignment,
-			"recordings/rec_tts/audio.m4a",
-			"audio.m4a",
-			"audio/mp4",
-			100,
-			"tts-test",
-			"recording-version",
-			now
-		));
+		recordingRepository.save(new Recording("rec_tts", assignment, "recordings/rec_tts/audio.m4a", "audio.m4a",
+		    "audio/mp4", 100, "tts-test", "recording-version", now));
 	}
 
 	@Test
 	void pairedParentCanReadTtsStatus() throws Exception {
-		mockMvc.perform(get("/api/v1/answers/{answerId}/audio", answer.getId())
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.answerId").value(answer.getId()))
-			.andExpect(jsonPath("$.ttsStatus").value("READY"))
-			.andExpect(jsonPath("$.audioUrl").doesNotExist())
-			.andExpect(jsonPath("$.processingNotice").doesNotExist());
+		mockMvc.perform(get("/api/v1/answers/{answerId}/audio", answer.getId()).header("Authorization", bearer(parent)))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.answerId").value(answer.getId()))
+		    .andExpect(jsonPath("$.ttsStatus").value("READY")).andExpect(jsonPath("$.audioUrl").doesNotExist())
+		    .andExpect(jsonPath("$.processingNotice").doesNotExist());
 	}
 
 	@Test
 	void childCannotReadTtsEndpoint() throws Exception {
-		mockMvc.perform(get("/api/v1/answers/{answerId}/audio", answer.getId())
-				.header("Authorization", bearer(child)))
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.errorCode").value("ROLE_NOT_ALLOWED"));
+		mockMvc.perform(get("/api/v1/answers/{answerId}/audio", answer.getId()).header("Authorization", bearer(child)))
+		    .andExpect(status().isForbidden()).andExpect(jsonPath("$.errorCode").value("ROLE_NOT_ALLOWED"));
 	}
 
 	@Test
 	void anotherParentCannotReadAnswerAudio() throws Exception {
-		User other = userRepository.save(new User(
-			"usr_tts_other",
-			"다른 부모",
-			Role.PARENT,
-			"tts-other",
-			OffsetDateTime.now(clock)
-		));
-		mockMvc.perform(get("/api/v1/answers/{answerId}/audio", answer.getId())
-				.header("Authorization", bearer(other)))
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.errorCode").value("PAIR_ACCESS_DENIED"));
+		User other = userRepository
+		    .save(new User("usr_tts_other", "다른 부모", Role.PARENT, "tts-other", OffsetDateTime.now(clock)));
+		mockMvc.perform(get("/api/v1/answers/{answerId}/audio", answer.getId()).header("Authorization", bearer(other)))
+		    .andExpect(status().isForbidden()).andExpect(jsonPath("$.errorCode").value("PAIR_ACCESS_DENIED"));
 	}
 
 	private String bearer(User user) {
