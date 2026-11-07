@@ -29,32 +29,21 @@ class OpenAiSpeechSynthesizerTest {
 	void setUp() {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
-		OpenAiProperties properties = new OpenAiProperties(
-			"test-key",
-			"https://api.openai.test/v1",
-			"gpt-4o-mini-transcribe",
-			"gpt-4o-mini",
-			"gpt-4o-mini-tts",
-			"alloy",
-			Duration.ofSeconds(1),
-			Duration.ofSeconds(5)
-		);
-		synthesizer = new OpenAiSpeechSynthesizer(
-			builder.baseUrl(properties.baseUrl()).build(),
-			properties
-		);
+		OpenAiProperties properties = new OpenAiProperties("test-key", "https://api.openai.test/v1",
+		    "gpt-4o-mini-transcribe", "gpt-4o-mini", "gpt-4o-mini-tts", "alloy", Duration.ofSeconds(1),
+		    Duration.ofSeconds(5));
+		synthesizer = new OpenAiSpeechSynthesizer(builder.baseUrl(properties.baseUrl()).build(), properties);
 	}
 
 	@Test
 	void synthesizesChildAnswerAsMp3() {
-		byte[] expected = new byte[] {1, 2, 3, 4};
-		server.expect(requestTo("https://api.openai.test/v1/audio/speech"))
-			.andExpect(method(HttpMethod.POST))
-			.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-			.andExpect(content().string(containsString("\"model\":\"gpt-4o-mini-tts\"")))
-			.andExpect(content().string(containsString("\"voice\":\"alloy\"")))
-			.andExpect(content().string(containsString("자녀의 답변입니다")))
-			.andRespond(withSuccess(expected, MediaType.valueOf("audio/mpeg")));
+		byte[] expected = new byte[]{1, 2, 3, 4};
+		server.expect(requestTo("https://api.openai.test/v1/audio/speech")).andExpect(method(HttpMethod.POST))
+		    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+		    .andExpect(content().string(containsString("\"model\":\"gpt-4o-mini-tts\"")))
+		    .andExpect(content().string(containsString("\"voice\":\"alloy\"")))
+		    .andExpect(content().string(containsString("자녀의 답변입니다")))
+		    .andRespond(withSuccess(expected, MediaType.valueOf("audio/mpeg")));
 
 		assertThat(synthesizer.synthesize("자녀의 답변입니다")).isEqualTo(expected);
 		server.verify();
@@ -62,12 +51,10 @@ class OpenAiSpeechSynthesizerTest {
 
 	@Test
 	void mapsProviderFailure() {
-		server.expect(requestTo("https://api.openai.test/v1/audio/speech"))
-			.andRespond(withServerError());
+		server.expect(requestTo("https://api.openai.test/v1/audio/speech")).andRespond(withServerError());
 
-		assertThatThrownBy(() -> synthesizer.synthesize("답변"))
-			.isInstanceOf(AudioProcessingException.class)
-			.satisfies(exception -> assertThat(((AudioProcessingException) exception).failureCode())
-				.isEqualTo("OPENAI_TTS_FAILED"));
+		assertThatThrownBy(() -> synthesizer.synthesize("답변")).isInstanceOf(AudioProcessingException.class)
+		    .satisfies(exception -> assertThat(((AudioProcessingException) exception).failureCode())
+		        .isEqualTo("OPENAI_TTS_FAILED"));
 	}
 }

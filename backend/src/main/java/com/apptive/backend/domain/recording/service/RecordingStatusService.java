@@ -53,11 +53,8 @@ public class RecordingStatusService {
 		if (!isCurrent(recording, version)) {
 			return null;
 		}
-		return new RecordingProcessingSource(
-			recording.getObjectKey(),
-			recording.getOriginalFilename(),
-			recording.getContentType()
-		);
+		return new RecordingProcessingSource(recording.getObjectKey(), recording.getOriginalFilename(),
+		    recording.getContentType());
 	}
 
 	@Transactional
@@ -96,17 +93,12 @@ public class RecordingStatusService {
 		if (!isCurrent(recording, version)) {
 			return;
 		}
-		recording.markFailed(
-			failedStage,
-			failureCode,
-			"음성 정리는 실패했지만 원본 녹음은 안전하게 저장되었습니다.",
-			now()
-		);
+		recording.markFailed(failedStage, failureCode, "음성 정리는 실패했지만 원본 녹음은 안전하게 저장되었습니다.", now());
 	}
 
 	private Recording find(String recordingId) {
 		return recordingRepository.findById(recordingId)
-			.orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
+		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
 	}
 
 	private boolean isCurrent(Recording recording, String version) {
@@ -118,16 +110,9 @@ public class RecordingStatusService {
 	}
 
 	private RecordingStatusResponse toResponse(Recording recording) {
-		return new RecordingStatusResponse(
-			recording.getId(),
-			recording.getAssignment().getId(),
-			recording.getProcessingStatus(),
-			recording.getSttText(),
-			recording.getSummaryText(),
-			recording.getFailedStage(),
-			recording.getFailureCode(),
-			recording.getProcessingNotice(),
-			recording.getUpdatedAt()
-		);
+		return new RecordingStatusResponse(recording.getId(), recording.getAssignment().getId(),
+		    recording.getProcessingStatus(), recording.getSttText(), recording.getSummaryText(),
+		    recording.getFailedStage(), recording.getFailureCode(), recording.getProcessingNotice(),
+		    recording.getUpdatedAt());
 	}
 }

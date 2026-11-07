@@ -14,13 +14,9 @@ import jakarta.persistence.UniqueConstraint;
 import com.apptive.backend.domain.user.entity.User;
 
 @Entity
-@Table(
-	name = "family_pairs",
-	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_family_pairs_parent", columnNames = "parent_id"),
-		@UniqueConstraint(name = "uk_family_pairs_child", columnNames = "child_id")
-	}
-)
+@Table(name = "family_pairs", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_family_pairs_parent", columnNames = "parent_id"),
+        @UniqueConstraint(name = "uk_family_pairs_child", columnNames = "child_id")})
 public class FamilyPair {
 
 	@Id

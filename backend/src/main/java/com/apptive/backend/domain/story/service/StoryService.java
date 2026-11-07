@@ -46,13 +46,9 @@ public class StoryService {
 	private final ChildAnswerRepository childAnswerRepository;
 	private final RecordingStorage recordingStorage;
 
-	public StoryService(
-		FamilyPairRepository familyPairRepository,
-		AssignmentRepository assignmentRepository,
-		RecordingRepository recordingRepository,
-		ChildAnswerRepository childAnswerRepository,
-		RecordingStorage recordingStorage
-	) {
+	public StoryService(FamilyPairRepository familyPairRepository, AssignmentRepository assignmentRepository,
+	    RecordingRepository recordingRepository, ChildAnswerRepository childAnswerRepository,
+	    RecordingStorage recordingStorage) {
 		this.familyPairRepository = familyPairRepository;
 		this.assignmentRepository = assignmentRepository;
 		this.recordingRepository = recordingRepository;
@@ -61,12 +57,8 @@ public class StoryService {
 	}
 
 	@Transactional(readOnly = true)
-	public StoryPageResponse getStories(
-		String month,
-		String encodedCursor,
-		Integer requestedLimit,
-		AuthenticatedUser authenticatedUser
-	) {
+	public StoryPageResponse getStories(String month, String encodedCursor, Integer requestedLimit,
+	    AuthenticatedUser authenticatedUser) {
 		if (month != null) {
 			return getStoriesByMonth(month, encodedCursor, requestedLimit, authenticatedUser);
 		}
@@ -76,17 +68,13 @@ public class StoryService {
 			throw new ApiException(ErrorCode.VALIDATION_ERROR);
 		}
 		FamilyPair pair = familyPairRepository.findByMemberId(authenticatedUser.userId())
-			.orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
+		    .orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
 		StoryCursor cursor = StoryCursor.decode(encodedCursor);
 		PageRequest pageRequest = PageRequest.of(0, limit + 1);
 		List<Assignment> fetched = cursor == null
-			? assignmentRepository.findRevealedFirstPage(pair.getId(), pageRequest)
-			: assignmentRepository.findRevealedAfter(
-				pair.getId(),
-				cursor.assignedDate(),
-				cursor.assignmentId(),
-				pageRequest
-			);
+		    ? assignmentRepository.findRevealedFirstPage(pair.getId(), pageRequest)
+		    : assignmentRepository.findRevealedAfter(pair.getId(), cursor.assignedDate(), cursor.assignmentId(),
+		        pageRequest);
 
 		boolean hasNext = fetched.size() > limit;
 		List<Assignment> page = hasNext ? fetched.subList(0, limit) : fetched;
@@ -97,12 +85,8 @@ public class StoryService {
 		return toResponse(page, hasNext);
 	}
 
-	private StoryPageResponse getStoriesByMonth(
-		String month,
-		String encodedCursor,
-		Integer requestedLimit,
-		AuthenticatedUser authenticatedUser
-	) {
+	private StoryPageResponse getStoriesByMonth(String month, String encodedCursor, Integer requestedLimit,
+	    AuthenticatedUser authenticatedUser) {
 		if (encodedCursor != null || requestedLimit != null) {
 			throw new ApiException(ErrorCode.VALIDATION_ERROR);
 		}
@@ -118,12 +102,9 @@ public class StoryService {
 		}
 
 		FamilyPair pair = familyPairRepository.findByMemberId(authenticatedUser.userId())
-			.orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
-		List<Assignment> assignments = assignmentRepository.findRevealedByMonth(
-			pair.getId(),
-			yearMonth.atDay(1),
-			yearMonth.atEndOfMonth()
-		);
+		    .orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
+		List<Assignment> assignments = assignmentRepository.findRevealedByMonth(pair.getId(), yearMonth.atDay(1),
+		    yearMonth.atEndOfMonth());
 		return toResponse(assignments, false);
 	}
 
@@ -133,62 +114,36 @@ public class StoryService {
 		}
 
 		List<String> assignmentIds = page.stream().map(Assignment::getId).toList();
-		Map<String, Recording> recordings = recordingRepository.findAllByAssignment_IdIn(assignmentIds)
-			.stream()
-			.collect(Collectors.toMap(recording -> recording.getAssignment().getId(), Function.identity()));
-		Map<String, ChildAnswer> childAnswers = childAnswerRepository.findAllByAssignment_IdIn(assignmentIds)
-			.stream()
-			.collect(Collectors.toMap(answer -> answer.getAssignment().getId(), Function.identity()));
+		Map<String, Recording> recordings = recordingRepository.findAllByAssignment_IdIn(assignmentIds).stream()
+		    .collect(Collectors.toMap(recording -> recording.getAssignment().getId(), Function.identity()));
+		Map<String, ChildAnswer> childAnswers = childAnswerRepository.findAllByAssignment_IdIn(assignmentIds).stream()
+		    .collect(Collectors.toMap(answer -> answer.getAssignment().getId(), Function.identity()));
 
-		List<StoryItemResponse> items = page.stream()
-			.map(assignment -> toItem(
-				assignment,
-				recordings.get(assignment.getId()),
-				childAnswers.get(assignment.getId())
-			))
-			.toList();
+		List<StoryItemResponse> items = page.stream().map(
+		    assignment -> toItem(assignment, recordings.get(assignment.getId()), childAnswers.get(assignment.getId())))
+		    .toList();
 		String nextCursor = hasNext
-			? new StoryCursor(page.get(page.size() - 1).getAssignedDate(), page.get(page.size() - 1).getId()).encode()
-			: null;
+		    ? new StoryCursor(page.get(page.size() - 1).getAssignedDate(), page.get(page.size() - 1).getId()).encode()
+		    : null;
 		return new StoryPageResponse(items, nextCursor, hasNext);
 	}
 
-	private StoryItemResponse toItem(
-		Assignment assignment,
-		Recording recording,
-		ChildAnswer childAnswer
-	) {
+	private StoryItemResponse toItem(Assignment assignment, Recording recording, ChildAnswer childAnswer) {
 		Question question = assignment.getQuestion();
 		SignedAudioUrl signedAudio = recordingStorage.createSignedReadUrl(recording.getObjectKey()).orElse(null);
 		OffsetDateTime revealedAt = recording.getSubmittedAt().isAfter(childAnswer.getSubmittedAt())
-			? recording.getSubmittedAt()
-			: childAnswer.getSubmittedAt();
-		return new StoryItemResponse(
-			storyId(assignment.getId()),
-			assignment.getId(),
-			assignment.getAssignedDate(),
-			new StoryQuestionResponse(question.getId(), question.getText(), question.getCategory()),
-			new StoryParentAnswerResponse(
-				recording.getId(),
-				recording.getProcessingStatus(),
-				signedAudio == null ? null : signedAudio.url(),
-				signedAudio == null ? null : signedAudio.expiresAt(),
-				recording.getSttText(),
-				recording.getSummaryText(),
-				recording.getProcessingNotice()
-			),
-			new StoryChildAnswerResponse(
-				childAnswer.getId(),
-				childAnswer.getText(),
-				childAnswer.getTtsStatus()
-			),
-			revealedAt
-		);
+		    ? recording.getSubmittedAt()
+		    : childAnswer.getSubmittedAt();
+		return new StoryItemResponse(storyId(assignment.getId()), assignment.getId(), assignment.getAssignedDate(),
+		    new StoryQuestionResponse(question.getId(), question.getText(), question.getCategory()),
+		    new StoryParentAnswerResponse(recording.getId(), recording.getProcessingStatus(),
+		        signedAudio == null ? null : signedAudio.url(), signedAudio == null ? null : signedAudio.expiresAt(),
+		        recording.getSttText(), recording.getSummaryText(), recording.getProcessingNotice()),
+		    new StoryChildAnswerResponse(childAnswer.getId(), childAnswer.getText(), childAnswer.getTtsStatus()),
+		    revealedAt);
 	}
 
 	private String storyId(String assignmentId) {
-		return assignmentId.startsWith("asg_")
-			? "story_" + assignmentId.substring(4)
-			: "story_" + assignmentId;
+		return assignmentId.startsWith("asg_") ? "story_" + assignmentId.substring(4) : "story_" + assignmentId;
 	}
 }

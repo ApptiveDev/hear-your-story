@@ -19,9 +19,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.domain.answer.entity.ChildAnswer;
 import com.apptive.backend.domain.answer.entity.TtsStatus;
@@ -37,6 +34,8 @@ import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -83,31 +82,24 @@ class StoryControllerTest {
 
 	@Test
 	void returnsOnlyRevealedStoriesNewestFirstWithCursor() throws Exception {
-		MvcResult firstResult = mockMvc.perform(get("/api/v1/stories")
-				.param("limit", "1")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.items.length()").value(1))
-			.andExpect(jsonPath("$.items[0].storyId").value("story_story_new"))
-			.andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_new"))
-			.andExpect(jsonPath("$.items[0].question.text").value("최근 질문"))
-			.andExpect(jsonPath("$.items[0].parentAnswer.summaryText").value("정리된 최근 질문"))
-			.andExpect(jsonPath("$.items[0].childAnswer.text").value("최근 답"))
-			.andExpect(jsonPath("$.hasNext").value(true))
-			.andExpect(jsonPath("$.nextCursor").isNotEmpty())
-			.andReturn();
+		MvcResult firstResult = mockMvc
+		    .perform(get("/api/v1/stories").param("limit", "1").header("Authorization", bearer(parent)))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
+		    .andExpect(jsonPath("$.items[0].storyId").value("story_story_new"))
+		    .andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_new"))
+		    .andExpect(jsonPath("$.items[0].question.text").value("최근 질문"))
+		    .andExpect(jsonPath("$.items[0].parentAnswer.summaryText").value("정리된 최근 질문"))
+		    .andExpect(jsonPath("$.items[0].childAnswer.text").value("최근 답"))
+		    .andExpect(jsonPath("$.hasNext").value(true)).andExpect(jsonPath("$.nextCursor").isNotEmpty()).andReturn();
 		JsonNode firstBody = objectMapper.readTree(firstResult.getResponse().getContentAsByteArray());
 
-		MvcResult secondResult = mockMvc.perform(get("/api/v1/stories")
-				.param("limit", "1")
-				.param("cursor", firstBody.get("nextCursor").asText())
-				.header("Authorization", bearer(child)))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.items.length()").value(1))
-			.andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_old"))
-			.andExpect(jsonPath("$.hasNext").value(false))
-			.andExpect(jsonPath("$.nextCursor").doesNotExist())
-			.andReturn();
+		MvcResult secondResult = mockMvc
+		    .perform(get("/api/v1/stories").param("limit", "1").param("cursor", firstBody.get("nextCursor").asText())
+		        .header("Authorization", bearer(child)))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
+		    .andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_old"))
+		    .andExpect(jsonPath("$.hasNext").value(false)).andExpect(jsonPath("$.nextCursor").doesNotExist())
+		    .andReturn();
 
 		JsonNode secondBody = objectMapper.readTree(secondResult.getResponse().getContentAsByteArray());
 		assertThat(secondBody.get("items").get(0).get("revealedAt").asText()).isNotBlank();
@@ -115,140 +107,80 @@ class StoryControllerTest {
 
 	@Test
 	void invalidCursorAndLimitReturnValidationError() throws Exception {
-		mockMvc.perform(get("/api/v1/stories")
-				.param("cursor", "not-a-valid-cursor")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		mockMvc
+		    .perform(
+		        get("/api/v1/stories").param("cursor", "not-a-valid-cursor").header("Authorization", bearer(parent)))
+		    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
-		mockMvc.perform(get("/api/v1/stories")
-				.param("limit", "51")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		mockMvc.perform(get("/api/v1/stories").param("limit", "51").header("Authorization", bearer(parent)))
+		    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 	}
 
 	@Test
 	void returnsRevealedStoriesForMonthOldestFirstWithoutPagination() throws Exception {
-		mockMvc.perform(get("/api/v1/stories")
-				.param("month", "2000-01")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.items.length()").value(2))
-			.andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_old"))
-			.andExpect(jsonPath("$.items[1].assignmentId").value("asg_story_new"))
-			.andExpect(jsonPath("$.nextCursor").doesNotExist())
-			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get("/api/v1/stories").param("month", "2000-01").header("Authorization", bearer(parent)))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(2))
+		    .andExpect(jsonPath("$.items[0].assignmentId").value("asg_story_old"))
+		    .andExpect(jsonPath("$.items[1].assignmentId").value("asg_story_new"))
+		    .andExpect(jsonPath("$.nextCursor").doesNotExist()).andExpect(jsonPath("$.hasNext").value(false));
 	}
 
 	@Test
 	void emptyMonthReturnsEmptyItems() throws Exception {
-		mockMvc.perform(get("/api/v1/stories")
-				.param("month", "2000-02")
-				.header("Authorization", bearer(child)))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.items").isEmpty())
-			.andExpect(jsonPath("$.nextCursor").doesNotExist())
-			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get("/api/v1/stories").param("month", "2000-02").header("Authorization", bearer(child)))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty())
+		    .andExpect(jsonPath("$.nextCursor").doesNotExist()).andExpect(jsonPath("$.hasNext").value(false));
 	}
 
 	@Test
 	void invalidMonthOrMixedPaginationReturnsValidationError() throws Exception {
-		mockMvc.perform(get("/api/v1/stories")
-				.param("month", "2000-1")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		mockMvc.perform(get("/api/v1/stories").param("month", "2000-1").header("Authorization", bearer(parent)))
+		    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
-		mockMvc.perform(get("/api/v1/stories")
-				.param("month", "2000-01")
-				.param("cursor", "cursor")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		mockMvc
+		    .perform(get("/api/v1/stories").param("month", "2000-01").param("cursor", "cursor").header("Authorization",
+		        bearer(parent)))
+		    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 
-		mockMvc.perform(get("/api/v1/stories")
-				.param("month", "2000-01")
-				.param("limit", "20")
-				.header("Authorization", bearer(parent)))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+		mockMvc
+		    .perform(get("/api/v1/stories").param("month", "2000-01").param("limit", "20").header("Authorization",
+		        bearer(parent)))
+		    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
 	}
 
 	@Test
 	void unpairedUserCannotReadStories() throws Exception {
-		User unpaired = userRepository.save(new User(
-			"usr_story_unpaired",
-			"미연결 사용자",
-			Role.CHILD,
-			"story-unpaired",
-			OffsetDateTime.now(clock)
-		));
-		mockMvc.perform(get("/api/v1/stories")
-				.header("Authorization", bearer(unpaired)))
-			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.errorCode").value("PAIR_NOT_FOUND"));
+		User unpaired = userRepository
+		    .save(new User("usr_story_unpaired", "미연결 사용자", Role.CHILD, "story-unpaired", OffsetDateTime.now(clock)));
+		mockMvc.perform(get("/api/v1/stories").header("Authorization", bearer(unpaired)))
+		    .andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("PAIR_NOT_FOUND"));
 	}
 
 	private void createRevealed(String assignmentId, LocalDate date, String questionText, String childText) {
 		OffsetDateTime submittedAt = OffsetDateTime.now(clock).minusDays(2);
 		Assignment assignment = createAssignment(assignmentId, date, questionText);
-		Recording recording = new Recording(
-			"rec_" + assignmentId,
-			assignment,
-			"recordings/" + assignmentId + "/audio.m4a",
-			"audio.m4a",
-			"audio/mp4",
-			100,
-			"idempotency-" + assignmentId,
-			"version-" + assignmentId,
-			submittedAt
-		);
+		Recording recording = new Recording("rec_" + assignmentId, assignment,
+		    "recordings/" + assignmentId + "/audio.m4a", "audio.m4a", "audio/mp4", 100, "idempotency-" + assignmentId,
+		    "version-" + assignmentId, submittedAt);
 		recording.markSttProcessing(submittedAt);
 		recording.markSttDone("원문 " + questionText, submittedAt);
 		recording.markLlmProcessing(submittedAt);
 		recording.markReady("정리된 " + questionText, submittedAt);
 		recordingRepository.save(recording);
-		childAnswerRepository.save(new ChildAnswer(
-			"ans_" + assignmentId,
-			assignment,
-			childText,
-			TtsStatus.PROCESSING,
-			"tts-" + assignmentId,
-			submittedAt.plusMinutes(1),
-			submittedAt.plusMinutes(1)
-		));
+		childAnswerRepository.save(new ChildAnswer("ans_" + assignmentId, assignment, childText, TtsStatus.PROCESSING,
+		    "tts-" + assignmentId, submittedAt.plusMinutes(1), submittedAt.plusMinutes(1)));
 	}
 
 	private void createIncomplete(String assignmentId, LocalDate date) {
 		Assignment assignment = createAssignment(assignmentId, date, "아직 답하지 않은 질문");
-		childAnswerRepository.save(new ChildAnswer(
-			"ans_" + assignmentId,
-			assignment,
-			"자녀만 답했습니다.",
-			TtsStatus.PROCESSING,
-			"tts-" + assignmentId,
-			OffsetDateTime.now(clock),
-			OffsetDateTime.now(clock)
-		));
+		childAnswerRepository.save(new ChildAnswer("ans_" + assignmentId, assignment, "자녀만 답했습니다.",
+		    TtsStatus.PROCESSING, "tts-" + assignmentId, OffsetDateTime.now(clock), OffsetDateTime.now(clock)));
 	}
 
 	private Assignment createAssignment(String assignmentId, LocalDate date, String questionText) {
-		Question question = questionRepository.save(new Question(
-			"qst_" + assignmentId,
-			date,
-			questionText,
-			"MEMORY",
-			null,
-			true
-		));
-		return assignmentRepository.save(new Assignment(
-			assignmentId,
-			pair,
-			question,
-			date,
-			OffsetDateTime.now(clock)
-		));
+		Question question = questionRepository
+		    .save(new Question("qst_" + assignmentId, date, questionText, "MEMORY", null, true));
+		return assignmentRepository.save(new Assignment(assignmentId, pair, question, date, OffsetDateTime.now(clock)));
 	}
 
 	private String bearer(User user) {

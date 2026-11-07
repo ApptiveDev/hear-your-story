@@ -35,25 +35,15 @@ class R2RecordingStorageTest {
 	void setUp() {
 		s3Client = mock(S3Client.class);
 		presigner = mock(S3Presigner.class);
-		R2Properties properties = new R2Properties(
-			"account",
-			"access-key",
-			"secret-key",
-			"recordings",
-			Duration.ofMinutes(15)
-		);
+		R2Properties properties = new R2Properties("account", "access-key", "secret-key", "recordings",
+		    Duration.ofMinutes(15));
 		Clock clock = Clock.fixed(Instant.parse("2026-09-26T10:00:00Z"), ZoneOffset.UTC);
 		storage = new R2RecordingStorage(s3Client, presigner, properties, clock);
 	}
 
 	@Test
 	void storesM4aInPrivateBucket() {
-		MockMultipartFile file = new MockMultipartFile(
-			"audioFile",
-			"answer.m4a",
-			"audio/mp4",
-			new byte[] {1, 2, 3}
-		);
+		MockMultipartFile file = new MockMultipartFile("audioFile", "answer.m4a", "audio/mp4", new byte[]{1, 2, 3});
 
 		String objectKey = storage.store("rec_123", file);
 
@@ -67,9 +57,9 @@ class R2RecordingStorageTest {
 
 	@Test
 	void readsStoredAudioBytes() {
-		byte[] audio = new byte[] {4, 5, 6};
+		byte[] audio = new byte[]{4, 5, 6};
 		when(s3Client.getObjectAsBytes(any(software.amazon.awssdk.services.s3.model.GetObjectRequest.class)))
-			.thenReturn(ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), audio));
+		    .thenReturn(ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), audio));
 
 		assertThat(storage.read("recordings/rec_123/audio.m4a")).containsExactly(audio);
 	}

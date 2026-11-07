@@ -14,11 +14,8 @@ public class AnswerTtsProcessor {
 	private final SpeechSynthesizer speechSynthesizer;
 	private final RecordingStorage recordingStorage;
 
-	public AnswerTtsProcessor(
-		AnswerTtsStatusService statusService,
-		SpeechSynthesizer speechSynthesizer,
-		RecordingStorage recordingStorage
-	) {
+	public AnswerTtsProcessor(AnswerTtsStatusService statusService, SpeechSynthesizer speechSynthesizer,
+	    RecordingStorage recordingStorage) {
 		this.statusService = statusService;
 		this.speechSynthesizer = speechSynthesizer;
 		this.recordingStorage = recordingStorage;
@@ -36,17 +33,12 @@ public class AnswerTtsProcessor {
 		try {
 			byte[] audio = speechSynthesizer.synthesize(source.text());
 			newObjectKey = recordingStorage.storeAnswerAudio(event.answerId(), audio);
-			TtsReadyResult result = statusService.markReady(
-				event.answerId(),
-				event.ttsVersion(),
-				newObjectKey
-			);
+			TtsReadyResult result = statusService.markReady(event.answerId(), event.ttsVersion(), newObjectKey);
 			if (!result.accepted()) {
 				recordingStorage.delete(newObjectKey);
 				return;
 			}
-			if (result.previousObjectKey() != null
-				&& !result.previousObjectKey().equals(newObjectKey)) {
+			if (result.previousObjectKey() != null && !result.previousObjectKey().equals(newObjectKey)) {
 				recordingStorage.delete(result.previousObjectKey());
 			}
 		} catch (RuntimeException exception) {

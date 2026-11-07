@@ -41,5 +41,5 @@ jobs:
       - name: Grant execute permission to Gradle Wrapper
         run: chmod +x gradlew
 
-      - name: Compile and test backend
+      - name: Check formatting, lint, and tests
         run: ./gradlew check --no-daemon

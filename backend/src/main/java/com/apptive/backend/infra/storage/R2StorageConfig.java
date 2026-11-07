@@ -21,34 +21,22 @@ public class R2StorageConfig {
 
 	@Bean
 	public S3Client r2S3Client(R2Properties properties) {
-		return S3Client.builder()
-			.endpointOverride(endpoint(properties))
-			.credentialsProvider(credentials(properties))
-			.region(Region.of("auto"))
-			.serviceConfiguration(S3Configuration.builder()
-				.pathStyleAccessEnabled(true)
-				.chunkedEncodingEnabled(false)
-				.build())
-			.build();
+		return S3Client.builder().endpointOverride(endpoint(properties)).credentialsProvider(credentials(properties))
+		    .region(Region.of("auto")).serviceConfiguration(
+		        S3Configuration.builder().pathStyleAccessEnabled(true).chunkedEncodingEnabled(false).build())
+		    .build();
 	}
 
 	@Bean
 	public S3Presigner r2S3Presigner(R2Properties properties) {
-		return S3Presigner.builder()
-			.endpointOverride(endpoint(properties))
-			.credentialsProvider(credentials(properties))
-			.region(Region.of("auto"))
-			.serviceConfiguration(S3Configuration.builder()
-				.pathStyleAccessEnabled(true)
-				.build())
-			.build();
+		return S3Presigner.builder().endpointOverride(endpoint(properties)).credentialsProvider(credentials(properties))
+		    .region(Region.of("auto"))
+		    .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build()).build();
 	}
 
 	private StaticCredentialsProvider credentials(R2Properties properties) {
-		return StaticCredentialsProvider.create(AwsBasicCredentials.create(
-			properties.accessKeyId(),
-			properties.secretAccessKey()
-		));
+		return StaticCredentialsProvider
+		    .create(AwsBasicCredentials.create(properties.accessKeyId(), properties.secretAccessKey()));
 	}
 
 	private URI endpoint(R2Properties properties) {

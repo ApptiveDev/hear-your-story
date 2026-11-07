@@ -28,19 +28,15 @@ public class OpenAiSpeechTranscriber implements SpeechTranscriber {
 	@Override
 	public String transcribe(AudioSource audioSource) {
 		MultipartBodyBuilder body = new MultipartBodyBuilder();
-		body.part("file", namedResource(audioSource))
-			.contentType(MediaType.parseMediaType(audioSource.contentType()));
+		body.part("file", namedResource(audioSource)).contentType(MediaType.parseMediaType(audioSource.contentType()));
 		body.part("model", properties.transcriptionModel());
 		body.part("language", "ko");
 		body.part("response_format", "json");
 
 		try {
-			TranscriptionResponse response = restClient.post()
-				.uri("/audio/transcriptions")
-				.contentType(MediaType.MULTIPART_FORM_DATA)
-				.body(asMultipart(body))
-				.retrieve()
-				.body(TranscriptionResponse.class);
+			TranscriptionResponse response = restClient.post().uri("/audio/transcriptions")
+			    .contentType(MediaType.MULTIPART_FORM_DATA).body(asMultipart(body)).retrieve()
+			    .body(TranscriptionResponse.class);
 			if (response == null || response.text() == null || response.text().isBlank()) {
 				throw new AudioProcessingException("STT", "OPENAI_STT_EMPTY");
 			}
@@ -61,9 +57,7 @@ public class OpenAiSpeechTranscriber implements SpeechTranscriber {
 		};
 	}
 
-	private MultiValueMap<String, org.springframework.http.HttpEntity<?>> asMultipart(
-		MultipartBodyBuilder body
-	) {
+	private MultiValueMap<String, org.springframework.http.HttpEntity<?>> asMultipart(MultipartBodyBuilder body) {
 		return body.build();
 	}
 

@@ -28,18 +28,14 @@ public class PairController {
 
 	@PostMapping("/invitations")
 	public ResponseEntity<InvitationResponse> createInvitation(
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
-		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(pairService.createInvitation(authenticatedUser));
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(pairService.createInvitation(authenticatedUser));
 	}
 
 	@PostMapping("/join")
-	public ResponseEntity<JoinPairResponse> join(
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-		@Valid @RequestBody JoinPairRequest request
-	) {
+	public ResponseEntity<JoinPairResponse> join(@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+	    @Valid @RequestBody JoinPairRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(pairService.join(authenticatedUser, request.inviteCode()));
+		    .body(pairService.join(authenticatedUser, request.inviteCode()));
 	}
 }

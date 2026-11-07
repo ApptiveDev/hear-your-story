@@ -19,20 +19,9 @@ public class ApiErrorFactory {
 		this.clock = clock;
 	}
 
-	public ApiErrorResponse create(
-		HttpServletRequest request,
-		ErrorCode errorCode,
-		String message,
-		List<FieldErrorResponse> fieldErrors
-	) {
-		return new ApiErrorResponse(
-			OffsetDateTime.now(clock),
-			errorCode.status().value(),
-			errorCode.name(),
-			message,
-			request.getRequestURI(),
-			TraceIdFilter.getTraceId(request),
-			List.copyOf(fieldErrors)
-		);
+	public ApiErrorResponse create(HttpServletRequest request, ErrorCode errorCode, String message,
+	    List<FieldErrorResponse> fieldErrors) {
+		return new ApiErrorResponse(OffsetDateTime.now(clock), errorCode.status().value(), errorCode.name(), message,
+		    request.getRequestURI(), TraceIdFilter.getTraceId(request), List.copyOf(fieldErrors));
 	}
 }

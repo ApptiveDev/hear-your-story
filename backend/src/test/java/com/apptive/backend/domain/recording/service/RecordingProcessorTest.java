@@ -30,23 +30,13 @@ class RecordingProcessorTest {
 		recordingStorage = mock(RecordingStorage.class);
 		speechTranscriber = mock(SpeechTranscriber.class);
 		storySummarizer = mock(StorySummarizer.class);
-		processor = new RecordingProcessor(
-			statusService,
-			recordingStorage,
-			speechTranscriber,
-			storySummarizer,
-			0
-		);
+		processor = new RecordingProcessor(statusService, recordingStorage, speechTranscriber, storySummarizer, 0);
 		event = new RecordingUploadedEvent("rec_123", "version-1");
 
 		when(statusService.markSttProcessing("rec_123", "version-1")).thenReturn(true);
 		when(statusService.findProcessingSource("rec_123", "version-1"))
-			.thenReturn(new RecordingProcessingSource(
-				"recordings/rec_123/audio.m4a",
-				"answer.m4a",
-				"audio/mp4"
-			));
-		when(recordingStorage.read("recordings/rec_123/audio.m4a")).thenReturn(new byte[] {1, 2, 3});
+		    .thenReturn(new RecordingProcessingSource("recordings/rec_123/audio.m4a", "answer.m4a", "audio/mp4"));
+		when(recordingStorage.read("recordings/rec_123/audio.m4a")).thenReturn(new byte[]{1, 2, 3});
 		when(speechTranscriber.transcribe(any(AudioSource.class))).thenReturn("받아쓰기 원문");
 		when(statusService.markSttDone("rec_123", "version-1", "받아쓰기 원문")).thenReturn(true);
 		when(statusService.markLlmProcessing("rec_123", "version-1")).thenReturn(true);
@@ -71,7 +61,7 @@ class RecordingProcessorTest {
 	@Test
 	void sttFailureIsSavedAndLlmIsNotCalled() {
 		when(speechTranscriber.transcribe(any(AudioSource.class)))
-			.thenThrow(new AudioProcessingException("STT", "OPENAI_STT_FAILED"));
+		    .thenThrow(new AudioProcessingException("STT", "OPENAI_STT_FAILED"));
 
 		processor.process(event);
 
@@ -82,7 +72,7 @@ class RecordingProcessorTest {
 	@Test
 	void storageReadFailureIsSavedAsSttFailure() {
 		when(recordingStorage.read("recordings/rec_123/audio.m4a"))
-			.thenThrow(new ApiException(ErrorCode.STORAGE_ERROR));
+		    .thenThrow(new ApiException(ErrorCode.STORAGE_ERROR));
 
 		processor.process(event);
 
@@ -92,8 +82,7 @@ class RecordingProcessorTest {
 
 	@Test
 	void llmFailurePreservesTranscriptAndMarksFailed() {
-		when(storySummarizer.summarize("받아쓰기 원문"))
-			.thenThrow(new AudioProcessingException("LLM", "OPENAI_LLM_FAILED"));
+		when(storySummarizer.summarize("받아쓰기 원문")).thenThrow(new AudioProcessingException("LLM", "OPENAI_LLM_FAILED"));
 
 		processor.process(event);
 

@@ -21,10 +21,8 @@ public class RecordingStatusController {
 	}
 
 	@GetMapping("/{recordingId}")
-	public RecordingStatusResponse get(
-		@PathVariable String recordingId,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
+	public RecordingStatusResponse get(@PathVariable String recordingId,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return recordingStatusService.get(recordingId, authenticatedUser);
 	}
 }

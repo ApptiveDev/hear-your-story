@@ -15,18 +15,12 @@ record StoryCursor(LocalDate assignedDate, String assignmentId) {
 			return null;
 		}
 		try {
-			String decoded = new String(
-				Base64.getUrlDecoder().decode(encoded),
-				StandardCharsets.UTF_8
-			);
+			String decoded = new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
 			int separator = decoded.indexOf(':');
 			if (separator <= 0 || separator == decoded.length() - 1) {
 				throw new IllegalArgumentException("invalid cursor payload");
 			}
-			return new StoryCursor(
-				LocalDate.parse(decoded.substring(0, separator)),
-				decoded.substring(separator + 1)
-			);
+			return new StoryCursor(LocalDate.parse(decoded.substring(0, separator)), decoded.substring(separator + 1));
 		} catch (IllegalArgumentException | DateTimeParseException exception) {
 			throw new ApiException(ErrorCode.VALIDATION_ERROR);
 		}
@@ -34,7 +28,6 @@ record StoryCursor(LocalDate assignedDate, String assignmentId) {
 
 	String encode() {
 		String raw = assignedDate + ":" + assignmentId;
-		return Base64.getUrlEncoder().withoutPadding()
-			.encodeToString(raw.getBytes(StandardCharsets.UTF_8));
+		return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
 	}
 }

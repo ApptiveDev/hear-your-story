@@ -1,7 +1,7 @@
 package com.apptive.backend.domain.answer.repository;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
 
@@ -23,10 +23,10 @@ public interface ChildAnswerRepository extends JpaRepository<ChildAnswer, String
 	Optional<ChildAnswer> findByIdForUpdate(@Param("answerId") String answerId);
 
 	@Query("""
-		select ca from ChildAnswer ca
-		join fetch ca.assignment a
-		join fetch a.familyPair
-		where ca.id = :answerId
-		""")
+	    select ca from ChildAnswer ca
+	    join fetch ca.assignment a
+	    join fetch a.familyPair
+	    where ca.id = :answerId
+	    """)
 	Optional<ChildAnswer> findByIdWithAssignment(@Param("answerId") String answerId);
 }

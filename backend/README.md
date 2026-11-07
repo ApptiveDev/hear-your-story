@@ -80,6 +80,26 @@ GET Signed URL만 반환한다. 실제 모드에서도 업로드 API와 폴링 �
 ./gradlew test
 ```
 
+## 포맷·린트 자동화
+
+Java 코드 형식은 Spotless의 Eclipse formatter로 통일한다. 탭 너비는 4,
+줄 길이 기준은 120자이며 설정은 `config/formatter/eclipse.xml`에서 관리한다.
+Checkstyle은 wildcard·중복·미사용 import, 타입·메서드 이름, 빈 문장,
+equals/hashCode 쌍을 검사한다. **들여쓰기·공백·줄바꿈·import 순서는 Spotless만
+담당**하므로 Checkstyle에 중복 스타일 규칙을 추가하지 않는다.
+
+```bash
+./gradlew spotlessApply                 # Java 형식 자동 수정
+./gradlew spotlessCheck                 # 형식 검사 (수정하지 않음)
+./gradlew checkstyleMain checkstyleTest  # main/test 린트 검사
+./gradlew check --no-daemon              # 포맷·린트·전체 테스트 (CI와 동일)
+```
+
+IntelliJ에서는 backend의 `.editorconfig`를 적용하고, 최종 형식은 Gradle 창의
+`spotlessApply`로 맞춘다. IDE 자체 포맷터와 Gradle 포맷 결과가 다르면 Gradle
+결과를 기준으로 한다. 도구 버전은 `build.gradle`에 고정한다.
+린트 보고서는 `build/reports/checkstyle/`에서 확인한다.
+
 ## API 개발 순서
 
 1. `GET /api/v1/health`

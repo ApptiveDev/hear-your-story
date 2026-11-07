@@ -8,8 +8,5 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "app.auth")
-public record JwtProperties(
-	@NotBlank String jwtSecret,
-	@Min(1) long accessTokenExpirationDays
-) {
+public record JwtProperties(@NotBlank String jwtSecret, @Min(1) long accessTokenExpirationDays) {
 }

@@ -21,12 +21,9 @@ public class StoryController {
 	}
 
 	@GetMapping
-	public StoryPageResponse getStories(
-		@RequestParam(required = false) String month,
-		@RequestParam(required = false) String cursor,
-		@RequestParam(required = false) Integer limit,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
+	public StoryPageResponse getStories(@RequestParam(required = false) String month,
+	    @RequestParam(required = false) String cursor, @RequestParam(required = false) Integer limit,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return storyService.getStories(month, cursor, limit, authenticatedUser);
 	}
 }

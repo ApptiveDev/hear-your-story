@@ -14,10 +14,8 @@ import com.apptive.backend.domain.pair.entity.PairInvitation;
 
 public interface PairInvitationRepository extends JpaRepository<PairInvitation, String> {
 
-	Optional<PairInvitation> findFirstByChild_IdAndUsedAtIsNullAndExpiresAtAfterOrderByCreatedAtDesc(
-		String childId,
-		OffsetDateTime now
-	);
+	Optional<PairInvitation> findFirstByChild_IdAndUsedAtIsNullAndExpiresAtAfterOrderByCreatedAtDesc(String childId,
+	    OffsetDateTime now);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select i from PairInvitation i join fetch i.child where i.inviteCode = :inviteCode")

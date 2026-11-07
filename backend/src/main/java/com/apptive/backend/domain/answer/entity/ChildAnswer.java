@@ -16,13 +16,7 @@ import jakarta.persistence.UniqueConstraint;
 import com.apptive.backend.domain.assignment.entity.Assignment;
 
 @Entity
-@Table(
-	name = "child_answers",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_child_answers_assignment",
-		columnNames = "assignment_id"
-	)
-)
+@Table(name = "child_answers", uniqueConstraints = @UniqueConstraint(name = "uk_child_answers_assignment", columnNames = "assignment_id"))
 public class ChildAnswer {
 
 	@Id
@@ -58,15 +52,8 @@ public class ChildAnswer {
 	protected ChildAnswer() {
 	}
 
-	public ChildAnswer(
-		String id,
-		Assignment assignment,
-		String text,
-		TtsStatus ttsStatus,
-		String ttsVersion,
-		OffsetDateTime submittedAt,
-		OffsetDateTime updatedAt
-	) {
+	public ChildAnswer(String id, Assignment assignment, String text, TtsStatus ttsStatus, String ttsVersion,
+	    OffsetDateTime submittedAt, OffsetDateTime updatedAt) {
 		this.id = id;
 		this.assignment = assignment;
 		this.text = text;

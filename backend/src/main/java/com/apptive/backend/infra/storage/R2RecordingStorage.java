@@ -14,8 +14,8 @@ import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
 
 import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -33,12 +33,7 @@ public class R2RecordingStorage implements RecordingStorage {
 	private final R2Properties properties;
 	private final Clock clock;
 
-	public R2RecordingStorage(
-		S3Client s3Client,
-		S3Presigner presigner,
-		R2Properties properties,
-		Clock clock
-	) {
+	public R2RecordingStorage(S3Client s3Client, S3Presigner presigner, R2Properties properties, Clock clock) {
 		this.s3Client = s3Client;
 		this.presigner = presigner;
 		this.properties = properties;
@@ -48,11 +43,8 @@ public class R2RecordingStorage implements RecordingStorage {
 	@Override
 	public String store(String recordingId, MultipartFile file) {
 		String objectKey = "recordings/" + recordingId + "/" + UUID.randomUUID() + ".m4a";
-		PutObjectRequest request = PutObjectRequest.builder()
-			.bucket(properties.bucketName())
-			.key(objectKey)
-			.contentType(file.getContentType())
-			.build();
+		PutObjectRequest request = PutObjectRequest.builder().bucket(properties.bucketName()).key(objectKey)
+		    .contentType(file.getContentType()).build();
 		try {
 			s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 			return objectKey;
@@ -64,11 +56,8 @@ public class R2RecordingStorage implements RecordingStorage {
 	@Override
 	public String storeAnswerAudio(String answerId, byte[] audio) {
 		String objectKey = "tts/" + answerId + "/" + UUID.randomUUID() + ".mp3";
-		PutObjectRequest request = PutObjectRequest.builder()
-			.bucket(properties.bucketName())
-			.key(objectKey)
-			.contentType("audio/mpeg")
-			.build();
+		PutObjectRequest request = PutObjectRequest.builder().bucket(properties.bucketName()).key(objectKey)
+		    .contentType("audio/mpeg").build();
 		try {
 			s3Client.putObject(request, RequestBody.fromBytes(audio));
 			return objectKey;
@@ -80,10 +69,8 @@ public class R2RecordingStorage implements RecordingStorage {
 	@Override
 	public byte[] read(String objectKey) {
 		try {
-			GetObjectRequest request = GetObjectRequest.builder()
-				.bucket(properties.bucketName())
-				.key(objectKey)
-				.build();
+			GetObjectRequest request = GetObjectRequest.builder().bucket(properties.bucketName()).key(objectKey)
+			    .build();
 			ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
 			return response.asByteArray();
 		} catch (SdkException exception) {
@@ -93,18 +80,13 @@ public class R2RecordingStorage implements RecordingStorage {
 
 	@Override
 	public Optional<SignedAudioUrl> createSignedReadUrl(String objectKey) {
-		GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-			.bucket(properties.bucketName())
-			.key(objectKey)
-			.build();
+		GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(properties.bucketName()).key(objectKey)
+		    .build();
 		GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-			.signatureDuration(properties.effectiveSignedUrlDuration())
-			.getObjectRequest(getObjectRequest)
-			.build();
+		    .signatureDuration(properties.effectiveSignedUrlDuration()).getObjectRequest(getObjectRequest).build();
 		try {
 			PresignedGetObjectRequest signed = presigner.presignGetObject(presignRequest);
-			OffsetDateTime expiresAt = OffsetDateTime.now(clock)
-				.plus(properties.effectiveSignedUrlDuration());
+			OffsetDateTime expiresAt = OffsetDateTime.now(clock).plus(properties.effectiveSignedUrlDuration());
 			return Optional.of(new SignedAudioUrl(signed.url().toString(), expiresAt));
 		} catch (SdkException exception) {
 			throw new ApiException(ErrorCode.STORAGE_ERROR);
@@ -117,9 +99,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			return;
 		}
 		try {
-			s3Client.deleteObject(builder -> builder
-				.bucket(properties.bucketName())
-				.key(objectKey));
+			s3Client.deleteObject(builder -> builder.bucket(properties.bucketName()).key(objectKey));
 		} catch (SdkException exception) {
 			throw new ApiException(ErrorCode.STORAGE_ERROR);
 		}

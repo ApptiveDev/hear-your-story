@@ -8,8 +8,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,8 +23,7 @@ public class LocalRecordingStorage implements RecordingStorage {
 	private final Path rootDirectory;
 
 	public LocalRecordingStorage(
-		@Value("${app.storage.local-directory:${java.io.tmpdir}/4team-recordings}") String rootDirectory
-	) {
+	    @Value("${app.storage.local-directory:${java.io.tmpdir}/4team-recordings}") String rootDirectory) {
 		this.rootDirectory = Path.of(rootDirectory).toAbsolutePath().normalize();
 	}
 

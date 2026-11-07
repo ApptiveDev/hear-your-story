@@ -25,18 +25,10 @@ public class OpenAiSpeechSynthesizer implements SpeechSynthesizer {
 	@Override
 	public byte[] synthesize(String text) {
 		try {
-			byte[] audio = restClient.post()
-				.uri("/audio/speech")
-				.contentType(MediaType.APPLICATION_JSON)
-				.accept(MediaType.valueOf("audio/mpeg"))
-				.body(Map.of(
-					"model", properties.ttsModel(),
-					"voice", properties.ttsVoice(),
-					"input", text,
-					"response_format", "mp3"
-				))
-				.retrieve()
-				.body(byte[].class);
+			byte[] audio = restClient.post().uri("/audio/speech").contentType(MediaType.APPLICATION_JSON)
+			    .accept(MediaType.valueOf("audio/mpeg")).body(Map.of("model", properties.ttsModel(), "voice",
+			        properties.ttsVoice(), "input", text, "response_format", "mp3"))
+			    .retrieve().body(byte[].class);
 			if (audio == null || audio.length == 0) {
 				throw new AudioProcessingException("TTS", "OPENAI_TTS_EMPTY_RESPONSE");
 			}
