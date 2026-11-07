@@ -15,19 +15,15 @@ import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.infra.storage.RecordingStorage;
 import com.apptive.backend.infra.storage.SignedAudioUrl;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class AnswerAudioService {
 
 	private final ChildAnswerRepository childAnswerRepository;
 	private final RecordingRepository recordingRepository;
 	private final RecordingStorage recordingStorage;
-
-	public AnswerAudioService(ChildAnswerRepository childAnswerRepository, RecordingRepository recordingRepository,
-	    RecordingStorage recordingStorage) {
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingRepository = recordingRepository;
-		this.recordingStorage = recordingStorage;
-	}
 
 	@Transactional(readOnly = true)
 	public AnswerAudioResponse get(String answerId, AuthenticatedUser authenticatedUser) {

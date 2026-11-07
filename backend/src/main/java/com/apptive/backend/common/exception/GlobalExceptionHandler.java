@@ -18,16 +18,15 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	private final ApiErrorFactory apiErrorFactory;
-
-	public GlobalExceptionHandler(ApiErrorFactory apiErrorFactory) {
-		this.apiErrorFactory = apiErrorFactory;
-	}
 
 	@ExceptionHandler(ApiException.class)
 	public ResponseEntity<ApiErrorResponse> handleApiException(ApiException exception, HttpServletRequest request) {

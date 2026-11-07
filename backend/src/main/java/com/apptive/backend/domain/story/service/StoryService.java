@@ -33,6 +33,9 @@ import com.apptive.backend.domain.story.dto.StoryQuestionResponse;
 import com.apptive.backend.infra.storage.RecordingStorage;
 import com.apptive.backend.infra.storage.SignedAudioUrl;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class StoryService {
 
@@ -45,16 +48,6 @@ public class StoryService {
 	private final RecordingRepository recordingRepository;
 	private final ChildAnswerRepository childAnswerRepository;
 	private final RecordingStorage recordingStorage;
-
-	public StoryService(FamilyPairRepository familyPairRepository, AssignmentRepository assignmentRepository,
-	    RecordingRepository recordingRepository, ChildAnswerRepository childAnswerRepository,
-	    RecordingStorage recordingStorage) {
-		this.familyPairRepository = familyPairRepository;
-		this.assignmentRepository = assignmentRepository;
-		this.recordingRepository = recordingRepository;
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingStorage = recordingStorage;
-	}
 
 	@Transactional(readOnly = true)
 	public StoryPageResponse getStories(String month, String encodedCursor, Integer requestedLimit,

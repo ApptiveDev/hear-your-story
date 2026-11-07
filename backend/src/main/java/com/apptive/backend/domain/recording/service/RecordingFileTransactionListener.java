@@ -8,16 +8,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.apptive.backend.infra.storage.RecordingStorage;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Component
 public class RecordingFileTransactionListener {
 
 	private static final Logger log = LoggerFactory.getLogger(RecordingFileTransactionListener.class);
 
 	private final RecordingStorage recordingStorage;
-
-	public RecordingFileTransactionListener(RecordingStorage recordingStorage) {
-		this.recordingStorage = recordingStorage;
-	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void deletePreviousFileAfterCommit(RecordingFileChangedEvent event) {

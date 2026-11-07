@@ -10,14 +10,13 @@ import org.springframework.stereotype.Component;
 
 import com.apptive.backend.common.web.TraceIdFilter;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Component
 public class ApiErrorFactory {
 
 	private final Clock clock;
-
-	public ApiErrorFactory(Clock clock) {
-		this.clock = clock;
-	}
 
 	public ApiErrorResponse create(HttpServletRequest request, ErrorCode errorCode, String message,
 	    List<FieldErrorResponse> fieldErrors) {

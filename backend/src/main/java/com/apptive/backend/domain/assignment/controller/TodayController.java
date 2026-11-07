@@ -9,15 +9,14 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.assignment.dto.TodayResponse;
 import com.apptive.backend.domain.assignment.service.TodayService;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/today")
 public class TodayController {
 
 	private final TodayService todayService;
-
-	public TodayController(TodayService todayService) {
-		this.todayService = todayService;
-	}
 
 	@GetMapping
 	public TodayResponse getToday(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {

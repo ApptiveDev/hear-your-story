@@ -24,6 +24,9 @@ import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class RecordingUploadService {
 
@@ -35,20 +38,6 @@ public class RecordingUploadService {
 	private final IdGenerator idGenerator;
 	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
-
-	public RecordingUploadService(AssignmentRepository assignmentRepository, RecordingRepository recordingRepository,
-	    ChildAnswerRepository childAnswerRepository, RecordingStorage recordingStorage,
-	    AudioFileValidator audioFileValidator, IdGenerator idGenerator, Clock clock,
-	    ApplicationEventPublisher eventPublisher) {
-		this.assignmentRepository = assignmentRepository;
-		this.recordingRepository = recordingRepository;
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingStorage = recordingStorage;
-		this.audioFileValidator = audioFileValidator;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-		this.eventPublisher = eventPublisher;
-	}
 
 	@Transactional
 	public RecordingUploadResponse put(String assignmentId, MultipartFile audioFile, String idempotencyKey,

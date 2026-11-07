@@ -15,16 +15,14 @@ import com.apptive.backend.common.exception.ApiErrorFactory;
 import com.apptive.backend.common.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
 	private final ApiErrorFactory apiErrorFactory;
 	private final ObjectMapper objectMapper;
-
-	public RestAuthenticationEntryPoint(ApiErrorFactory apiErrorFactory, ObjectMapper objectMapper) {
-		this.apiErrorFactory = apiErrorFactory;
-		this.objectMapper = objectMapper;
-	}
 
 	@Override
 	public void commence(HttpServletRequest request, HttpServletResponse response,

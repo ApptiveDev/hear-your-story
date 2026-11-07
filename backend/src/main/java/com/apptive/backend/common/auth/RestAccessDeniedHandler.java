@@ -15,16 +15,14 @@ import com.apptive.backend.common.exception.ApiErrorFactory;
 import com.apptive.backend.common.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
 	private final ApiErrorFactory apiErrorFactory;
 	private final ObjectMapper objectMapper;
-
-	public RestAccessDeniedHandler(ApiErrorFactory apiErrorFactory, ObjectMapper objectMapper) {
-		this.apiErrorFactory = apiErrorFactory;
-		this.objectMapper = objectMapper;
-	}
 
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response,
