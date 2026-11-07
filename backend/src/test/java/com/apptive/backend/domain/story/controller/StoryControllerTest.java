@@ -117,6 +117,14 @@ class StoryControllerTest {
 	}
 
 	@Test
+	void nonNumericLimitReturnsValidationError() throws Exception {
+		mockMvc.perform(get("/api/v1/stories").param("limit", "abc").header("Authorization", bearer(parent)))
+		    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+		    .andExpect(jsonPath("$.fieldErrors[0].field").value("limit"))
+		    .andExpect(jsonPath("$.fieldErrors[0].reason").value("type_mismatch"));
+	}
+
+	@Test
 	void returnsRevealedStoriesForMonthOldestFirstWithoutPagination() throws Exception {
 		mockMvc.perform(get("/api/v1/stories").param("month", "2000-01").header("Authorization", bearer(parent)))
 		    .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(2))

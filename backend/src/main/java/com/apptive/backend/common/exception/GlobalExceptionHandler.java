@@ -13,6 +13,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -50,6 +51,14 @@ public class GlobalExceptionHandler {
 	    HttpServletRequest request) {
 		return ResponseEntity.badRequest().body(apiErrorFactory.create(request, ErrorCode.VALIDATION_ERROR,
 		    ErrorCode.VALIDATION_ERROR.message(), List.of()));
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ApiErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception,
+	    HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+		    .body(apiErrorFactory.create(request, ErrorCode.VALIDATION_ERROR, ErrorCode.VALIDATION_ERROR.message(),
+		        List.of(new FieldErrorResponse(exception.getName(), "type_mismatch"))));
 	}
 
 	@ExceptionHandler(MissingServletRequestPartException.class)
