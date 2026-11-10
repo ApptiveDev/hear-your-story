@@ -14,28 +14,21 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.recording.dto.RecordingUploadResponse;
 import com.apptive.backend.domain.recording.service.RecordingUploadService;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/assignments")
 public class RecordingController {
 
 	private final RecordingUploadService recordingUploadService;
 
-	public RecordingController(RecordingUploadService recordingUploadService) {
-		this.recordingUploadService = recordingUploadService;
-	}
-
 	@PutMapping(path = "/{assignmentId}/parent-recording", consumes = "multipart/form-data")
-	public ResponseEntity<RecordingUploadResponse> put(
-		@PathVariable String assignmentId,
-		@RequestPart("audioFile") MultipartFile audioFile,
-		@RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
-		return ResponseEntity.accepted().body(recordingUploadService.put(
-			assignmentId,
-			audioFile,
-			idempotencyKey,
-			authenticatedUser
-		));
+	public ResponseEntity<RecordingUploadResponse> put(@PathVariable String assignmentId,
+	    @RequestPart("audioFile") MultipartFile audioFile,
+	    @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return ResponseEntity.accepted()
+		    .body(recordingUploadService.put(assignmentId, audioFile, idempotencyKey, authenticatedUser));
 	}
 }

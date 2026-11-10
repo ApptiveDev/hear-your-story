@@ -18,13 +18,9 @@ public class RecordingProcessor {
 	private final StorySummarizer storySummarizer;
 	private final long mockDelayMs;
 
-	public RecordingProcessor(
-		RecordingStatusService statusService,
-		RecordingStorage recordingStorage,
-		SpeechTranscriber speechTranscriber,
-		StorySummarizer storySummarizer,
-		@Value("${app.recording.mock-processing-delay-ms:0}") long mockDelayMs
-	) {
+	public RecordingProcessor(RecordingStatusService statusService, RecordingStorage recordingStorage,
+	    SpeechTranscriber speechTranscriber, StorySummarizer storySummarizer,
+	    @Value("${app.recording.mock-processing-delay-ms:0}") long mockDelayMs) {
 		this.statusService = statusService;
 		this.recordingStorage = recordingStorage;
 		this.speechTranscriber = speechTranscriber;
@@ -41,10 +37,8 @@ public class RecordingProcessor {
 		if (!pauseForMock(event)) {
 			return;
 		}
-		RecordingProcessingSource source = statusService.findProcessingSource(
-			event.recordingId(),
-			event.processingVersion()
-		);
+		RecordingProcessingSource source = statusService.findProcessingSource(event.recordingId(),
+		    event.processingVersion());
 		if (source == null) {
 			return;
 		}
@@ -52,11 +46,8 @@ public class RecordingProcessor {
 		String transcript;
 		try {
 			byte[] audio = recordingStorage.read(source.objectKey());
-			transcript = speechTranscriber.transcribe(new AudioSource(
-				audio,
-				source.originalFilename(),
-				source.contentType()
-			));
+			transcript = speechTranscriber
+			    .transcribe(new AudioSource(audio, source.originalFilename(), source.contentType()));
 		} catch (ApiException exception) {
 			fail(event, "STT", "STORAGE_READ_FAILED");
 			return;

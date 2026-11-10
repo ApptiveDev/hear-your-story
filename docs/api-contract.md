@@ -37,7 +37,6 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 
 | 기능 | 현재 동작 | 구현 PR에서 함께 변경할 항목 |
 |---|---|---|
-| `GET /stories?month=YYYY-MM` | 서버는 `cursor`와 `limit`만 처리한다. `month`를 보내도 월별 필터가 적용되지 않는다. | 백엔드 Controller·조회·검증·테스트, 프론트 모델·DataSource·Mock·테스트 |
 | `PUT /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 저장·권한·DTO·테스트, 프론트 모델·업로드·Mock·테스트 |
 | `DELETE /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 삭제·권한·테스트, 프론트 삭제 흐름·Mock·테스트 |
 | `DELETE /recordings/{recordingId}`와 삭제된 답변 응답 | 삭제 endpoint와 `availability=DELETED` 응답이 미구현이며, 현재 프론트는 `recordingId`와 `processingStatus`를 필수 문자열로 파싱한다. | 백엔드 삭제·nullable DTO·테스트, 프론트 nullable 모델·재생 차단·Mock·파싱 테스트 |
@@ -237,6 +236,7 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 | 7 | `PUT /assignments/{assignmentId}/child-answer` | 자녀 | 텍스트 답변 신규 제출·수정 |
 | 8 | `GET /answers/{answerId}/audio` | 부모 | 자녀 답변 TTS 상태·재생 URL 조회 |
 | 9 | `GET /stories?cursor=&limit=` | 공통 | 공개된 지난 이야기 목록 |
+| 10 | `GET /stories?month=YYYY-MM` | 공통 | 공개된 지난 이야기 월별 목록 |
 
 `GET /questions/today`와 `GET /today?pairId=`는 제거한다. 오늘 화면은 `GET
 /today` 하나로 통합하고 Pair는 인증 사용자로부터 서버가 결정한다.
@@ -618,10 +618,7 @@ GET 요청에서는 TTS를 새로 생성하지 않는다. 자녀 답변 제출 �
 같다. signed URL이 만료되면 프론트는 저장된 URL을 재사용하지 않고 이 API를 다시
 호출한다.
 
-#### 월별 조회 모드 — `GET /stories?month=2026-11` — 초안, 미구현
-
-현재 백엔드는 `month`를 처리하지 않는다. 아래 계약은 백엔드와 프론트가 함께
-구현되는 PR에서 확정하기 위한 개발 요구사항이며, 그전에는 호출하지 않는다.
+#### 월별 조회 모드 — `GET /stories?month=2026-11`
 
 - `month` 형식은 `YYYY-MM`이고 기준 시간대는 `Asia/Seoul`이다.
 - `month`와 `cursor`·`limit`은 함께 보내지 않는다. 함께 보내면
@@ -804,3 +801,4 @@ frontend/
 | 2026-09-24 | v0 | MVP API 분리, 공통 규칙·전체 요청/응답·Mock 계약 확정 |
 | 2026-09-28 | v0 | 공통 오류 표와 `POST /pairs/join` 실패 응답에 `INVITE_CODE_NOT_FOUND`, `INVITE_CODE_EXPIRED`, `PAIR_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` 추가 (백엔드 구현과 맞춤) |
 | 2026-11-04 | v0.1 | 월별 지난 이야기, 사진 첨부·삭제, 녹음 삭제, 회원 탈퇴, 재로그인·기록 복구 요구사항을 미구현 초안으로 추가 |
+| 2026-11-07 | v0.2 | 월별 지난 이야기 조회 계약 확정 및 백엔드 구현 반영 |

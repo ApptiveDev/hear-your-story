@@ -27,6 +27,10 @@ Implement one reviewable API-backed change. Follow the root `AGENTS.md` and the
    - Service: authorization, ownership, state transition, and transaction boundary
    - Repository: persistence and query behavior
    - DTO: contract shape; never expose Entity directly
+   For new or changed backend types, use `@RequiredArgsConstructor` for pure `final`
+   dependency injection and Entity `@Getter` only when every generated accessor is part
+   of the intended public API. Keep explicit constructors or accessors when annotations,
+   initialization, validation, calculation, or field hiding requires them.
    For frontend work, keep Dio behind the DataSource and Repository, keep DTO fields and
    enums identical to the contract, and use server-provided visibility fields instead of
    recalculating policy in the app.

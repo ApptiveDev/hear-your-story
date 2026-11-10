@@ -10,21 +10,18 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.answer.dto.AnswerAudioResponse;
 import com.apptive.backend.domain.answer.service.AnswerAudioService;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/answers")
 public class AnswerAudioController {
 
 	private final AnswerAudioService answerAudioService;
 
-	public AnswerAudioController(AnswerAudioService answerAudioService) {
-		this.answerAudioService = answerAudioService;
-	}
-
 	@GetMapping("/{answerId}/audio")
-	public AnswerAudioResponse get(
-		@PathVariable String answerId,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
+	public AnswerAudioResponse get(@PathVariable String answerId,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return answerAudioService.get(answerId, authenticatedUser);
 	}
 }

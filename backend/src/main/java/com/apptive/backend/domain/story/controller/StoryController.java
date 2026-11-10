@@ -10,22 +10,19 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.story.dto.StoryPageResponse;
 import com.apptive.backend.domain.story.service.StoryService;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/stories")
 public class StoryController {
 
 	private final StoryService storyService;
 
-	public StoryController(StoryService storyService) {
-		this.storyService = storyService;
-	}
-
 	@GetMapping
-	public StoryPageResponse getStories(
-		@RequestParam(required = false) String cursor,
-		@RequestParam(required = false) Integer limit,
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
-		return storyService.getStories(cursor, limit, authenticatedUser);
+	public StoryPageResponse getStories(@RequestParam(required = false) String month,
+	    @RequestParam(required = false) String cursor, @RequestParam(required = false) Integer limit,
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return storyService.getStories(month, cursor, limit, authenticatedUser);
 	}
 }

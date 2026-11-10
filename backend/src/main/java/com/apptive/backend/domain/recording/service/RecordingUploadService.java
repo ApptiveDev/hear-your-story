@@ -5,8 +5,8 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +24,9 @@ import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class RecordingUploadService {
 
@@ -36,47 +39,22 @@ public class RecordingUploadService {
 	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
 
-	public RecordingUploadService(
-		AssignmentRepository assignmentRepository,
-		RecordingRepository recordingRepository,
-		ChildAnswerRepository childAnswerRepository,
-		RecordingStorage recordingStorage,
-		AudioFileValidator audioFileValidator,
-		IdGenerator idGenerator,
-		Clock clock,
-		ApplicationEventPublisher eventPublisher
-	) {
-		this.assignmentRepository = assignmentRepository;
-		this.recordingRepository = recordingRepository;
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingStorage = recordingStorage;
-		this.audioFileValidator = audioFileValidator;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-		this.eventPublisher = eventPublisher;
-	}
-
 	@Transactional
-	public RecordingUploadResponse put(
-		String assignmentId,
-		MultipartFile audioFile,
-		String idempotencyKey,
-		AuthenticatedUser authenticatedUser
-	) {
+	public RecordingUploadResponse put(String assignmentId, MultipartFile audioFile, String idempotencyKey,
+	    AuthenticatedUser authenticatedUser) {
 		if (authenticatedUser.role() != Role.PARENT) {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
 		}
 
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId)
-			.orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
-		if (!assignment.getFamilyPair().getParent().getId().equals(authenticatedUser.userId())) {
+		    .orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+		if (!assignment.belongsToParent(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 
 		String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
 		Recording existing = recordingRepository.findByAssignment_Id(assignmentId).orElse(null);
-		if (existing != null && normalizedKey != null
-			&& Objects.equals(existing.getIdempotencyKey(), normalizedKey)) {
+		if (existing != null && normalizedKey != null && Objects.equals(existing.getIdempotencyKey(), normalizedKey)) {
 			return toResponse(existing);
 		}
 		if (existing != null && childAnswerRepository.findByAssignment_Id(assignmentId).isPresent()) {
@@ -93,33 +71,15 @@ public class RecordingUploadService {
 		try {
 			Recording recording;
 			if (existing == null) {
-				recording = new Recording(
-					recordingId,
-					assignment,
-					newObjectKey,
-					audioFile.getOriginalFilename(),
-					audioFile.getContentType(),
-					audioFile.getSize(),
-					normalizedKey,
-					processingVersion,
-					now
-				);
+				recording = new Recording(recordingId, assignment, newObjectKey, audioFile.getOriginalFilename(),
+				    audioFile.getContentType(), audioFile.getSize(), normalizedKey, processingVersion, now);
 			} else {
-				existing.replaceFile(
-					newObjectKey,
-					audioFile.getOriginalFilename(),
-					audioFile.getContentType(),
-					audioFile.getSize(),
-					normalizedKey,
-					processingVersion,
-					now
-				);
+				existing.replaceFile(newObjectKey, audioFile.getOriginalFilename(), audioFile.getContentType(),
+				    audioFile.getSize(), normalizedKey, processingVersion, now);
 				recording = existing;
 			}
 			Recording saved = recordingRepository.save(recording);
-			if (previousObjectKey != null && !previousObjectKey.equals(newObjectKey)) {
-				recordingStorage.delete(previousObjectKey);
-			}
+			eventPublisher.publishEvent(new RecordingFileChangedEvent(newObjectKey, previousObjectKey));
 			eventPublisher.publishEvent(new RecordingUploadedEvent(saved.getId(), processingVersion));
 			return toResponse(saved);
 		} catch (RuntimeException exception) {
@@ -140,13 +100,8 @@ public class RecordingUploadService {
 	}
 
 	private RecordingUploadResponse toResponse(Recording recording) {
-		return new RecordingUploadResponse(
-			recording.getId(),
-			recording.getAssignment().getId(),
-			SubmissionStatus.SUBMITTED,
-			recording.getProcessingStatus(),
-			recording.getSubmittedAt(),
-			"/api/v1/recordings/" + recording.getId()
-		);
+		return new RecordingUploadResponse(recording.getId(), recording.getAssignment().getId(),
+		    SubmissionStatus.SUBMITTED, recording.getProcessingStatus(), recording.getSubmittedAt(),
+		    "/api/v1/recordings/" + recording.getId());
 	}
 }

@@ -15,14 +15,11 @@ import jakarta.persistence.UniqueConstraint;
 
 import com.apptive.backend.domain.assignment.entity.Assignment;
 
+import lombok.Getter;
+
+@Getter
 @Entity
-@Table(
-	name = "child_answers",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_child_answers_assignment",
-		columnNames = "assignment_id"
-	)
-)
+@Table(name = "child_answers", uniqueConstraints = @UniqueConstraint(name = "uk_child_answers_assignment", columnNames = "assignment_id"))
 public class ChildAnswer {
 
 	@Id
@@ -58,15 +55,8 @@ public class ChildAnswer {
 	protected ChildAnswer() {
 	}
 
-	public ChildAnswer(
-		String id,
-		Assignment assignment,
-		String text,
-		TtsStatus ttsStatus,
-		String ttsVersion,
-		OffsetDateTime submittedAt,
-		OffsetDateTime updatedAt
-	) {
+	public ChildAnswer(String id, Assignment assignment, String text, TtsStatus ttsStatus, String ttsVersion,
+	    OffsetDateTime submittedAt, OffsetDateTime updatedAt) {
 		this.id = id;
 		this.assignment = assignment;
 		this.text = text;
@@ -103,39 +93,11 @@ public class ChildAnswer {
 		this.updatedAt = updatedAt;
 	}
 
-	public String getId() {
-		return id;
+	public void restartTts(String ttsVersion, OffsetDateTime updatedAt) {
+		this.ttsStatus = TtsStatus.PROCESSING;
+		this.ttsVersion = ttsVersion;
+		this.ttsProcessingNotice = null;
+		this.updatedAt = updatedAt;
 	}
 
-	public Assignment getAssignment() {
-		return assignment;
-	}
-
-	public String getText() {
-		return text;
-	}
-
-	public TtsStatus getTtsStatus() {
-		return ttsStatus;
-	}
-
-	public String getTtsObjectKey() {
-		return ttsObjectKey;
-	}
-
-	public String getTtsVersion() {
-		return ttsVersion;
-	}
-
-	public String getTtsProcessingNotice() {
-		return ttsProcessingNotice;
-	}
-
-	public OffsetDateTime getSubmittedAt() {
-		return submittedAt;
-	}
-
-	public OffsetDateTime getUpdatedAt() {
-		return updatedAt;
-	}
 }

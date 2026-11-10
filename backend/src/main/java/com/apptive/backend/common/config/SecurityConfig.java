@@ -21,36 +21,26 @@ import com.apptive.backend.common.web.TraceIdFilter;
 public class SecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(
-		HttpSecurity http,
-		RestAuthenticationEntryPoint authenticationEntryPoint,
-		RestAccessDeniedHandler accessDeniedHandler,
-		JwtTokenProvider jwtTokenProvider
-	) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http,
+	    RestAuthenticationEntryPoint authenticationEntryPoint, RestAccessDeniedHandler accessDeniedHandler,
+	    JwtTokenProvider jwtTokenProvider) throws Exception {
 		TraceIdFilter traceIdFilter = new TraceIdFilter();
-		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(
-			jwtTokenProvider,
-			authenticationEntryPoint
-		);
-		http
-			.addFilterBefore(traceIdFilter, SecurityContextHolderFilter.class)
-			.addFilterAfter(jwtAuthenticationFilter, SecurityContextHolderFilter.class)
-			.csrf(csrf -> csrf.disable())
-			.formLogin(form -> form.disable())
-			.httpBasic(basic -> basic.disable())
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.exceptionHandling(exceptions -> exceptions
-				.authenticationEntryPoint(authenticationEntryPoint)
-				.accessDeniedHandler(accessDeniedHandler))
-			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
-				.requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
-				.requestMatchers(HttpMethod.POST, "/api/v1/pairs/invitations").hasRole("CHILD")
-				.requestMatchers(HttpMethod.POST, "/api/v1/pairs/join").hasRole("PARENT")
-				.requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/child-answer").hasRole("CHILD")
-				.requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/parent-recording").hasRole("PARENT")
-				.requestMatchers(HttpMethod.GET, "/api/v1/recordings/*").hasRole("PARENT")
-				.anyRequest().authenticated());
+		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtTokenProvider,
+		    authenticationEntryPoint);
+		http.addFilterBefore(traceIdFilter, SecurityContextHolderFilter.class)
+		    .addFilterAfter(jwtAuthenticationFilter, SecurityContextHolderFilter.class).csrf(csrf -> csrf.disable())
+		    .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable())
+		    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+		    .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
+		        .accessDeniedHandler(accessDeniedHandler))
+		    .authorizeHttpRequests(authorize -> authorize.requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
+		        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
+		        .requestMatchers(HttpMethod.POST, "/api/v1/pairs/invitations").hasRole("CHILD")
+		        .requestMatchers(HttpMethod.POST, "/api/v1/pairs/join").hasRole("PARENT")
+		        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/child-answer").hasRole("CHILD")
+		        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/parent-recording").hasRole("PARENT")
+		        .requestMatchers(HttpMethod.GET, "/api/v1/recordings/*").hasRole("PARENT").anyRequest()
+		        .authenticated());
 
 		return http.build();
 	}

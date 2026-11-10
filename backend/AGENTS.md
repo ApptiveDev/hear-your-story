@@ -18,6 +18,9 @@
 ```bash
 ./gradlew bootRun                         # 로컬 서버 실행
 ./gradlew test                            # 전체 테스트
+./gradlew spotlessApply                   # Java 형식 자동 수정
+./gradlew spotlessCheck                   # Java 형식 검사
+./gradlew checkstyleMain checkstyleTest    # Java 린트 검사
 ./gradlew test --tests "패키지.클래스명"   # 특정 테스트
 ./gradlew check --no-daemon               # PR 전 전체 검증·CI 기준
 docker compose up -d                      # 로컬 PostgreSQL 실행
@@ -25,6 +28,10 @@ docker compose up -d                      # 로컬 PostgreSQL 실행
 
 작업 완료 전에는 최소 `./gradlew check --no-daemon`을 실행한다. 실행하지 못하면
 이유와 미검증 범위를 보고한다.
+
+Java 들여쓰기·공백·줄바꿈·import 순서는 Spotless가 전담한다. Checkstyle에
+중복 스타일 규칙을 추가하지 않는다. 설정과 IntelliJ 사용법은 `README.md`의
+포맷·린트 자동화 절을 따른다.
 
 ## 구현 원칙
 
@@ -37,6 +44,12 @@ docker compose up -d                      # 로컬 PostgreSQL 실행
   같은 PR에서 확인한다.
 - 외부 OpenAI·R2 연동은 인터페이스 경계를 유지하고 단위 테스트에서 실제 외부
   서비스를 호출하지 않는다.
+- Spring Bean의 생성자가 `final` 의존성 대입만 담당하면
+  `@RequiredArgsConstructor`를 사용한다. `@Value`·`@Qualifier` 같은 파라미터
+  어노테이션이나 초기화·검증 로직이 필요하면 명시적 생성자를 유지한다.
+- Entity의 기존 공개 API가 모든 필드의 단순 getter라면 `@Getter`를 사용한다.
+  계산·변환 getter와 의도적으로 숨긴 필드는 명시적으로 유지하며 Entity에
+  `@Data`나 클래스 단위 `@Setter`를 사용하지 않는다.
 
 ## 데이터베이스
 
@@ -45,6 +58,8 @@ docker compose up -d                      # 로컬 PostgreSQL 실행
 - 테스트는 `application-test.yaml`의 H2를 사용하며 운영 데이터나 외부 서비스에
   연결하지 않는다.
 - 테이블·컬럼·제약조건 변경은 운영 영향과 migration 방법을 먼저 확인한다.
+- 스키마 변경은 `src/main/resources/db/migration`에 새 Flyway 버전 파일로 추가하고
+  이미 적용된 migration 파일은 수정하지 않는다. Hibernate는 `validate`로 유지한다.
 - 데이터·volume 삭제, schema 초기화 등 복구가 어려운 작업은 명시적 승인 없이
   실행하지 않는다.
 - 중복 제출과 상태 전이는 애플리케이션 검사만 믿지 말고 transaction·DB 제약과

@@ -22,6 +22,9 @@ import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class PairService {
 
@@ -35,22 +38,6 @@ public class PairService {
 	private final IdGenerator idGenerator;
 	private final Clock clock;
 
-	public PairService(
-		UserRepository userRepository,
-		FamilyPairRepository familyPairRepository,
-		PairInvitationRepository invitationRepository,
-		InviteCodeGenerator inviteCodeGenerator,
-		IdGenerator idGenerator,
-		Clock clock
-	) {
-		this.userRepository = userRepository;
-		this.familyPairRepository = familyPairRepository;
-		this.invitationRepository = invitationRepository;
-		this.inviteCodeGenerator = inviteCodeGenerator;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-	}
-
 	@Transactional
 	public InvitationResponse createInvitation(AuthenticatedUser authenticatedUser) {
 		requireRole(authenticatedUser, Role.CHILD);
@@ -61,14 +48,9 @@ public class PairService {
 
 		OffsetDateTime now = OffsetDateTime.now(clock);
 		PairInvitation invitation = invitationRepository
-			.findFirstByChild_IdAndUsedAtIsNullAndExpiresAtAfterOrderByCreatedAtDesc(child.getId(), now)
-			.orElseGet(() -> invitationRepository.save(new PairInvitation(
-				idGenerator.generate("inv"),
-				child,
-				generateUniqueCode(),
-				now.plusHours(INVITATION_VALID_HOURS),
-				now
-			)));
+		    .findFirstByChild_IdAndUsedAtIsNullAndExpiresAtAfterOrderByCreatedAtDesc(child.getId(), now)
+		    .orElseGet(() -> invitationRepository.save(new PairInvitation(idGenerator.generate("inv"), child,
+		        generateUniqueCode(), now.plusHours(INVITATION_VALID_HOURS), now)));
 		return toInvitationResponse(invitation);
 	}
 
@@ -81,13 +63,13 @@ public class PairService {
 		}
 
 		PairInvitation invitation = invitationRepository.findByInviteCodeForUpdate(inviteCode)
-			.orElseThrow(() -> new ApiException(ErrorCode.INVITE_CODE_NOT_FOUND));
-		if (invitation.getUsedAt() != null) {
+		    .orElseThrow(() -> new ApiException(ErrorCode.INVITE_CODE_NOT_FOUND));
+		if (invitation.isUsed()) {
 			throw new ApiException(ErrorCode.INVITE_CODE_USED);
 		}
 
 		OffsetDateTime now = OffsetDateTime.now(clock);
-		if (!invitation.getExpiresAt().isAfter(now)) {
+		if (invitation.isExpiredAt(now)) {
 			throw new ApiException(ErrorCode.INVITE_CODE_EXPIRED);
 		}
 		User child = invitation.getChild();
@@ -95,19 +77,13 @@ public class PairService {
 			throw new ApiException(ErrorCode.ALREADY_PAIRED);
 		}
 
-		FamilyPair pair = familyPairRepository.save(new FamilyPair(
-			idGenerator.generate("pair"),
-			parent,
-			child,
-			now
-		));
+		FamilyPair pair = familyPairRepository.save(new FamilyPair(idGenerator.generate("pair"), parent, child, now));
 		invitation.markUsed(now);
 		return new JoinPairResponse(toPairResponse(pair));
 	}
 
 	private User findUser(String userId) {
-		return userRepository.findById(userId)
-			.orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+		return userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 	}
 
 	private void requireRole(AuthenticatedUser user, Role requiredRole) {
@@ -127,19 +103,12 @@ public class PairService {
 	}
 
 	private InvitationResponse toInvitationResponse(PairInvitation invitation) {
-		return new InvitationResponse(
-			invitation.getId(),
-			invitation.getInviteCode(),
-			invitation.getExpiresAt()
-		);
+		return new InvitationResponse(invitation.getId(), invitation.getInviteCode(), invitation.getExpiresAt());
 	}
 
 	private PairResponse toPairResponse(FamilyPair pair) {
-		return new PairResponse(
-			pair.getId(),
-			new PairMemberResponse(pair.getParent().getId(), pair.getParent().getName()),
-			new PairMemberResponse(pair.getChild().getId(), pair.getChild().getName()),
-			pair.getPairedAt()
-		);
+		return new PairResponse(pair.getId(),
+		    new PairMemberResponse(pair.getParent().getId(), pair.getParent().getName()),
+		    new PairMemberResponse(pair.getChild().getId(), pair.getChild().getName()), pair.getPairedAt());
 	}
 }

@@ -14,15 +14,14 @@ import com.apptive.backend.domain.user.dto.CreateUserResponse;
 import com.apptive.backend.domain.user.service.UserRegistrationResult;
 import com.apptive.backend.domain.user.service.UserService;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
 
 	private final UserService userService;
-
-	public UserController(UserService userService) {
-		this.userService = userService;
-	}
 
 	@PostMapping
 	public ResponseEntity<CreateUserResponse> register(@Valid @RequestBody CreateUserRequest request) {

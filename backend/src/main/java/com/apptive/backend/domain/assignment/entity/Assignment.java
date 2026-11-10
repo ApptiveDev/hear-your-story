@@ -15,14 +15,12 @@ import jakarta.persistence.UniqueConstraint;
 import com.apptive.backend.domain.pair.entity.FamilyPair;
 import com.apptive.backend.domain.question.entity.Question;
 
+import lombok.Getter;
+
+@Getter
 @Entity
-@Table(
-	name = "assignments",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_assignments_pair_date",
-		columnNames = {"pair_id", "assigned_date"}
-	)
-)
+@Table(name = "assignments", uniqueConstraints = @UniqueConstraint(name = "uk_assignments_pair_date", columnNames = {
+        "pair_id", "assigned_date"}))
 public class Assignment {
 
 	@Id
@@ -46,13 +44,8 @@ public class Assignment {
 	protected Assignment() {
 	}
 
-	public Assignment(
-		String id,
-		FamilyPair familyPair,
-		Question question,
-		LocalDate assignedDate,
-		OffsetDateTime createdAt
-	) {
+	public Assignment(String id, FamilyPair familyPair, Question question, LocalDate assignedDate,
+	    OffsetDateTime createdAt) {
 		this.id = id;
 		this.familyPair = familyPair;
 		this.question = question;
@@ -60,23 +53,12 @@ public class Assignment {
 		this.createdAt = createdAt;
 	}
 
-	public String getId() {
-		return id;
+	public boolean belongsToParent(String userId) {
+		return familyPair.hasParent(userId);
 	}
 
-	public FamilyPair getFamilyPair() {
-		return familyPair;
+	public boolean belongsToChild(String userId) {
+		return familyPair.hasChild(userId);
 	}
 
-	public Question getQuestion() {
-		return question;
-	}
-
-	public LocalDate getAssignedDate() {
-		return assignedDate;
-	}
-
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
 }

@@ -6,3 +6,9 @@
 .env
 **/.env
 **/application-local.yaml
+
+# Local Codex-generated artifacts
+/.codex-build/
+/outputs/20261107-frontend-wireframes/
+/presentation-assets/
+/presentation-output/

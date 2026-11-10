@@ -16,30 +16,25 @@ import com.apptive.backend.domain.pair.dto.JoinPairRequest;
 import com.apptive.backend.domain.pair.dto.JoinPairResponse;
 import com.apptive.backend.domain.pair.service.PairService;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/pairs")
 public class PairController {
 
 	private final PairService pairService;
 
-	public PairController(PairService pairService) {
-		this.pairService = pairService;
-	}
-
 	@PostMapping("/invitations")
 	public ResponseEntity<InvitationResponse> createInvitation(
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser
-	) {
-		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(pairService.createInvitation(authenticatedUser));
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(pairService.createInvitation(authenticatedUser));
 	}
 
 	@PostMapping("/join")
-	public ResponseEntity<JoinPairResponse> join(
-		@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-		@Valid @RequestBody JoinPairRequest request
-	) {
+	public ResponseEntity<JoinPairResponse> join(@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+	    @Valid @RequestBody JoinPairRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(pairService.join(authenticatedUser, request.inviteCode()));
+		    .body(pairService.join(authenticatedUser, request.inviteCode()));
 	}
 }

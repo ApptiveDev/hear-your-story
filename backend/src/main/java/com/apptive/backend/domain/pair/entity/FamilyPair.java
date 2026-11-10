@@ -13,14 +13,13 @@ import jakarta.persistence.UniqueConstraint;
 
 import com.apptive.backend.domain.user.entity.User;
 
+import lombok.Getter;
+
+@Getter
 @Entity
-@Table(
-	name = "family_pairs",
-	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_family_pairs_parent", columnNames = "parent_id"),
-		@UniqueConstraint(name = "uk_family_pairs_child", columnNames = "child_id")
-	}
-)
+@Table(name = "family_pairs", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_family_pairs_parent", columnNames = "parent_id"),
+        @UniqueConstraint(name = "uk_family_pairs_child", columnNames = "child_id")})
 public class FamilyPair {
 
 	@Id
@@ -48,19 +47,12 @@ public class FamilyPair {
 		this.pairedAt = pairedAt;
 	}
 
-	public String getId() {
-		return id;
+	public boolean hasParent(String userId) {
+		return parent.getId().equals(userId);
 	}
 
-	public User getParent() {
-		return parent;
+	public boolean hasChild(String userId) {
+		return child.getId().equals(userId);
 	}
 
-	public User getChild() {
-		return child;
-	}
-
-	public OffsetDateTime getPairedAt() {
-		return pairedAt;
-	}
 }

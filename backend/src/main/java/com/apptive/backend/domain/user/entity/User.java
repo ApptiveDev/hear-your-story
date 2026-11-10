@@ -10,14 +10,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import lombok.Getter;
+
+@Getter
 @Entity
-@Table(
-	name = "app_users",
-	uniqueConstraints = @UniqueConstraint(
-		name = "uk_app_users_device_role",
-		columnNames = {"device_id", "role"}
-	)
-)
+@Table(name = "app_users", uniqueConstraints = @UniqueConstraint(name = "uk_app_users_device_role", columnNames = {
+        "device_id", "role"}))
 public class User {
 
 	@Id
@@ -48,23 +46,4 @@ public class User {
 		this.createdAt = createdAt;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public Role getRole() {
-		return role;
-	}
-
-	public String getDeviceId() {
-		return deviceId;
-	}
-
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
 }

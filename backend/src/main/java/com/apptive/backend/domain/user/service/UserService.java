@@ -16,6 +16,9 @@ import com.apptive.backend.domain.user.dto.UserResponse;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class UserService {
 
@@ -25,45 +28,21 @@ public class UserService {
 	private final IdGenerator idGenerator;
 	private final Clock clock;
 
-	public UserService(
-		UserRepository userRepository,
-		FamilyPairRepository familyPairRepository,
-		JwtTokenProvider tokenProvider,
-		IdGenerator idGenerator,
-		Clock clock
-	) {
-		this.userRepository = userRepository;
-		this.familyPairRepository = familyPairRepository;
-		this.tokenProvider = tokenProvider;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-	}
-
 	@Transactional
 	public UserRegistrationResult register(CreateUserRequest request) {
 		String deviceId = request.deviceId().trim();
 		User existingUser = userRepository.findByDeviceIdAndRole(deviceId, request.role()).orElse(null);
 		boolean created = existingUser == null;
 		User user = created
-			? userRepository.save(new User(
-				idGenerator.generate("usr"),
-				request.name().trim(),
-				request.role(),
-				deviceId,
-				OffsetDateTime.now(clock)
-			))
-			: existingUser;
+		    ? userRepository.save(new User(idGenerator.generate("usr"), request.name().trim(), request.role(), deviceId,
+		        OffsetDateTime.now(clock)))
+		    : existingUser;
 
 		IssuedToken issuedToken = tokenProvider.issue(user.getId(), user.getRole());
 		String pairingStatus = familyPairRepository.existsByMemberId(user.getId()) ? "PAIRED" : "UNPAIRED";
 		return new UserRegistrationResult(
-			new CreateUserResponse(
-				new UserResponse(user.getId(), user.getName(), user.getRole(), pairingStatus),
-				issuedToken.value(),
-				"Bearer",
-				issuedToken.expiresAt()
-			),
-			created
-		);
+		    new CreateUserResponse(new UserResponse(user.getId(), user.getName(), user.getRole(), pairingStatus),
+		        issuedToken.value(), "Bearer", issuedToken.expiresAt()),
+		    created);
 	}
 }

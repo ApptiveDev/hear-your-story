@@ -22,7 +22,7 @@ class QuestionSeedInitializerTest {
 	@Test
 	void mockQuestionsAreLoadedFromJson() {
 		Question question = questionRepository.findByScheduledDateAndActiveTrue(LocalDate.of(2026, 9, 24))
-			.orElseThrow();
+		    .orElseThrow();
 
 		assertThat(question.getId()).isEqualTo("qst_mock_20260924");
 		assertThat(question.getText()).isEqualTo("어릴 때 가장 좋아했던 놀이는 무엇이었나요?");

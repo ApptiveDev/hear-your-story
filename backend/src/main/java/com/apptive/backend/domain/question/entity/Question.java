@@ -7,6 +7,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import lombok.Getter;
+
+@Getter
 @Entity
 @Table(name = "questions")
 public class Question {
@@ -33,25 +36,12 @@ public class Question {
 	protected Question() {
 	}
 
-	public Question(
-		String id,
-		LocalDate scheduledDate,
-		String text,
-		String category,
-		String audioUrl,
-		boolean active
-	) {
+	public Question(String id, LocalDate scheduledDate, String text, String category, String audioUrl, boolean active) {
 		this.id = id;
 		updateFromSeed(scheduledDate, text, category, audioUrl, active);
 	}
 
-	public void updateFromSeed(
-		LocalDate scheduledDate,
-		String text,
-		String category,
-		String audioUrl,
-		boolean active
-	) {
+	public void updateFromSeed(LocalDate scheduledDate, String text, String category, String audioUrl, boolean active) {
 		this.scheduledDate = scheduledDate;
 		this.text = text;
 		this.category = category;
@@ -59,27 +49,4 @@ public class Question {
 		this.active = active;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public LocalDate getScheduledDate() {
-		return scheduledDate;
-	}
-
-	public String getText() {
-		return text;
-	}
-
-	public String getCategory() {
-		return category;
-	}
-
-	public String getAudioUrl() {
-		return audioUrl;
-	}
-
-	public boolean isActive() {
-		return active;
-	}
 }

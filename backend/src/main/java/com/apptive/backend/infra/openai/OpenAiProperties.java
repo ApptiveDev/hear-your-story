@@ -9,22 +9,9 @@ import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties("app.openai")
 @Validated
-public record OpenAiProperties(
-	@NotBlank
-	String apiKey,
-	@NotBlank
-	String baseUrl,
-	@NotBlank
-	String transcriptionModel,
-	@NotBlank
-	String summaryModel,
-	@NotBlank
-	String ttsModel,
-	@NotBlank
-	String ttsVoice,
-	Duration connectTimeout,
-	Duration readTimeout
-) {
+public record OpenAiProperties(@NotBlank String apiKey, @NotBlank String baseUrl, @NotBlank String transcriptionModel,
+    @NotBlank String summaryModel, @NotBlank String ttsModel, @NotBlank String ttsVoice, Duration connectTimeout,
+    Duration readTimeout) {
 
 	public Duration effectiveConnectTimeout() {
 		return connectTimeout == null ? Duration.ofSeconds(10) : connectTimeout;

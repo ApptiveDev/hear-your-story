@@ -31,39 +31,24 @@ class OpenAiSpeechTranscriberTest {
 	void setUp() {
 		RestClient.Builder builder = RestClient.builder();
 		server = MockRestServiceServer.bindTo(builder).build();
-		OpenAiProperties properties = new OpenAiProperties(
-			"test-key",
-			"https://api.openai.test/v1",
-			"gpt-4o-mini-transcribe",
-			"gpt-4o-mini",
-			"gpt-4o-mini-tts",
-			"alloy",
-			Duration.ofSeconds(1),
-			Duration.ofSeconds(5)
-		);
-		RestClient client = builder
-			.baseUrl(properties.baseUrl())
-			.defaultHeader("Authorization", "Bearer " + properties.apiKey())
-			.build();
+		OpenAiProperties properties = new OpenAiProperties("test-key", "https://api.openai.test/v1",
+		    "gpt-4o-mini-transcribe", "gpt-4o-mini", "gpt-4o-mini-tts", "alloy", Duration.ofSeconds(1),
+		    Duration.ofSeconds(5));
+		RestClient client = builder.baseUrl(properties.baseUrl())
+		    .defaultHeader("Authorization", "Bearer " + properties.apiKey()).build();
 		transcriber = new OpenAiSpeechTranscriber(client, properties);
 	}
 
 	@Test
 	void transcribesKoreanM4a() {
-		server.expect(requestTo("https://api.openai.test/v1/audio/transcriptions"))
-			.andExpect(method(HttpMethod.POST))
-			.andExpect(header("Authorization", "Bearer test-key"))
-			.andExpect(content().contentTypeCompatibleWith(MediaType.MULTIPART_FORM_DATA))
-			.andExpect(content().string(containsString("gpt-4o-mini-transcribe")))
-			.andExpect(content().string(containsString("answer.m4a")))
-			.andExpect(content().string(containsString("ko")))
-			.andRespond(withSuccess("{\"text\":\"어릴 때 고무줄놀이를 했어요.\"}", MediaType.APPLICATION_JSON));
+		server.expect(requestTo("https://api.openai.test/v1/audio/transcriptions")).andExpect(method(HttpMethod.POST))
+		    .andExpect(header("Authorization", "Bearer test-key"))
+		    .andExpect(content().contentTypeCompatibleWith(MediaType.MULTIPART_FORM_DATA))
+		    .andExpect(content().string(containsString("gpt-4o-mini-transcribe")))
+		    .andExpect(content().string(containsString("answer.m4a"))).andExpect(content().string(containsString("ko")))
+		    .andRespond(withSuccess("{\"text\":\"어릴 때 고무줄놀이를 했어요.\"}", MediaType.APPLICATION_JSON));
 
-		String text = transcriber.transcribe(new AudioSource(
-			new byte[] {1, 2, 3},
-			"answer.m4a",
-			"audio/mp4"
-		));
+		String text = transcriber.transcribe(new AudioSource(new byte[]{1, 2, 3}, "answer.m4a", "audio/mp4"));
 
 		assertThat(text).isEqualTo("어릴 때 고무줄놀이를 했어요.");
 		server.verify();
@@ -71,16 +56,11 @@ class OpenAiSpeechTranscriberTest {
 
 	@Test
 	void mapsProviderFailureWithoutLeakingResponse() {
-		server.expect(requestTo("https://api.openai.test/v1/audio/transcriptions"))
-			.andRespond(withServerError());
+		server.expect(requestTo("https://api.openai.test/v1/audio/transcriptions")).andRespond(withServerError());
 
-		assertThatThrownBy(() -> transcriber.transcribe(new AudioSource(
-			new byte[] {1},
-			"answer.m4a",
-			"audio/mp4"
-		)))
-			.isInstanceOf(AudioProcessingException.class)
-			.satisfies(exception -> assertThat(((AudioProcessingException) exception).failureCode())
-				.isEqualTo("OPENAI_STT_FAILED"));
+		assertThatThrownBy(() -> transcriber.transcribe(new AudioSource(new byte[]{1}, "answer.m4a", "audio/mp4")))
+		    .isInstanceOf(AudioProcessingException.class)
+		    .satisfies(exception -> assertThat(((AudioProcessingException) exception).failureCode())
+		        .isEqualTo("OPENAI_STT_FAILED"));
 	}
 }

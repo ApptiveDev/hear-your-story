@@ -7,12 +7,13 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
 import com.apptive.backend.domain.user.entity.Role;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtTokenProvider {
@@ -36,23 +37,15 @@ public class JwtTokenProvider {
 	public IssuedToken issue(String userId, Role role) {
 		OffsetDateTime issuedAt = OffsetDateTime.now(clock).withNano(0);
 		OffsetDateTime expiresAt = issuedAt.plusDays(expirationDays);
-		String token = Jwts.builder()
-			.subject(userId)
-			.claim("role", role.name())
-			.issuedAt(Date.from(issuedAt.toInstant()))
-			.expiration(Date.from(expiresAt.toInstant()))
-			.signWith(signingKey)
-			.compact();
+		String token = Jwts.builder().subject(userId).claim("role", role.name())
+		    .issuedAt(Date.from(issuedAt.toInstant())).expiration(Date.from(expiresAt.toInstant())).signWith(signingKey)
+		    .compact();
 		return new IssuedToken(token, expiresAt);
 	}
 
 	public AuthenticatedUser parse(String token) {
-		Claims claims = Jwts.parser()
-			.verifyWith(signingKey)
-			.clock(() -> Date.from(clock.instant()))
-			.build()
-			.parseSignedClaims(token)
-			.getPayload();
+		Claims claims = Jwts.parser().verifyWith(signingKey).clock(() -> Date.from(clock.instant())).build()
+		    .parseSignedClaims(token).getPayload();
 		return new AuthenticatedUser(claims.getSubject(), Role.valueOf(claims.get("role", String.class)));
 	}
 }

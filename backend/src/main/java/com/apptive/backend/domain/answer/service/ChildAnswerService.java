@@ -22,6 +22,9 @@ import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class ChildAnswerService {
 
@@ -34,35 +37,15 @@ public class ChildAnswerService {
 	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
 
-	public ChildAnswerService(
-		AssignmentRepository assignmentRepository,
-		ChildAnswerRepository childAnswerRepository,
-		RecordingRepository recordingRepository,
-		IdGenerator idGenerator,
-		Clock clock,
-		ApplicationEventPublisher eventPublisher
-	) {
-		this.assignmentRepository = assignmentRepository;
-		this.childAnswerRepository = childAnswerRepository;
-		this.recordingRepository = recordingRepository;
-		this.idGenerator = idGenerator;
-		this.clock = clock;
-		this.eventPublisher = eventPublisher;
-	}
-
 	@Transactional
-	public ChildAnswerResponse put(
-		String assignmentId,
-		String rawText,
-		AuthenticatedUser authenticatedUser
-	) {
+	public ChildAnswerResponse put(String assignmentId, String rawText, AuthenticatedUser authenticatedUser) {
 		if (authenticatedUser.role() != Role.CHILD) {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
 		}
 
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId)
-			.orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
-		if (!assignment.getFamilyPair().getChild().getId().equals(authenticatedUser.userId())) {
+		    .orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+		if (!assignment.belongsToChild(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 
@@ -80,15 +63,8 @@ public class ChildAnswerService {
 		String ttsVersion = UUID.randomUUID().toString();
 		ChildAnswer answer;
 		if (existing == null) {
-			answer = new ChildAnswer(
-				idGenerator.generate("ans"),
-				assignment,
-				text,
-				TtsStatus.PROCESSING,
-				ttsVersion,
-				now,
-				now
-			);
+			answer = new ChildAnswer(idGenerator.generate("ans"), assignment, text, TtsStatus.PROCESSING, ttsVersion,
+			    now, now);
 		} else {
 			existing.update(text, ttsVersion, now);
 			answer = existing;
@@ -100,14 +76,7 @@ public class ChildAnswerService {
 	}
 
 	private ChildAnswerResponse toResponse(ChildAnswer answer) {
-		return new ChildAnswerResponse(
-			answer.getId(),
-			answer.getAssignment().getId(),
-			answer.getText(),
-			SubmissionStatus.SUBMITTED,
-			answer.getTtsStatus(),
-			answer.getSubmittedAt(),
-			answer.getUpdatedAt()
-		);
+		return new ChildAnswerResponse(answer.getId(), answer.getAssignment().getId(), answer.getText(),
+		    SubmissionStatus.SUBMITTED, answer.getTtsStatus(), answer.getSubmittedAt(), answer.getUpdatedAt());
 	}
 }

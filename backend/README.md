@@ -47,13 +47,20 @@ Spring Boot는 `.env`를 자동으로 읽지 않는다. IntelliJ로 실행한다
 | `R2_BUCKET_NAME` | 비공개 원본 음성 bucket |
 | `STORAGE_TYPE` | `local`(기본) 또는 `r2` |
 | `AUDIO_PROCESSING_MODE` | `mock`(기본) 또는 `openai` |
+| `PROCESSING_RECOVERY_*` | 중단된 STT/TTS 작업의 복구 활성화·지연·주기·배치 크기 |
 | `OPENAI_TRANSCRIPTION_MODEL`, `OPENAI_SUMMARY_MODEL` | STT·이야기 정리 모델 |
 | `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE` | 자녀 답변 음성 합성 모델·목소리 |
 | `JPA_SHOW_SQL` | 로컬 SQL 출력 여부, 기본 `false` |
-| `JPA_DDL_AUTO` | 로컬 기본 `update`; 운영 배포 전 migration 도구로 교체 |
+| `JPA_DDL_AUTO` | 기본 `validate`; Flyway 적용 결과와 Entity 매핑이 같은지 검사 |
 
 실제 `.env`, API key, 비밀번호는 커밋하지 않는다. 전체 형식은
 [`.env.example`](.env.example)을 복사해 사용한다.
+
+### 데이터베이스 마이그레이션
+
+애플리케이션 시작 시 Flyway가 `src/main/resources/db/migration`의 SQL을 버전 순서대로
+적용하고 Hibernate는 결과 스키마를 검증만 한다. 테이블이나 컬럼을 변경할 때는 이미
+적용된 파일을 수정하지 말고 다음 버전의 `V{번호}__설명.sql`을 추가한다.
 
 ### 실제 음성 처리 활성화
 
@@ -79,6 +86,26 @@ GET Signed URL만 반환한다. 실제 모드에서도 업로드 API와 폴링 �
 ```bash
 ./gradlew test
 ```
+
+## 포맷·린트 자동화
+
+Java 코드 형식은 Spotless의 Eclipse formatter로 통일한다. 탭 너비는 4,
+줄 길이 기준은 120자이며 설정은 `config/formatter/eclipse.xml`에서 관리한다.
+Checkstyle은 wildcard·중복·미사용 import, 타입·메서드 이름, 빈 문장,
+equals/hashCode 쌍을 검사한다. **들여쓰기·공백·줄바꿈·import 순서는 Spotless만
+담당**하므로 Checkstyle에 중복 스타일 규칙을 추가하지 않는다.
+
+```bash
+./gradlew spotlessApply                 # Java 형식 자동 수정
+./gradlew spotlessCheck                 # 형식 검사 (수정하지 않음)
+./gradlew checkstyleMain checkstyleTest  # main/test 린트 검사
+./gradlew check --no-daemon              # 포맷·린트·전체 테스트 (CI와 동일)
+```
+
+IntelliJ에서는 backend의 `.editorconfig`를 적용하고, 최종 형식은 Gradle 창의
+`spotlessApply`로 맞춘다. IDE 자체 포맷터와 Gradle 포맷 결과가 다르면 Gradle
+결과를 기준으로 한다. 도구 버전은 `build.gradle`에 고정한다.
+린트 보고서는 `build/reports/checkstyle/`에서 확인한다.
 
 ## API 개발 순서
 

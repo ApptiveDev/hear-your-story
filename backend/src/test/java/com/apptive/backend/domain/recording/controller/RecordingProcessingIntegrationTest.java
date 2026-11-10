@@ -20,9 +20,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.domain.assignment.entity.Assignment;
 import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
@@ -35,6 +32,8 @@ import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -79,36 +78,12 @@ class RecordingProcessingIntegrationTest {
 	@BeforeEach
 	void setUp() {
 		OffsetDateTime now = OffsetDateTime.now(clock);
-		parent = userRepository.save(new User(
-			PARENT_ID,
-			"부모",
-			Role.PARENT,
-			"async-parent",
-			now
-		));
-		User child = userRepository.save(new User(
-			CHILD_ID,
-			"자녀",
-			Role.CHILD,
-			"async-child",
-			now
-		));
+		parent = userRepository.save(new User(PARENT_ID, "부모", Role.PARENT, "async-parent", now));
+		User child = userRepository.save(new User(CHILD_ID, "자녀", Role.CHILD, "async-child", now));
 		FamilyPair pair = familyPairRepository.save(new FamilyPair(PAIR_ID, parent, child, now));
-		Question question = questionRepository.save(new Question(
-			QUESTION_ID,
-			LocalDate.of(2099, 1, 1),
-			"기억나는 일을 들려주세요.",
-			"DAILY",
-			null,
-			true
-		));
-		assignmentRepository.save(new Assignment(
-			ASSIGNMENT_ID,
-			pair,
-			question,
-			LocalDate.of(2099, 1, 1),
-			now
-		));
+		Question question = questionRepository
+		    .save(new Question(QUESTION_ID, LocalDate.of(2099, 1, 1), "기억나는 일을 들려주세요.", "DAILY", null, true));
+		assignmentRepository.save(new Assignment(ASSIGNMENT_ID, pair, question, LocalDate.of(2099, 1, 1), now));
 	}
 
 	@AfterEach
@@ -122,27 +97,17 @@ class RecordingProcessingIntegrationTest {
 
 	@Test
 	void uploadedRecordingIsProcessedToReadyAsynchronously() throws Exception {
-		MockMultipartFile audio = new MockMultipartFile(
-			"audioFile",
-			"answer.m4a",
-			"audio/mp4",
-			new byte[] {0, 0, 0, 16, 'f', 't', 'y', 'p', 'M', '4', 'A', ' '}
-		);
-		MvcResult upload = mockMvc.perform(multipart(
-				"/api/v1/assignments/{assignmentId}/parent-recording",
-				ASSIGNMENT_ID
-			)
-			.file(audio)
-			.with(request -> {
-				request.setMethod("PUT");
-				return request;
-			})
-			.header("Authorization", bearer(parent))
-			.header("Idempotency-Key", "async-upload"))
-			.andExpect(status().isAccepted())
-			.andReturn();
-		String recordingId = objectMapper.readTree(upload.getResponse().getContentAsByteArray())
-			.get("recordingId").asText();
+		MockMultipartFile audio = new MockMultipartFile("audioFile", "answer.m4a", "audio/mp4",
+		    new byte[]{0, 0, 0, 16, 'f', 't', 'y', 'p', 'M', '4', 'A', ' '});
+		MvcResult upload = mockMvc
+		    .perform(multipart("/api/v1/assignments/{assignmentId}/parent-recording", ASSIGNMENT_ID).file(audio)
+		        .with(request -> {
+			        request.setMethod("PUT");
+			        return request;
+		        }).header("Authorization", bearer(parent)).header("Idempotency-Key", "async-upload"))
+		    .andExpect(status().isAccepted()).andReturn();
+		String recordingId = objectMapper.readTree(upload.getResponse().getContentAsByteArray()).get("recordingId")
+		    .asText();
 
 		JsonNode statusBody = awaitTerminalStatus(recordingId);
 
@@ -153,14 +118,13 @@ class RecordingProcessingIntegrationTest {
 
 	private JsonNode awaitTerminalStatus(String recordingId) throws Exception {
 		for (int attempt = 0; attempt < 50; attempt++) {
-			MvcResult result = mockMvc.perform(get("/api/v1/recordings/{recordingId}", recordingId)
-					.header("Authorization", bearer(parent)))
-				.andExpect(status().isOk())
-				.andReturn();
+			MvcResult result = mockMvc
+			    .perform(get("/api/v1/recordings/{recordingId}", recordingId).header("Authorization", bearer(parent)))
+			    .andExpect(status().isOk()).andReturn();
 			JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
 			String processingStatus = body.get("processingStatus").asText();
 			if (processingStatus.equals(ProcessingStatus.READY.name())
-				|| processingStatus.equals(ProcessingStatus.FAILED.name())) {
+			    || processingStatus.equals(ProcessingStatus.FAILED.name())) {
 				return body;
 			}
 			Thread.sleep(20);
