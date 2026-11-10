@@ -319,6 +319,26 @@ void main() {
       await controller.stop();
     });
 
+    testWidgets('이어가기를 기다리는 사이 다시 멈췄다 이어가도 시간은 한 번만 잰다', (tester) async {
+      await controller.start();
+      await controller.pause();
+      recorder.resumeGate = Completer();
+      final first = controller.resume();
+      await controller.pause();
+      final second = controller.resume();
+      recorder.resumeGate!.complete();
+      await first;
+      await second;
+      await controller.pause();
+      final paused = controller.elapsedSeconds;
+
+      now = now.add(const Duration(seconds: 70));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(controller.phase, RecordingPhase.paused);
+      expect(controller.elapsedSeconds, paused);
+      expect(recorder.stops, 0);
+    });
+
     testWidgets('처음부터 다시 말하면 시간을 0부터 재고 이전 녹음은 보내지 않는다', (tester) async {
       await controller.start();
       now = now.add(const Duration(seconds: 30));

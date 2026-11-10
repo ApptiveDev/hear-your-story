@@ -145,6 +145,7 @@ class RecordingController extends ChangeNotifier {
       _recordedBefore + _now().difference(_startedAt!);
 
   void _startRecordTimer() {
+    _recordTimer?.cancel(); // 이어가기가 겹쳐도 타이머는 하나만 둔다
     _recordTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       elapsedSeconds = _recordedTotal.inSeconds.clamp(0, 60);
       _emit();
