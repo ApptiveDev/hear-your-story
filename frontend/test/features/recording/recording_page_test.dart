@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_record/core/widgets/audio_playback_card.dart';
+import 'package:life_record/core/theme/app_theme.dart';
 import 'package:life_record/features/recording/presentation/recording_args.dart';
 import 'package:life_record/features/recording/presentation/recording_controller.dart';
 import 'package:life_record/features/recording/presentation/recording_page.dart';
@@ -53,6 +55,155 @@ void main() {
     await tester.pump();
     expect(find.textContaining('녹음 중'), findsOneWidget);
     expect(find.text('그만 말하고 보내기'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('잠깐 멈추고 이어서 말할 수 있다', (tester) async {
+    final recorder = FakeRecorder();
+    final controller = RecordingController(
+      args: args,
+      repository: FakeRecordingRepository(),
+      recorder: recorder,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: RecordingPage(args: args, controller: controller),
+        ),
+      ),
+    );
+    await controller.start();
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('잠깐 멈추기'));
+    await tester.pump();
+    await tester.tap(find.text('잠깐 멈추기'));
+    await tester.pump();
+    expect(find.textContaining('잠깐 멈췄어요'), findsOneWidget);
+    expect(find.text('잠깐 멈추기'), findsNothing);
+    expect(find.text('그만 말하고 보내기'), findsOneWidget);
+    expect(recorder.pauses, 1);
+
+    await tester.ensureVisible(find.text('이어서 말하기'));
+    await tester.pump();
+    await tester.tap(find.text('이어서 말하기'));
+    await tester.pump();
+    expect(find.textContaining('녹음 중'), findsOneWidget);
+    expect(recorder.resumes, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('글씨를 키워도 말하는 동안 멈춤 버튼이 화면 안에 있다', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1080 / 411;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    const withAudio = RecordingArgs(
+      assignmentId: 'asg_1',
+      questionText: '어릴 때 가장 좋아했던 놀이는 무엇이었나요?',
+      questionAudioUrl: 'https://signed.example.com/question.mp3',
+    );
+    final controller = RecordingController(
+      args: withAudio,
+      repository: FakeRecordingRepository(),
+      recorder: FakeRecorder(),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: RecordingPage(args: withAudio, controller: controller),
+        ),
+      ),
+    );
+    expect(find.byType(AudioPlaybackCard), findsOneWidget);
+
+    await controller.start();
+    await tester.pump();
+    expect(find.byType(AudioPlaybackCard), findsNothing);
+    final height =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    expect(tester.getRect(find.text('잠깐 멈추기')).bottom, lessThan(height));
+
+    await controller.pause();
+    await tester.pump();
+    expect(find.byType(AudioPlaybackCard), findsNothing);
+    expect(tester.getRect(find.text('처음부터 다시 말하기')).bottom, lessThan(height));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('처음부터 다시 말하기는 한 번 더 묻고 나서 다시 시작한다', (tester) async {
+    final recorder = FakeRecorder();
+    final controller = RecordingController(
+      args: args,
+      repository: FakeRecordingRepository(),
+      recorder: recorder,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: RecordingPage(args: args, controller: controller),
+        ),
+      ),
+    );
+    await controller.start();
+    await controller.pause();
+    await tester.pump();
+
+    Future<void> tapRestart() async {
+      await tester.ensureVisible(find.text('처음부터 다시 말하기'));
+      await tester.pump();
+      await tester.tap(find.text('처음부터 다시 말하기'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await tapRestart();
+    expect(find.text('지금까지 말한 내용은 지워져요.'), findsOneWidget);
+    await tester.tap(find.text('그대로 두기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(controller.phase, RecordingPhase.paused);
+    expect(recorder.starts, 1);
+
+    await tapRestart();
+    await tester.tap(find.text('다시 말하기'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('녹음 중 · 0초'), findsOneWidget);
+    expect(recorder.starts, 2);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('멈춘 상태에서 뒤로 가면 저장되지 않는다고 묻는다', (tester) async {
+    final controller = RecordingController(
+      args: args,
+      repository: FakeRecordingRepository(),
+      recorder: FakeRecorder(),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: RecordingPage(args: args, controller: controller),
+        ),
+      ),
+    );
+    await controller.start();
+    await controller.pause();
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    expect(find.text('녹음을 그만둘까요?'), findsOneWidget);
+
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });

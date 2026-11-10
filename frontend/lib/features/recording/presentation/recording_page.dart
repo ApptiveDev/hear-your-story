@@ -92,15 +92,36 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     await _controller.start();
   }
 
+  Future<void> _restart() async {
+    final restart = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('처음부터 다시 말할까요?'),
+        content: const Text('지금까지 말한 내용은 지워져요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('그대로 두기'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('다시 말하기'),
+          ),
+        ],
+      ),
+    );
+    if (restart == true && mounted) await _controller.restart();
+  }
+
   Future<void> _leave() async {
     if (_askingLeave) return;
-    if (_controller.busy && _controller.phase != RecordingPhase.recording) {
+    if (_controller.busy && !_controller.isCapturing) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('녹음을 저장하고 있어요. 잠시 기다려 주세요.')),
       );
       return;
     }
-    if (_controller.phase == RecordingPhase.recording || _controller.hasDraft) {
+    if (_controller.isCapturing || _controller.hasDraft) {
       _askingLeave = true;
       final leave = await showDialog<bool>(
         context: context,
@@ -148,6 +169,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
       widget.args.canRecord ? '편하게 이야기해 주세요.' : '이미 공개된 답변이에요.',
     RecordingPhase.requestingPermission => '마이크를 준비하고 있어요.',
     RecordingPhase.recording => '녹음 중 · ${_controller.elapsedSeconds}초 / 60초',
+    RecordingPhase.paused => '잠깐 멈췄어요 · ${_controller.elapsedSeconds}초 / 60초',
     RecordingPhase.stopping => '녹음을 저장하고 있어요.',
     RecordingPhase.draft => '녹음을 보낼 준비가 됐어요.',
     RecordingPhase.uploading =>
@@ -165,6 +187,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     builder: (context, _) {
       final c = _controller;
       final recording = c.phase == RecordingPhase.recording;
+      final paused = c.phase == RecordingPhase.paused;
       return PopScope(
         canPop: _allowLeave || (!c.busy && !c.hasDraft),
         onPopInvokedWithResult: (didPop, _) {
@@ -188,7 +211,8 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 24),
-                if (widget.args.questionAudioUrl != null)
+                // 말하는 동안에는 쓰지 않으므로 숨겨서 큰 글씨에서도 멈춤 버튼이 보이게 한다
+                if (widget.args.questionAudioUrl != null && !c.isCapturing)
                   AudioPlaybackCard(
                     key: _audioKey,
                     source: PlaybackSource(widget.args.questionAudioUrl!),
@@ -199,6 +223,8 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                 Icon(
                   recording
                       ? Icons.mic
+                      : paused
+                      ? Icons.pause_circle_outline
                       : c.phase == RecordingPhase.ready
                       ? Icons.check_circle_outline
                       : Icons.mic_none,
@@ -232,12 +258,38 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                   Text(c.result!.summaryText!),
                 ],
                 const SizedBox(height: 24),
-                if (recording)
+                if (recording) ...[
                   FilledButton.icon(
                     onPressed: c.stop,
                     icon: const Icon(Icons.stop),
                     label: const Text('그만 말하고 보내기'),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: c.pause,
+                    icon: const Icon(Icons.pause),
+                    label: const Text('잠깐 멈추기'),
+                  ),
+                ],
+                if (paused) ...[
+                  FilledButton.icon(
+                    onPressed: c.resume,
+                    icon: const Icon(Icons.mic),
+                    label: const Text('이어서 말하기'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: c.stop,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('그만 말하고 보내기'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: _restart,
+                    icon: const Icon(Icons.replay),
+                    label: const Text('처음부터 다시 말하기'),
+                  ),
+                ],
                 if (c.canRetryUpload)
                   FilledButton.icon(
                     onPressed: c.retryUpload,

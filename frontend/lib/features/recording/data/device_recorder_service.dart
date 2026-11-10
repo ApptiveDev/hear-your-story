@@ -11,10 +11,13 @@ class DeviceRecorderService implements RecorderService {
   final Stopwatch _watch = Stopwatch();
   Directory? _directory;
 
+  /// 사용자가 누른 일시정지도 같은 pause 상태로 오므로 전화 같은 방해와 구분한다.
+  bool _pausedByUser = false;
+
   @override
   Stream<void> get interruptions => _recorder
       .onStateChanged()
-      .where((state) => state == RecordState.pause)
+      .where((state) => state == RecordState.pause && !_pausedByUser)
       .map((_) {});
 
   @override
@@ -23,6 +26,7 @@ class DeviceRecorderService implements RecorderService {
   @override
   Future<void> start() async {
     await discard();
+    _pausedByUser = false;
     // 캐시가 비워져 임시 폴더 자체가 없을 수 있으므로 먼저 만든다.
     final temporary = await (await getTemporaryDirectory()).create(
       recursive: true,
@@ -35,6 +39,20 @@ class DeviceRecorderService implements RecorderService {
     _watch
       ..reset()
       ..start();
+  }
+
+  @override
+  Future<void> pause() async {
+    _pausedByUser = true;
+    await _recorder.pause();
+    _watch.stop();
+  }
+
+  @override
+  Future<void> resume() async {
+    await _recorder.resume();
+    _pausedByUser = false;
+    _watch.start();
   }
 
   @override
