@@ -12,6 +12,7 @@ import com.apptive.backend.domain.answer.repository.ChildAnswerRepository;
 
 import lombok.RequiredArgsConstructor;
 
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class AnswerTtsStatusService {

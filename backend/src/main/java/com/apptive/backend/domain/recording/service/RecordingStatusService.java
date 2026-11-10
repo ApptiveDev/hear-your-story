@@ -17,6 +17,7 @@ import com.apptive.backend.domain.user.entity.Role;
 
 import lombok.RequiredArgsConstructor;
 
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class RecordingStatusService {
@@ -24,7 +25,6 @@ public class RecordingStatusService {
 	private final RecordingRepository recordingRepository;
 	private final Clock clock;
 
-	@Transactional(readOnly = true)
 	public RecordingStatusResponse get(String recordingId, AuthenticatedUser authenticatedUser) {
 		if (authenticatedUser.role() != Role.PARENT) {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
@@ -46,7 +46,6 @@ public class RecordingStatusService {
 		return true;
 	}
 
-	@Transactional(readOnly = true)
 	public RecordingProcessingSource findProcessingSource(String recordingId, String version) {
 		Recording recording = find(recordingId);
 		if (!isCurrent(recording, version)) {
