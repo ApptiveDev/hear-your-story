@@ -53,4 +53,12 @@ public class Assignment {
 		this.createdAt = createdAt;
 	}
 
+	public boolean belongsToParent(String userId) {
+		return familyPair.hasParent(userId);
+	}
+
+	public boolean belongsToChild(String userId) {
+		return familyPair.hasChild(userId);
+	}
+
 }

@@ -64,12 +64,12 @@ public class PairService {
 
 		PairInvitation invitation = invitationRepository.findByInviteCodeForUpdate(inviteCode)
 		    .orElseThrow(() -> new ApiException(ErrorCode.INVITE_CODE_NOT_FOUND));
-		if (invitation.getUsedAt() != null) {
+		if (invitation.isUsed()) {
 			throw new ApiException(ErrorCode.INVITE_CODE_USED);
 		}
 
 		OffsetDateTime now = OffsetDateTime.now(clock);
-		if (!invitation.getExpiresAt().isAfter(now)) {
+		if (invitation.isExpiredAt(now)) {
 			throw new ApiException(ErrorCode.INVITE_CODE_EXPIRED);
 		}
 		User child = invitation.getChild();
