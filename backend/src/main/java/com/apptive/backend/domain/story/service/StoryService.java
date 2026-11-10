@@ -35,6 +35,7 @@ import com.apptive.backend.infra.storage.SignedAudioUrl;
 
 import lombok.RequiredArgsConstructor;
 
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class StoryService {
@@ -49,7 +50,6 @@ public class StoryService {
 	private final ChildAnswerRepository childAnswerRepository;
 	private final RecordingStorage recordingStorage;
 
-	@Transactional(readOnly = true)
 	public StoryPageResponse getStories(String month, String encodedCursor, Integer requestedLimit,
 	    AuthenticatedUser authenticatedUser) {
 		if (month != null) {

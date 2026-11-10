@@ -17,6 +17,7 @@ import com.apptive.backend.infra.storage.SignedAudioUrl;
 
 import lombok.RequiredArgsConstructor;
 
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
 public class AnswerAudioService {
@@ -25,7 +26,6 @@ public class AnswerAudioService {
 	private final RecordingRepository recordingRepository;
 	private final RecordingStorage recordingStorage;
 
-	@Transactional(readOnly = true)
 	public AnswerAudioResponse get(String answerId, AuthenticatedUser authenticatedUser) {
 		if (authenticatedUser.role() != Role.PARENT) {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
