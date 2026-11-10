@@ -10,6 +10,12 @@ abstract class StoriesDataSource {
 
   /// [month]는 `YYYY-MM`. 계약상 cursor·limit과 함께 보내지 않는다.
   Future<Map<String, dynamic>> fetchStoriesByMonth(String month);
+
+  /// 부모 본인의 녹음을 지운다. (계약 5.12 초안)
+  Future<void> deleteRecording(String recordingId);
+
+  /// 자녀 본인의 답을 지운다. (계약 5.15 초안)
+  Future<void> deleteAnswer(String answerId);
 }
 
 class MockStoriesDataSource implements StoriesDataSource {
@@ -27,6 +33,28 @@ class MockStoriesDataSource implements StoriesDataSource {
   final String scenario;
   final ApiException? failWith;
   final Duration delay;
+
+  /// 이번 실행에서 지운 녹음·답. 다시 조회하면 서버처럼 DELETED로 돌려준다.
+  final _deletedRecordingIds = <String>{};
+  final _deletedAnswerIds = <String>{};
+
+  static const Map<String, dynamic> _deletedParentAnswer = {
+    'availability': 'DELETED',
+    'recordingId': null,
+    'processingStatus': null,
+    'originalAudioUrl': null,
+    'originalAudioExpiresAt': null,
+    'sttText': null,
+    'summaryText': null,
+    'processingNotice': '부모님이 이 음성 기록을 삭제했어요.',
+  };
+
+  static const Map<String, dynamic> _deletedChildAnswer = {
+    'availability': 'DELETED',
+    'answerId': null,
+    'text': null,
+    'ttsStatus': null,
+  };
 
   @override
   Future<Map<String, dynamic>> fetchStories({
@@ -64,9 +92,41 @@ class MockStoriesDataSource implements StoriesDataSource {
     return _load(hasStories ? 'stories_month_2026_11' : 'stories_empty');
   }
 
+  @override
+  Future<void> deleteRecording(String recordingId) async {
+    await Future.delayed(delay);
+    if (failWith != null) throw failWith!;
+    if (scenario == 'NETWORK') throw ApiException();
+    _deletedRecordingIds.add(recordingId);
+  }
+
+  @override
+  Future<void> deleteAnswer(String answerId) async {
+    await Future.delayed(delay);
+    if (failWith != null) throw failWith!;
+    if (scenario == 'NETWORK') throw ApiException();
+    _deletedAnswerIds.add(answerId);
+  }
+
   Future<Map<String, dynamic>> _load(String file) async {
     final raw = await rootBundle.loadString('assets/mocks/$file.json');
-    return jsonDecode(raw) as Map<String, dynamic>;
+    return _applyDeletions(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  /// 지운 녹음·답을 `availability=DELETED` 응답으로 바꾼다.
+  Map<String, dynamic> _applyDeletions(Map<String, dynamic> page) {
+    for (final item in page['items'] as List<dynamic>) {
+      final story = item as Map<String, dynamic>;
+      final parent = story['parentAnswer'] as Map<String, dynamic>;
+      if (_deletedRecordingIds.contains(parent['recordingId'])) {
+        story['parentAnswer'] = _deletedParentAnswer;
+      }
+      final child = story['childAnswer'] as Map<String, dynamic>;
+      if (_deletedAnswerIds.contains(child['answerId'])) {
+        story['childAnswer'] = _deletedChildAnswer;
+      }
+    }
+    return page;
   }
 }
 
@@ -95,6 +155,24 @@ class ApiStoriesDataSource implements StoriesDataSource {
     try {
       final res = await _dio.get('/stories', queryParameters: {'month': month});
       return res.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<void> deleteRecording(String recordingId) async {
+    try {
+      await _dio.delete('/recordings/$recordingId');
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<void> deleteAnswer(String answerId) async {
+    try {
+      await _dio.delete('/answers/$answerId');
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }

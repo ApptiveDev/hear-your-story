@@ -54,6 +54,52 @@ void main() {
     expect(page.items[1].parentAnswer.isDeleted, isFalse);
   });
 
+  group('내 답 지우기', () {
+    Future<Uri> requestedDelete(
+      Future<void> Function(StoriesRepositoryImpl repo) action,
+    ) async {
+      late RequestOptions requested;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.test/api/v1'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            requested = options;
+            handler.resolve(Response(requestOptions: options, statusCode: 204));
+          },
+        ),
+      );
+      await action(StoriesRepositoryImpl(ApiStoriesDataSource(dio)));
+      expect(requested.method, 'DELETE');
+      return requested.uri;
+    }
+
+    test('부모 녹음은 DELETE /recordings/{recordingId}로 지운다', () async {
+      final uri = await requestedDelete(
+        (repo) => repo.deleteParentRecording('rec_1'),
+      );
+      expect(uri.path, '/api/v1/recordings/rec_1');
+    });
+
+    test('자녀 답은 DELETE /answers/{answerId}로 지운다', () async {
+      final uri = await requestedDelete(
+        (repo) => repo.deleteChildAnswer('ans_1'),
+      );
+      expect(uri.path, '/api/v1/answers/ans_1');
+    });
+
+    test('Mock: 지운 쪽만 DELETED로 바뀌고 상대 답은 남는다', () async {
+      final repo = repoFor('first_page');
+      final before = (await repo.fetchPage()).items.single;
+
+      await repo.deleteParentRecording(before.parentAnswer.recordingId!);
+      final after = (await repo.fetchPage()).items.single;
+
+      expect(after.parentAnswer.isDeleted, isTrue);
+      expect(after.childAnswer.isDeleted, isFalse);
+      expect(after.childAnswer.text, before.childAnswer.text);
+    });
+  });
+
   group('월별 조회', () {
     test('이야기가 있는 달을 날짜 오름차순으로 파싱한다', () async {
       final items = await repoFor('first_page').fetchMonth('2026-11');

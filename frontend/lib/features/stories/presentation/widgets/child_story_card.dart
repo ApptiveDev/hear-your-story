@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/audio_playback_card.dart';
 import '../stories_controller.dart';
 import '../../domain/story.dart';
+import 'delete_my_answer_button.dart';
 import 'story_card_frame.dart';
 
 /// 자녀용: 부모님 목소리를 듣는 카드
@@ -46,6 +47,15 @@ class ChildStoryCard extends ConsumerWidget {
           label: '내가 쓴 답',
           text: childAnswerText(story.childAnswer),
         ),
+        // 자녀는 자기 답만 지울 수 있다. 부모 녹음은 부모가 지운다.
+        if (!story.childAnswer.isDeleted && story.childAnswer.answerId != null)
+          DeleteMyAnswerButton(
+            label: '내 답 지우기',
+            confirmTitle: '내 답을 지울까요?',
+            confirmMessage: childDeleteConfirmMessage,
+            doneMessage: '답을 지웠어요.',
+            onDelete: (deleter) => deleter.deleteChildAnswer(story),
+          ),
       ],
     );
   }

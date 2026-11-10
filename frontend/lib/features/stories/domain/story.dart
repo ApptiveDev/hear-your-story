@@ -29,6 +29,41 @@ class Story {
   final StoryParentAnswer parentAnswer;
   final StoryChildAnswer childAnswer;
   final DateTime revealedAt;
+
+  /// 부모 녹음을 지운 뒤의 이야기. 질문과 자녀 답은 그대로다.
+  Story withParentAnswerDeleted() => _copyWith(
+    parentAnswer: const StoryParentAnswer(
+      availability: AnswerAvailability.deleted,
+      recordingId: null,
+      processingStatus: null,
+    ),
+  );
+
+  /// 자녀 답을 지운 뒤의 이야기. 질문과 부모 답은 그대로다.
+  Story withChildAnswerDeleted() => _copyWith(
+    childAnswer: const StoryChildAnswer(
+      availability: AnswerAvailability.deleted,
+      answerId: null,
+      text: null,
+      ttsStatus: null,
+    ),
+  );
+
+  Story _copyWith({
+    StoryParentAnswer? parentAnswer,
+    StoryChildAnswer? childAnswer,
+  }) {
+    return Story(
+      storyId: storyId,
+      assignmentId: assignmentId,
+      assignedDate: assignedDate,
+      questionText: questionText,
+      questionCategory: questionCategory,
+      parentAnswer: parentAnswer ?? this.parentAnswer,
+      childAnswer: childAnswer ?? this.childAnswer,
+      revealedAt: revealedAt,
+    );
+  }
 }
 
 class StoryParentAnswer {

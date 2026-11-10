@@ -73,6 +73,13 @@ class FakeStoriesRepository implements StoriesRepository {
   /// 요청된 달 기록
   final List<String> requestedMonths = [];
 
+  /// 지우기 요청 기록
+  final List<String> deletedRecordingIds = [];
+  final List<String> deletedAnswerIds = [];
+
+  /// 값이 있으면 지우기 요청에서 이 에러를 던진다.
+  Object? deleteError;
+
   @override
   Future<StoryPage> fetchPage({String? cursor}) async {
     requestedCursors.add(cursor);
@@ -87,5 +94,17 @@ class FakeStoriesRepository implements StoriesRepository {
     if (gate != null) await gate!.future;
     if (error != null) throw error!;
     return months[month] ?? const [];
+  }
+
+  @override
+  Future<void> deleteParentRecording(String recordingId) async {
+    if (deleteError != null) throw deleteError!;
+    deletedRecordingIds.add(recordingId);
+  }
+
+  @override
+  Future<void> deleteChildAnswer(String answerId) async {
+    if (deleteError != null) throw deleteError!;
+    deletedAnswerIds.add(answerId);
   }
 }

@@ -210,6 +210,96 @@ void main() {
     expect(audioRepo.audioCalls, 0);
   });
 
+  // ───────────── 내 답 지우기 (각자 본인 답만 개별 삭제) ─────────────
+
+  testWidgets('부모: 확인 후 내 녹음만 지우고 자녀 답은 남는다', (tester) async {
+    final repo = oneStory(testStory('1', ttsStatus: 'NOT_REQUESTED'));
+    await pumpPage(
+      tester,
+      repo,
+      role: UserRole.parent,
+      audioRepo: FakeParentAnswerRepository(),
+    );
+
+    await tester.tap(find.text('녹음 지우기'));
+    await tester.pumpAndSettle();
+    expect(find.text('이 녹음을 지울까요?'), findsOneWidget);
+    expect(find.text(parentDeleteConfirmMessage), findsOneWidget);
+
+    await tester.tap(find.text('지우기'));
+    await tester.pumpAndSettle();
+
+    expect(repo.deletedRecordingIds, ['rec_1']);
+    expect(repo.deletedAnswerIds, isEmpty); // 자녀 답은 건드리지 않음
+    expect(find.text(deletedParentAnswerText), findsOneWidget);
+    expect(find.text('자녀 답 1'), findsOneWidget);
+    expect(find.text('녹음 지우기'), findsNothing); // 지운 뒤엔 버튼이 없음
+    expect(find.text('녹음을 지웠어요.'), findsOneWidget);
+  });
+
+  testWidgets('부모: 취소하면 아무것도 지우지 않는다', (tester) async {
+    final repo = oneStory(testStory('1', ttsStatus: 'NOT_REQUESTED'));
+    await pumpPage(
+      tester,
+      repo,
+      role: UserRole.parent,
+      audioRepo: FakeParentAnswerRepository(),
+    );
+
+    await tester.tap(find.text('녹음 지우기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+
+    expect(repo.deletedRecordingIds, isEmpty);
+    expect(find.text('정리된 부모님 답'), findsOneWidget);
+    expect(find.text('녹음 지우기'), findsOneWidget);
+  });
+
+  testWidgets('자녀: 확인 후 내 답만 지우고 부모님 답은 남는다', (tester) async {
+    final repo = oneStory(testStory('1'));
+    await pumpPage(tester, repo, role: UserRole.child);
+
+    expect(find.text('녹음 지우기'), findsNothing); // 부모 녹음은 지울 수 없음
+    await tester.tap(find.text('내 답 지우기'));
+    await tester.pumpAndSettle();
+    expect(find.text(childDeleteConfirmMessage), findsOneWidget);
+
+    await tester.tap(find.text('지우기'));
+    await tester.pumpAndSettle();
+
+    expect(repo.deletedAnswerIds, ['ans_1']);
+    expect(repo.deletedRecordingIds, isEmpty);
+    expect(find.text(deletedChildAnswerText), findsOneWidget);
+    expect(find.text('정리된 부모님 답'), findsOneWidget);
+    expect(find.text('내 답 지우기'), findsNothing);
+  });
+
+  testWidgets('이미 지워진 내 답에는 지우기 버튼이 없다', (tester) async {
+    await pumpPage(
+      tester,
+      oneStory(testStory('1', childDeleted: true)),
+      role: UserRole.child,
+    );
+
+    expect(find.text('내 답 지우기'), findsNothing);
+  });
+
+  testWidgets('지우기에 실패하면 안내하고 답은 그대로 둔다', (tester) async {
+    final repo = oneStory(testStory('1'))
+      ..deleteError = ApiException(statusCode: 500);
+    await pumpPage(tester, repo, role: UserRole.child);
+
+    await tester.tap(find.text('내 답 지우기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('지우기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('잠시 후 다시 시도해 주세요.'), findsOneWidget);
+    expect(find.text('자녀 답 1'), findsOneWidget);
+    expect(find.text('내 답 지우기'), findsOneWidget); // 다시 시도할 수 있음
+  });
+
   testWidgets('부모: TTS 만드는 중이면 안내만 하고 API는 부르지 않는다', (tester) async {
     final audioRepo = FakeParentAnswerRepository();
     await pumpPage(

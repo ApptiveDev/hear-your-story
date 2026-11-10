@@ -5,6 +5,7 @@ import '../../../../core/widgets/audio_playback_card.dart';
 import '../../../parent_answer/data/parent_answer_providers.dart';
 import '../../domain/story.dart';
 import '../story_child_audio_provider.dart';
+import 'delete_my_answer_button.dart';
 import 'story_card_frame.dart';
 
 /// 부모용: 자녀의 답을 목소리(TTS)로 듣는 카드
@@ -25,6 +26,16 @@ class ParentStoryCard extends StatelessWidget {
           label: '내가 남긴 답',
           text: parentAnswerText(story.parentAnswer),
         ),
+        // 부모는 자기 녹음만 지울 수 있다. 자녀 답은 자녀가 지운다.
+        if (!story.parentAnswer.isDeleted &&
+            story.parentAnswer.recordingId != null)
+          DeleteMyAnswerButton(
+            label: '녹음 지우기',
+            confirmTitle: '이 녹음을 지울까요?',
+            confirmMessage: parentDeleteConfirmMessage,
+            doneMessage: '녹음을 지웠어요.',
+            onDelete: (deleter) => deleter.deleteParentRecording(story),
+          ),
       ],
     );
   }
