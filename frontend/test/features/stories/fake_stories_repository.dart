@@ -12,6 +12,8 @@ Story testStory(
   String? processingNotice,
   String? originalAudioUrl,
   String ttsStatus = 'READY',
+  bool parentDeleted = false,
+  bool childDeleted = false,
 }) {
   return Story(
     storyId: 'story_$id',
@@ -19,18 +21,33 @@ Story testStory(
     assignedDate: assignedDate ?? DateTime(2026, 9, 24),
     questionText: '질문 $id',
     questionCategory: 'CHILDHOOD',
-    parentAnswer: StoryParentAnswer(
-      recordingId: 'rec_$id',
-      processingStatus: processingStatus,
-      summaryText: summaryText,
-      processingNotice: processingNotice,
-      originalAudioUrl: originalAudioUrl,
-    ),
-    childAnswer: StoryChildAnswer(
-      answerId: 'ans_$id',
-      text: '자녀 답 $id',
-      ttsStatus: ttsStatus,
-    ),
+    parentAnswer: parentDeleted
+        ? StoryParentAnswer(
+            availability: AnswerAvailability.deleted,
+            recordingId: null,
+            processingStatus: null,
+            processingNotice: processingNotice,
+            originalAudioUrl: originalAudioUrl,
+          )
+        : StoryParentAnswer(
+            recordingId: 'rec_$id',
+            processingStatus: processingStatus,
+            summaryText: summaryText,
+            processingNotice: processingNotice,
+            originalAudioUrl: originalAudioUrl,
+          ),
+    childAnswer: childDeleted
+        ? const StoryChildAnswer(
+            availability: AnswerAvailability.deleted,
+            answerId: null,
+            text: null,
+            ttsStatus: null,
+          )
+        : StoryChildAnswer(
+            answerId: 'ans_$id',
+            text: '자녀 답 $id',
+            ttsStatus: ttsStatus,
+          ),
     revealedAt: DateTime(2026, 9, 24, 21),
   );
 }

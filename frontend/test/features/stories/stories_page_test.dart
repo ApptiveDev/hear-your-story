@@ -162,6 +162,54 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  // ───────────── 삭제된 답 (계약 5.12·5.13 초안) ─────────────
+
+  testWidgets('자녀: 부모님이 지운 녹음은 재생 버튼 없이 안내만 보인다', (tester) async {
+    await pumpPage(
+      tester,
+      oneStory(
+        testStory(
+          '1',
+          parentDeleted: true,
+          processingNotice: '부모님이 이 음성 기록을 삭제했어요.',
+          // 주소가 남아 있어도 지운 녹음은 재생하지 않는다
+          originalAudioUrl: 'https://example.test/p.m4a',
+        ),
+      ),
+      role: UserRole.child,
+    );
+
+    expect(find.text('부모님 목소리 듣기'), findsNothing);
+    expect(find.text('부모님이 이 음성 기록을 삭제했어요.'), findsOneWidget);
+    expect(find.text('글로 정리하고 있어요.'), findsNothing); // 처리 중으로 오해하지 않음
+    expect(find.text('자녀 답 1'), findsOneWidget); // 내 답은 그대로
+  });
+
+  testWidgets('자녀: 안내 문구가 없어도 기본 삭제 안내를 보여준다', (tester) async {
+    await pumpPage(
+      tester,
+      oneStory(testStory('1', parentDeleted: true)),
+      role: UserRole.child,
+    );
+
+    expect(find.text(deletedParentAnswerText), findsOneWidget);
+  });
+
+  testWidgets('부모: 지워진 자녀 답은 TTS를 요청하지 않고 안내만 보인다', (tester) async {
+    final audioRepo = FakeParentAnswerRepository();
+    await pumpPage(
+      tester,
+      oneStory(testStory('1', childDeleted: true)),
+      role: UserRole.parent,
+      audioRepo: audioRepo,
+    );
+
+    expect(find.text('자녀 답 들어보기'), findsNothing);
+    expect(find.text(deletedChildAnswerText), findsOneWidget);
+    expect(find.text('정리된 부모님 답'), findsOneWidget); // 내 답은 그대로
+    expect(audioRepo.audioCalls, 0);
+  });
+
   testWidgets('부모: TTS 만드는 중이면 안내만 하고 API는 부르지 않는다', (tester) async {
     final audioRepo = FakeParentAnswerRepository();
     await pumpPage(

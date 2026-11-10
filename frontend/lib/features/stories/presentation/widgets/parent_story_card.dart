@@ -19,7 +19,7 @@ class ParentStoryCard extends StatelessWidget {
       children: [
         _ChildVoiceSection(answer: story.childAnswer),
         const SizedBox(height: 12),
-        AnswerSection(label: '자녀의 답', text: story.childAnswer.text),
+        AnswerSection(label: '자녀의 답', text: childAnswerText(story.childAnswer)),
         const SizedBox(height: 16),
         AnswerSection(
           label: '내가 남긴 답',
@@ -43,9 +43,11 @@ class _ChildVoiceSection extends ConsumerWidget {
         style: Theme.of(context).textTheme.bodyMedium,
       );
     }
-    if (!answer.isTtsReady) return const SizedBox.shrink();
+    // 지워진 답(answerId == null)은 음성 주소를 요청하지 않는다.
+    final answerId = answer.answerId;
+    if (!answer.isTtsReady || answerId == null) return const SizedBox.shrink();
 
-    final audio = ref.watch(storyChildAudioProvider(answer.answerId));
+    final audio = ref.watch(storyChildAudioProvider(answerId));
     return audio.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(8),
@@ -61,7 +63,7 @@ class _ChildVoiceSection extends ConsumerWidget {
           onRefresh: () async {
             final fresh = await ref
                 .read(parentAnswerRepositoryProvider)
-                .getAudio(answer.answerId);
+                .getAudio(answerId);
             final freshUrl = fresh.url;
             if (freshUrl == null) {
               throw StateError('음성을 다시 불러오지 못했어요');

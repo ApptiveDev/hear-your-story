@@ -32,8 +32,11 @@ class StoriesDto {
   static StoryParentAnswer _parent(Map<String, dynamic> json) {
     final expiresAt = json['originalAudioExpiresAt'] as String?;
     return StoryParentAnswer(
-      recordingId: json['recordingId'] as String,
-      processingStatus: json['processingStatus'] as String,
+      availability: AnswerAvailability.fromJson(
+        json['availability'] as String?,
+      ),
+      recordingId: json['recordingId'] as String?,
+      processingStatus: json['processingStatus'] as String?,
       originalAudioUrl: json['originalAudioUrl'] as String?,
       originalAudioExpiresAt: expiresAt == null
           ? null
@@ -46,9 +49,12 @@ class StoriesDto {
 
   static StoryChildAnswer _child(Map<String, dynamic> json) {
     return StoryChildAnswer(
-      answerId: json['answerId'] as String,
-      text: json['text'] as String,
-      ttsStatus: json['ttsStatus'] as String,
+      availability: AnswerAvailability.fromJson(
+        json['availability'] as String?,
+      ),
+      answerId: json['answerId'] as String?,
+      text: json['text'] as String?,
+      ttsStatus: json['ttsStatus'] as String?,
     );
   }
 }

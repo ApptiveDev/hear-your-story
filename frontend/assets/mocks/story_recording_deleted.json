@@ -1,0 +1,60 @@
+{
+  "items": [
+    {
+      "storyId": "story_deleted_01",
+      "assignmentId": "asg_deleted_01",
+      "assignedDate": "2026-09-25",
+      "question": {
+        "id": "qst_046",
+        "text": "처음 일을 시작했을 때 어떤 마음이었나요?",
+        "category": "WORK"
+      },
+      "parentAnswer": {
+        "availability": "DELETED",
+        "recordingId": null,
+        "processingStatus": null,
+        "originalAudioUrl": null,
+        "originalAudioExpiresAt": null,
+        "sttText": null,
+        "summaryText": null,
+        "processingNotice": "부모님이 이 음성 기록을 삭제했어요."
+      },
+      "childAnswer": {
+        "availability": "AVAILABLE",
+        "answerId": "ans_deleted_01",
+        "text": "저는 첫 출근 날 너무 떨렸어요.",
+        "ttsStatus": "READY"
+      },
+      "revealedAt": "2026-09-25T21:00:00+09:00"
+    },
+    {
+      "storyId": "story_deleted_02",
+      "assignmentId": "asg_deleted_02",
+      "assignedDate": "2026-09-24",
+      "question": {
+        "id": "qst_045",
+        "text": "어릴 때 가장 좋아했던 놀이는 무엇이었나요?",
+        "category": "CHILDHOOD"
+      },
+      "parentAnswer": {
+        "availability": "AVAILABLE",
+        "recordingId": "rec_deleted_02",
+        "processingStatus": "READY",
+        "originalAudioUrl": "https://signed.example.com/rec_deleted_02.m4a?expires=...",
+        "originalAudioExpiresAt": "2026-09-24T10:50:00+09:00",
+        "sttText": "어릴 때는 동네에서 고무줄 놀이를 했지.",
+        "summaryText": "어린 시절 동네 친구들과 고무줄 놀이를 즐겼어요.",
+        "processingNotice": null
+      },
+      "childAnswer": {
+        "availability": "DELETED",
+        "answerId": null,
+        "text": null,
+        "ttsStatus": null
+      },
+      "revealedAt": "2026-09-24T21:00:00+09:00"
+    }
+  ],
+  "nextCursor": null,
+  "hasNext": false
+}

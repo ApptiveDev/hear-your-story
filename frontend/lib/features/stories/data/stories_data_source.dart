@@ -15,7 +15,7 @@ abstract class StoriesDataSource {
 class MockStoriesDataSource implements StoriesDataSource {
   /// 에뮬레이터에서 상태별 화면을 볼 때는:
   /// flutter run --dart-define=MOCK_STORIES=paged
-  /// 지원 값: first_page(기본, 계약 예시), paged, empty, NETWORK
+  /// 지원 값: first_page(기본, 계약 예시), paged, empty, deleted(삭제된 답), NETWORK
   MockStoriesDataSource({
     this.scenario = _definedScenario,
     this.failWith,
@@ -44,6 +44,8 @@ class MockStoriesDataSource implements StoriesDataSource {
         file = 'stories_empty';
       case 'paged':
         file = cursor == null ? 'stories_paged_1' : 'stories_paged_2';
+      case 'deleted':
+        file = 'story_recording_deleted';
       default:
         file = 'stories_first_page';
     }
