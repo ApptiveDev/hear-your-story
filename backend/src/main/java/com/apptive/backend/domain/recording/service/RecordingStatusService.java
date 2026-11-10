@@ -10,6 +10,7 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
 import com.apptive.backend.domain.recording.dto.RecordingStatusResponse;
+import com.apptive.backend.domain.recording.entity.ProcessingStatus;
 import com.apptive.backend.domain.recording.entity.Recording;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
@@ -37,8 +38,8 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markSttProcessing(String recordingId, String version) {
-		Recording recording = find(recordingId);
-		if (!isCurrent(recording, version)) {
+		Recording recording = findForUpdate(recordingId);
+		if (!isCurrent(recording, version) || recording.getProcessingStatus() != ProcessingStatus.UPLOADED) {
 			return false;
 		}
 		recording.markSttProcessing(now());
@@ -57,7 +58,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markSttDone(String recordingId, String version, String sttText) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return false;
 		}
@@ -67,7 +68,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markLlmProcessing(String recordingId, String version) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return false;
 		}
@@ -77,7 +78,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markReady(String recordingId, String version, String summaryText) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return false;
 		}
@@ -87,7 +88,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public void markFailed(String recordingId, String version, String failedStage, String failureCode) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return;
 		}
@@ -96,6 +97,11 @@ public class RecordingStatusService {
 
 	private Recording find(String recordingId) {
 		return recordingRepository.findById(recordingId)
+		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
+	}
+
+	private Recording findForUpdate(String recordingId) {
+		return recordingRepository.findByIdForUpdate(recordingId)
 		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
 	}
 

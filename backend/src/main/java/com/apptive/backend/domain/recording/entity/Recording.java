@@ -131,4 +131,15 @@ public class Recording {
 		this.updatedAt = now;
 	}
 
+	public void restartProcessing(String processingVersion, OffsetDateTime now) {
+		this.processingVersion = processingVersion;
+		this.processingStatus = ProcessingStatus.UPLOADED;
+		this.sttText = null;
+		this.summaryText = null;
+		this.failedStage = null;
+		this.failureCode = null;
+		this.processingNotice = null;
+		this.updatedAt = now;
+	}
+
 }

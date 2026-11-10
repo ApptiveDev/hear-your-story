@@ -47,6 +47,7 @@ Spring Boot는 `.env`를 자동으로 읽지 않는다. IntelliJ로 실행한다
 | `R2_BUCKET_NAME` | 비공개 원본 음성 bucket |
 | `STORAGE_TYPE` | `local`(기본) 또는 `r2` |
 | `AUDIO_PROCESSING_MODE` | `mock`(기본) 또는 `openai` |
+| `PROCESSING_RECOVERY_*` | 중단된 STT/TTS 작업의 복구 활성화·지연·주기·배치 크기 |
 | `OPENAI_TRANSCRIPTION_MODEL`, `OPENAI_SUMMARY_MODEL` | STT·이야기 정리 모델 |
 | `OPENAI_TTS_MODEL`, `OPENAI_TTS_VOICE` | 자녀 답변 음성 합성 모델·목소리 |
 | `JPA_SHOW_SQL` | 로컬 SQL 출력 여부, 기본 `false` |
