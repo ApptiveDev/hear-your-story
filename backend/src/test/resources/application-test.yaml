@@ -15,3 +15,7 @@ app:
     access-token-expiration-days: 30
   recording:
     mock-processing-delay-ms: 5
+  processing-recovery:
+    enabled: false
+    stale-after: 1m
+    batch-size: 50

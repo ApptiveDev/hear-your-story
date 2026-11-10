@@ -93,4 +93,11 @@ public class ChildAnswer {
 		this.updatedAt = updatedAt;
 	}
 
+	public void restartTts(String ttsVersion, OffsetDateTime updatedAt) {
+		this.ttsStatus = TtsStatus.PROCESSING;
+		this.ttsVersion = ttsVersion;
+		this.ttsProcessingNotice = null;
+		this.updatedAt = updatedAt;
+	}
+
 }

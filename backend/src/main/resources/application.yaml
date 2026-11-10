@@ -35,6 +35,12 @@ app:
     local-directory: ${LOCAL_STORAGE_DIRECTORY:${java.io.tmpdir}/4team-recordings}
   audio-processing:
     mode: ${AUDIO_PROCESSING_MODE:mock}
+  processing-recovery:
+    enabled: ${PROCESSING_RECOVERY_ENABLED:true}
+    stale-after: ${PROCESSING_RECOVERY_STALE_AFTER:5m}
+    initial-delay: ${PROCESSING_RECOVERY_INITIAL_DELAY:10s}
+    fixed-delay: ${PROCESSING_RECOVERY_FIXED_DELAY:1m}
+    batch-size: ${PROCESSING_RECOVERY_BATCH_SIZE:50}
   openai:
     api-key: ${OPENAI_API_KEY:}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

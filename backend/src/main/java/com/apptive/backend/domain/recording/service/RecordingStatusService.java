@@ -10,6 +10,7 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
 import com.apptive.backend.domain.recording.dto.RecordingStatusResponse;
+import com.apptive.backend.domain.recording.entity.ProcessingStatus;
 import com.apptive.backend.domain.recording.entity.Recording;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
@@ -37,8 +38,9 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markSttProcessing(String recordingId, String version) {
-		Recording recording = find(recordingId);
-		if (!isCurrent(recording, version)) {
+		Recording recording = recordingRepository.findByIdForUpdate(recordingId)
+		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
+		if (!isCurrent(recording, version) || recording.getProcessingStatus() != ProcessingStatus.UPLOADED) {
 			return false;
 		}
 		recording.markSttProcessing(now());
