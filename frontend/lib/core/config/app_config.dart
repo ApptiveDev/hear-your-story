@@ -13,4 +13,11 @@ class AppConfig {
     'STORIES_MONTH_API',
     defaultValue: useMock,
   );
+
+  // 카카오 로그인·토큰 갱신·기록 복구(계약 1.2·5.14)는 아직 초안이다.
+  // 켜지 않으면 기존 가입(POST /users)과 401 처리를 그대로 쓴다.
+  static const kakaoAuth = bool.fromEnvironment(
+    'KAKAO_AUTH',
+    defaultValue: false,
+  );
 }
