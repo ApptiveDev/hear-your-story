@@ -38,8 +38,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markSttProcessing(String recordingId, String version) {
-		Recording recording = recordingRepository.findByIdForUpdate(recordingId)
-		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version) || recording.getProcessingStatus() != ProcessingStatus.UPLOADED) {
 			return false;
 		}
@@ -59,7 +58,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markSttDone(String recordingId, String version, String sttText) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return false;
 		}
@@ -69,7 +68,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markLlmProcessing(String recordingId, String version) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return false;
 		}
@@ -79,7 +78,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public boolean markReady(String recordingId, String version, String summaryText) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return false;
 		}
@@ -89,7 +88,7 @@ public class RecordingStatusService {
 
 	@Transactional
 	public void markFailed(String recordingId, String version, String failedStage, String failureCode) {
-		Recording recording = find(recordingId);
+		Recording recording = findForUpdate(recordingId);
 		if (!isCurrent(recording, version)) {
 			return;
 		}
@@ -98,6 +97,11 @@ public class RecordingStatusService {
 
 	private Recording find(String recordingId) {
 		return recordingRepository.findById(recordingId)
+		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
+	}
+
+	private Recording findForUpdate(String recordingId) {
+		return recordingRepository.findByIdForUpdate(recordingId)
 		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
 	}
 
