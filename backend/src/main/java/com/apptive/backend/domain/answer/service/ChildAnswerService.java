@@ -45,7 +45,7 @@ public class ChildAnswerService {
 
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId)
 		    .orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
-		if (!assignment.getFamilyPair().getChild().getId().equals(authenticatedUser.userId())) {
+		if (!assignment.belongsToChild(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 

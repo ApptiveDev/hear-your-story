@@ -32,7 +32,7 @@ public class AnswerAudioService {
 		}
 		ChildAnswer answer = childAnswerRepository.findByIdWithAssignment(answerId)
 		    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-		if (!answer.getAssignment().getFamilyPair().getParent().getId().equals(authenticatedUser.userId())) {
+		if (!answer.getAssignment().belongsToParent(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 		if (recordingRepository.findByAssignment_Id(answer.getAssignment().getId()).isEmpty()) {

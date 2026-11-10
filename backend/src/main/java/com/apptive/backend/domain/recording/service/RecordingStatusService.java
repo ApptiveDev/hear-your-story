@@ -30,7 +30,7 @@ public class RecordingStatusService {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
 		}
 		Recording recording = find(recordingId);
-		if (!recording.getAssignment().getFamilyPair().getParent().getId().equals(authenticatedUser.userId())) {
+		if (!recording.getAssignment().belongsToParent(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 		return toResponse(recording);

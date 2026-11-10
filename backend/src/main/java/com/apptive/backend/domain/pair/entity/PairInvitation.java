@@ -55,4 +55,12 @@ public class PairInvitation {
 		this.usedAt = usedAt;
 	}
 
+	public boolean isUsed() {
+		return usedAt != null;
+	}
+
+	public boolean isExpiredAt(OffsetDateTime now) {
+		return !expiresAt.isAfter(now);
+	}
+
 }

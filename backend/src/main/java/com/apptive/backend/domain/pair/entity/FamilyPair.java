@@ -47,4 +47,12 @@ public class FamilyPair {
 		this.pairedAt = pairedAt;
 	}
 
+	public boolean hasParent(String userId) {
+		return parent.getId().equals(userId);
+	}
+
+	public boolean hasChild(String userId) {
+		return child.getId().equals(userId);
+	}
+
 }
