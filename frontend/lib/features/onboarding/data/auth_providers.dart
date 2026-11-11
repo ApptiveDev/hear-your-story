@@ -9,6 +9,7 @@ import '../domain/auth_repository.dart';
 import 'auth_data_source.dart';
 import 'auth_repository_impl.dart';
 import 'device_id_storage.dart';
+import 'kakao_sign_in.dart';
 import 'user_storage.dart';
 
 final authDataSourceProvider = Provider<AuthDataSource>((ref) {
@@ -37,5 +38,6 @@ final authRepositoryProvider = Provider<AuthRepository>(
     deviceIdStorage: ref.read(deviceIdStorageProvider),
     tokenStorage: ref.read(tokenStorageProvider),
     userStorage: ref.read(userStorageProvider),
+    kakaoSignIn: ref.read(kakaoSignInProvider),
   ),
 );

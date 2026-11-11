@@ -10,6 +10,7 @@ import '../../../core/widgets/error_retry_view.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
+import '../../onboarding/presentation/widgets/logout_button.dart';
 import '../../onboarding/presentation/widgets/step_header.dart';
 import '../data/pairing_providers.dart';
 import '../domain/pairing_repository.dart';
@@ -25,6 +26,7 @@ class PairingPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     return Scaffold(
+      persistentFooterButtons: logoutFooter(ref),
       body: SafeArea(
         child: user.when(
           // 가입 직후 다시 읽는 동안 이전 값(null)을 쓰면 가입 화면으로 잘못 돌아간다

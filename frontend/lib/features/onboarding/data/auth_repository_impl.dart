@@ -4,8 +4,11 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../domain/app_user.dart';
 import '../domain/auth_repository.dart';
+import '../domain/login_result.dart';
 import 'auth_data_source.dart';
 import 'device_id_storage.dart';
+import 'kakao_login_response.dart';
+import 'kakao_sign_in.dart';
 import 'sign_up_response.dart';
 import 'user_storage.dart';
 
@@ -15,12 +18,14 @@ class AuthRepositoryImpl implements AuthRepository {
     required this._deviceIdStorage,
     required this._tokenStorage,
     required this._userStorage,
+    required this._kakaoSignIn,
   });
 
   final AuthDataSource _dataSource;
   final DeviceIdStorage _deviceIdStorage;
   final TokenStorage _tokenStorage;
   final UserStorage _userStorage;
+  final KakaoSignIn _kakaoSignIn;
 
   /// 앱을 켤 때 서버 응답을 기다리는 최대 시간. 넘으면 저장된 정보로 들어간다.
   static const restoreTimeout = Duration(seconds: 5);
@@ -54,5 +59,34 @@ class AuthRepositoryImpl implements AuthRepository {
     if (await _tokenStorage.read() == null) return user;
     await _userStorage.save(user);
     return user;
+  }
+
+  @override
+  Future<LoginResult> loginWithKakao() async {
+    final idToken = await _kakaoSignIn.signIn();
+    final deviceId = await _deviceIdStorage.getOrCreate();
+    final response = KakaoLoginResponse.fromJson(
+      await _dataSource.loginWithKakao(idToken: idToken, deviceId: deviceId),
+    );
+
+    await _tokenStorage.saveTokens(
+      access: response.accessToken,
+      refresh: response.refreshToken,
+    );
+    final user = response.user;
+    if (user == null) {
+      // 예전 가입 정보가 남아 있으면 가입 화면이 홈으로 보내 버린다
+      await _userStorage.clear();
+    } else {
+      await _userStorage.save(user);
+    }
+    return response.toResult();
+  }
+
+  @override
+  Future<void> logout() async {
+    await _tokenStorage.clear();
+    await _userStorage.clear();
+    await _kakaoSignIn.signOut();
   }
 }

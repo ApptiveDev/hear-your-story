@@ -7,7 +7,9 @@ import 'package:life_record/core/storage/token_storage.dart';
 import 'package:life_record/features/onboarding/data/auth_repository_impl.dart';
 import 'package:life_record/features/onboarding/data/device_id_storage.dart';
 import 'package:life_record/features/onboarding/data/user_storage.dart';
+import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/domain/app_user.dart';
+import 'package:life_record/features/onboarding/domain/login_result.dart';
 
 import 'fake_auth_data_source.dart';
 
@@ -17,10 +19,12 @@ void main() {
   late TokenStorage tokenStorage;
   late UserStorage userStorage;
   late AuthRepositoryImpl repository;
+  late FakeKakao kakao;
 
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
     dataSource = FakeAuthDataSource();
+    kakao = FakeKakao();
     tokenStorage = TokenStorage(secure);
     userStorage = UserStorage(secure);
     repository = AuthRepositoryImpl(
@@ -28,6 +32,7 @@ void main() {
       deviceIdStorage: DeviceIdStorage(secure),
       tokenStorage: tokenStorage,
       userStorage: userStorage,
+      kakaoSignIn: kakao,
     );
   });
 
@@ -157,6 +162,112 @@ void main() {
       await restoring;
 
       expect(await userStorage.read(), isNull);
+    });
+  });
+
+  group('카카오 로그인', () {
+    test('기존 계정이면 토큰 두 개와 사용자 정보를 저장한다', () async {
+      dataSource.kakao = kakaoLoginJson();
+
+      final result = await repository.loginWithKakao();
+
+      expect(result.recoveryStatus, RecoveryStatus.restored);
+      expect(result.user?.name, '김영희');
+      expect(await tokenStorage.read(), 'kakao-access');
+      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
+      expect((await userStorage.read())?.id, 'usr_kakao');
+    });
+
+    test('카카오 id token과 기기 ID를 보낸다', () async {
+      dataSource.kakao = kakaoLoginJson();
+      await repository.signUp(name: '김영희', role: UserRole.parent);
+
+      await repository.loginWithKakao();
+
+      final request = dataSource.kakaoRequests.single;
+      expect(request['idToken'], 'id-token-1');
+      // 기존 기기 계정을 카카오 계정에 연결할 수 있게 같은 기기 ID를 보낸다
+      expect(request['deviceId'], dataSource.requests.single['deviceId']);
+    });
+
+    test('처음이면 토큰만 저장하고 예전 사용자 정보는 지운다', () async {
+      await userStorage.save(
+        const AppUser(
+          id: 'usr_old',
+          name: '예전',
+          role: UserRole.child,
+          pairingStatus: PairingStatus.paired,
+        ),
+      );
+      dataSource.kakao = kakaoLoginJson(status: 'NEW');
+
+      final result = await repository.loginWithKakao();
+
+      expect(result.recoveryStatus, RecoveryStatus.newUser);
+      expect(result.user, isNull);
+      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
+      expect(await userStorage.read(), isNull);
+    });
+
+    test('처음 로그인 후 가입을 마치면 refresh token은 그대로 둔다', () async {
+      dataSource.kakao = kakaoLoginJson(status: 'NEW');
+      await repository.loginWithKakao();
+
+      await repository.signUp(name: '김민지', role: UserRole.child);
+
+      expect(await tokenStorage.read(), 'token_for_김민지');
+      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
+    });
+
+    test('카카오 창을 닫으면 서버에 묻지 않고 아무것도 저장하지 않는다', () async {
+      kakao.error = const KakaoSignInCancelled();
+
+      await expectLater(
+        repository.loginWithKakao(),
+        throwsA(isA<KakaoSignInCancelled>()),
+      );
+      expect(dataSource.kakaoRequests, isEmpty);
+      expect(await tokenStorage.read(), isNull);
+    });
+
+    test('서버가 거절하면 아무것도 저장하지 않는다', () async {
+      dataSource.kakaoError = ApiException(statusCode: 401);
+
+      await expectLater(
+        repository.loginWithKakao(),
+        throwsA(isA<ApiException>()),
+      );
+      expect(await tokenStorage.read(), isNull);
+      expect(await tokenStorage.readRefresh(), isNull);
+    });
+
+    for (final (label, json) in [
+      ('RESTORED인데 사용자가 없으면', {...kakaoLoginJson(), 'user': null}),
+      ('모르는 상태 값이면', kakaoLoginJson(status: 'MERGED')),
+      ('refresh token이 없으면', {...kakaoLoginJson(), 'refreshToken': null}),
+    ]) {
+      test('$label 응답 오류로 보고 저장하지 않는다', () async {
+        dataSource.kakao = json;
+
+        await expectLater(repository.loginWithKakao(), throwsA(anything));
+        expect(await tokenStorage.read(), isNull);
+      });
+    }
+
+    test('로그아웃하면 토큰·사용자를 지우고 기기 ID는 남긴다', () async {
+      dataSource.kakao = kakaoLoginJson();
+      await repository.signUp(name: '김영희', role: UserRole.parent);
+      await repository.loginWithKakao();
+      final deviceId = await secure.read(key: 'device_id');
+
+      await repository.logout();
+
+      expect(await tokenStorage.read(), isNull);
+      expect(await tokenStorage.readRefresh(), isNull);
+      expect(await userStorage.read(), isNull);
+      expect(await secure.read(key: 'device_id'), deviceId);
+      expect(deviceId, isNotNull);
+      expect(kakao.signOutCalls, 1);
     });
   });
 }

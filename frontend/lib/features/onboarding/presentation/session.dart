@@ -6,6 +6,7 @@ import '../../../core/config/auth_flags.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_providers.dart';
+import 'kakao_login_controller.dart';
 
 /// 앱을 켰을 때 가입 화면 대신 갈 곳. 로그인 정보가 없으면 null(가입 화면 유지).
 ///
@@ -67,13 +68,44 @@ class SessionExpiry {
     _ref.invalidate(currentUserProvider);
     // 앱 시작 때 계산한 "갈 곳"이 남아 있으면 가입 화면이 그 값을 다시 쓴다
     _ref.invalidate(launchDestinationProvider);
+    // 가입을 마치지 않은 채(역할 선택 중) 만료되면 같은 화면에 머무르므로 로그인 결과도 비운다
+    _ref.invalidate(needsKakaoLoginProvider);
+    _ref.invalidate(kakaoLoginControllerProvider);
 
-    // 같은 기기·같은 역할로 다시 가입하면 서버가 기존 계정을 돌려준다
     messenger?.showSnackBar(
-      const SnackBar(content: Text('다시 시작해 주세요.\n같은 역할을 고르면 이야기가 그대로 이어져요.')),
+      SnackBar(
+        content: Text(
+          _ref.read(kakaoAuthEnabledProvider)
+              // 같은 카카오 계정으로 로그인하면 서버가 기존 계정을 돌려준다
+              ? '다시 로그인해 주세요.\n같은 카카오 계정이면 이야기가 이어져요.'
+              // 같은 기기·같은 역할로 다시 가입하면 서버가 기존 계정을 돌려준다
+              : '다시 시작해 주세요.\n같은 역할을 고르면 이야기가 그대로 이어져요.',
+        ),
+      ),
     );
     router.go('/onboarding');
   }
+}
+
+/// 카카오 로그인을 켰고 아직 로그인하지 않았는지. 로그인은 했지만 가입(역할·이름)을
+/// 마치지 않았으면 false라서 가입 화면이 역할 선택부터 보여준다.
+final needsKakaoLoginProvider = FutureProvider.autoDispose<bool>((ref) async {
+  if (!ref.read(kakaoAuthEnabledProvider)) return false;
+  return await ref.read(tokenStorageProvider).read() == null;
+});
+
+/// 로그아웃. 기기의 로그인 정보를 지우고 가입(로그인) 화면으로 보낸다.
+///
+/// 화면이 사라진 뒤에도 정리를 마칠 수 있게 시작할 때 container와 router를 잡아 둔다.
+Future<void> signOut(BuildContext context) async {
+  final container = ProviderScope.containerOf(context, listen: false);
+  final router = GoRouter.of(context);
+  await container.read(authRepositoryProvider).logout();
+  container
+    ..invalidate(currentUserProvider)
+    ..invalidate(launchDestinationProvider)
+    ..invalidate(needsKakaoLoginProvider);
+  router.go('/onboarding');
 }
 
 final sessionExpiryProvider = Provider<SessionExpiry>(SessionExpiry.new);

@@ -1,4 +1,5 @@
 import 'app_user.dart';
+import 'login_result.dart';
 
 abstract class AuthRepository {
   /// 가입하고 access token과 사용자 정보를 기기에 저장한다.
@@ -10,4 +11,15 @@ abstract class AuthRepository {
   /// 로그인이 끝났으면(401) [ApiException]을 그대로 던진다. 그 밖의 실패(인터넷 끊김,
   /// 서버 오류, 응답 형식 오류, 시간 초과)는 앱을 쓸 수 있게 [cached]를 돌려준다.
   Future<AppUser> restoreUser({required AppUser cached});
+
+  /// 카카오로 본인 확인을 하고 서버 토큰(access·refresh)을 저장한다. 계약 5.14 초안.
+  ///
+  /// 기존 계정이면 사용자 정보도 저장한다. 처음이면(NEW) 사용자 정보를 비워 두고,
+  /// 화면이 역할·이름을 받아 [signUp]으로 가입을 마친다. 사용자가 카카오 창을 닫으면
+  /// `KakaoSignInCancelled`를 던진다.
+  Future<LoginResult> loginWithKakao();
+
+  /// 기기에서 로그인 정보(토큰·사용자)를 지우고 카카오 SDK도 로그아웃한다.
+  /// 기기 ID는 남긴다.
+  Future<void> logout();
 }

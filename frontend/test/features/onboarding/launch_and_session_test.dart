@@ -171,7 +171,7 @@ void main() {
       expect(find.text('어릴 때 가장 좋아했던 놀이는 무엇이었나요?'), findsOneWidget);
     });
 
-    testWidgets('로그인이 끝났으면(401) 정보를 지우고 가입 화면으로 보낸다', (tester) async {
+    testWidgets('로그인이 끝났으면(401) 정보를 지우고 카카오 로그인으로 보낸다', (tester) async {
       final auth = FakeAuthDataSource(
         meError: ApiException(statusCode: 401, errorCode: 'TOKEN_EXPIRED'),
       );
@@ -179,20 +179,20 @@ void main() {
       await _launch(tester, stored: _stored(), auth: auth, kakaoAuth: true);
       await tester.pumpAndSettle();
 
-      expect(find.text('누구로 시작할까요?'), findsOneWidget);
-      expect(find.textContaining('같은 역할을 고르면 이야기가 그대로 이어져요.'), findsOneWidget);
+      expect(find.text('카카오로 시작하기'), findsOneWidget);
+      expect(find.textContaining('다시 로그인해 주세요.'), findsOneWidget);
       const storage = FlutterSecureStorage();
       expect(await storage.read(key: 'access_token'), isNull);
       expect(await storage.read(key: 'current_user'), isNull);
     });
 
-    testWidgets('가입 정보가 없으면 서버에 묻지 않는다', (tester) async {
+    testWidgets('로그인 전이면 서버에 묻지 않고 카카오 로그인을 보여준다', (tester) async {
       final auth = FakeAuthDataSource(me: me('PAIRED'));
 
       await _launch(tester, stored: {}, auth: auth, kakaoAuth: true);
 
       expect(auth.meCalls, 0);
-      expect(find.text('누구로 시작할까요?'), findsOneWidget);
+      expect(find.text('카카오로 시작하기'), findsOneWidget);
     });
   });
 

@@ -1,0 +1,12 @@
+{
+  "user": {
+    "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
+    "name": "김영희",
+    "role": "PARENT",
+    "pairingStatus": "PAIRED"
+  },
+  "accessToken": "draft-access-token",
+  "refreshToken": "draft-refresh-token",
+  "expiresAt": "2026-11-04T16:00:00+09:00",
+  "recoveryStatus": "RESTORED"
+}
