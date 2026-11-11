@@ -12,7 +12,9 @@ import 'device_id_storage.dart';
 import 'user_storage.dart';
 
 final authDataSourceProvider = Provider<AuthDataSource>((ref) {
-  if (AppConfig.useMock) return MockAuthDataSource();
+  if (AppConfig.useMock) {
+    return MockAuthDataSource(ref.read(userStorageProvider));
+  }
   return ApiAuthDataSource(ref.read(dioProvider));
 });
 

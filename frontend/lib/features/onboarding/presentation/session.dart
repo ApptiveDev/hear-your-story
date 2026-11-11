@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/auth_flags.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_providers.dart';
@@ -10,12 +11,22 @@ import '../data/auth_providers.dart';
 ///
 /// 라우터에 redirect를 두지 않고 가입 화면에서 판단한다. 첫 화면이 `/onboarding`이라
 /// 결과가 같고, 여러 사람이 함께 고치는 router.dart를 건드리지 않아도 된다.
+///
+/// 카카오 로그인을 켜면 서버(`GET /users/me`)에서 사용자를 다시 받는다. 상대가 연결을
+/// 끊었으면 페어링으로 보낸다. 인터넷이 없으면 저장된 정보로 들어가고, 로그인이
+/// 끝났으면(401) 에러로 알려서 가입 화면이 [handleSessionExpired]로 처리한다.
 final launchDestinationProvider = FutureProvider.autoDispose<String?>((
   ref,
 ) async {
   final token = await ref.read(tokenStorageProvider).read();
-  final user = await ref.read(currentUserProvider.future);
+  var user = await ref.read(currentUserProvider.future);
   if (token == null || user == null) return null;
+  if (ref.read(kakaoAuthEnabledProvider)) {
+    user = await ref.read(authRepositoryProvider).restoreUser(cached: user);
+    if (!ref.mounted) return null;
+    // 홈·페어링 화면이 새로 받은 사용자를 읽게 한다
+    ref.invalidate(currentUserProvider);
+  }
   return user.isPaired ? '/today' : '/pairing';
 });
 

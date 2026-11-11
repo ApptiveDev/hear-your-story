@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_record/core/config/auth_flags.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/network/dio_provider.dart';
 import 'package:life_record/core/network/session_expired_signal.dart';
@@ -77,9 +78,7 @@ void main() {
           : (onApi ?? api)(o),
     );
     container = ProviderContainer(
-      overrides: [
-        tokenRefreshEnabledProvider.overrideWithValue(refreshEnabled),
-      ],
+      overrides: [kakaoAuthEnabledProvider.overrideWithValue(refreshEnabled)],
     );
     addTearDown(container.dispose);
     expired = 0;

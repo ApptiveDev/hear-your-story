@@ -49,6 +49,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     ref.listen(launchDestinationProvider, (_, next) {
       // 다시 계산하는 중에는 이전 값이 실려 오므로 계산이 끝난 값에만 반응한다
       if (next.isLoading) return;
+      // 서버가 로그인이 끝났다고(401) 하면 정보를 지우고 가입부터 하게 한다
+      final error = next.error;
+      if (error != null) {
+        handleSessionExpired(context, ref, error);
+        return;
+      }
       final destination = next.value;
       if (destination != null) context.go(destination);
     });
