@@ -17,7 +17,13 @@ abstract class AuthRepository {
   /// 기존 계정이면 사용자 정보도 저장한다. 처음이면(NEW) 사용자 정보를 비워 두고,
   /// 화면이 역할·이름을 받아 [signUp]으로 가입을 마친다. 사용자가 카카오 창을 닫으면
   /// `KakaoSignInCancelled`를 던진다.
-  Future<LoginResult> loginWithKakao();
+  ///
+  /// [onVerified]는 카카오 본인 확인이 끝나고 서버에 기록을 찾으러 가기 직전에 부른다.
+  /// [chooseAccount]면 카카오 계정을 고르게 한다.
+  Future<LoginResult> loginWithKakao({
+    bool chooseAccount = false,
+    void Function()? onVerified,
+  });
 
   /// 기기에서 로그인 정보(토큰·사용자)를 지우고 카카오 SDK도 로그아웃한다.
   /// 기기 ID는 남긴다.

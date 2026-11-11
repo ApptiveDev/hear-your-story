@@ -62,8 +62,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<LoginResult> loginWithKakao() async {
-    final idToken = await _kakaoSignIn.signIn();
+  Future<LoginResult> loginWithKakao({
+    bool chooseAccount = false,
+    void Function()? onVerified,
+  }) async {
+    final idToken = await _kakaoSignIn.signIn(chooseAccount: chooseAccount);
+    onVerified?.call();
     final deviceId = await _deviceIdStorage.getOrCreate();
     final response = KakaoLoginResponse.fromJson(
       await _dataSource.loginWithKakao(idToken: idToken, deviceId: deviceId),

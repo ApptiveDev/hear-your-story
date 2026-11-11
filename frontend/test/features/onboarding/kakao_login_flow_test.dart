@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -272,5 +273,96 @@ void main() {
 
     expect(find.text('카카오로 시작하기'), findsOneWidget);
     expect(await _storage.read(key: 'refresh_token'), isNull);
+  });
+
+  testWidgets('로그인하는 동안 카카오 확인 → 기록 찾기 단계를 알려준다', (tester) async {
+    final kakaoGate = Completer<void>();
+    final serverGate = Completer<void>();
+    final kakao = FakeKakao()..gate = kakaoGate.future;
+    final auth = FakeAuthDataSource()
+      ..kakao = kakaoLoginJson(role: 'CHILD')
+      ..kakaoGate = serverGate.future;
+
+    await _pumpApp(tester, auth: auth, kakao: kakao);
+    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.pump();
+    expect(find.text('카카오에서 확인하고 있어요'), findsOneWidget);
+
+    kakaoGate.complete();
+    await tester.pump();
+    expect(find.text('이전 기록을 찾고 있어요'), findsOneWidget);
+
+    serverGate.complete();
+    await _settle(tester);
+    expect(find.text(_question), findsOneWidget);
+  });
+
+  group('이전 기록을 찾지 못했을 때', () {
+    Future<void> reachFailure(
+      WidgetTester tester,
+      FakeAuthDataSource auth,
+      FakeKakao kakao,
+    ) async {
+      await _pumpApp(tester, auth: auth, kakao: kakao);
+      await _tapLogin(tester);
+      expect(find.text('이전 기록을 찾지 못했어요'), findsOneWidget);
+    }
+
+    testWidgets('이 계정으로 새로 시작하면 역할·이름을 받아 가입한다', (tester) async {
+      final auth = FakeAuthDataSource()
+        ..kakao = kakaoLoginJson(status: 'RECOVERY_FAILED');
+      await reachFailure(tester, auth, FakeKakao());
+
+      await tester.tap(find.text('이 계정으로 새로 시작하기'));
+      await tester.pumpAndSettle();
+      expect(find.text('누구로 시작할까요?'), findsOneWidget);
+
+      await tester.tap(find.text('자녀예요'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '김민지');
+      await tester.pump();
+      await tester.tap(find.text('시작하기'));
+      await _settle(tester);
+
+      expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
+      expect(await _storage.read(key: 'refresh_token'), 'kakao-refresh');
+    });
+
+    testWidgets('다른 카카오 계정을 고르면 그 계정의 기록으로 들어간다', (tester) async {
+      final kakao = FakeKakao();
+      final auth = FakeAuthDataSource()
+        ..kakaoQueue.addAll([
+          kakaoLoginJson(status: 'RECOVERY_FAILED'),
+          kakaoLoginJson(role: 'CHILD'),
+        ]);
+      await reachFailure(tester, auth, kakao);
+
+      await tester.tap(find.text('다른 카카오 계정으로 로그인'));
+      await _settle(tester);
+
+      expect(find.text(_question), findsOneWidget);
+      // 앞 계정은 로그아웃하고, 계정 선택부터 다시 했다
+      expect(kakao.signOutCalls, 1);
+      expect(kakao.chooseAccount, [false, true]);
+      expect(auth.kakaoRequests.map((r) => r['idToken']), [
+        'id-token-1',
+        'id-token-2',
+      ]);
+    });
+
+    testWidgets('다른 계정 고르기를 닫으면 앞 계정 토큰 없이 로그인 화면으로 간다', (tester) async {
+      final kakao = FakeKakao();
+      final auth = FakeAuthDataSource()
+        ..kakao = kakaoLoginJson(status: 'RECOVERY_FAILED');
+      await reachFailure(tester, auth, kakao);
+
+      kakao.error = const KakaoSignInCancelled();
+      await tester.tap(find.text('다른 카카오 계정으로 로그인'));
+      await _settle(tester);
+
+      expect(find.text('카카오로 시작하기'), findsOneWidget);
+      expect(await _storage.read(key: 'access_token'), isNull);
+      expect(await _storage.read(key: 'refresh_token'), isNull);
+    });
   });
 }

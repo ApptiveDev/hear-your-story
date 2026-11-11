@@ -27,6 +27,12 @@ class FakeAuthDataSource implements AuthDataSource {
   Object? kakaoError;
   final kakaoRequests = <Map<String, String>>[];
 
+  /// 넣으면 `POST /auth/kakao`가 이것이 끝날 때까지 응답하지 않는다.
+  Future<void>? kakaoGate;
+
+  /// 응답할 때마다 꺼내 쓰는 차례별 응답. 비면 [kakao]를 쓴다.
+  final kakaoQueue = <Map<String, dynamic>>[];
+
   @override
   Future<Map<String, dynamic>> signUp({
     required String name,
@@ -64,8 +70,10 @@ class FakeAuthDataSource implements AuthDataSource {
     required String deviceId,
   }) async {
     kakaoRequests.add({'idToken': idToken, 'deviceId': deviceId});
+    await kakaoGate;
     final e = kakaoError;
     if (e != null) throw e;
+    if (kakaoQueue.isNotEmpty) return kakaoQueue.removeAt(0);
     return kakao ?? (throw StateError('kakao 응답을 정하지 않았다'));
   }
 }
@@ -76,7 +84,8 @@ Map<String, dynamic> kakaoLoginJson({
   String role = 'PARENT',
   String pairingStatus = 'PAIRED',
 }) => {
-  'user': status == 'NEW'
+  // 계약 5.14 뼈대: 기존 계정을 찾았을 때(RESTORED)만 사용자가 있다
+  'user': status != 'RESTORED'
       ? null
       : {
           'id': 'usr_kakao',
@@ -98,12 +107,21 @@ class FakeKakao implements KakaoSignIn {
   var signInCalls = 0;
   var signOutCalls = 0;
 
+  /// signIn마다 계정을 고르게 했는지
+  final chooseAccount = <bool>[];
+
+  /// 넣으면 카카오 본인 확인이 이것이 끝날 때까지 끝나지 않는다.
+  Future<void>? gate;
+
   @override
-  Future<String> signIn() async {
+  Future<String> signIn({bool chooseAccount = false}) async {
     signInCalls++;
+    this.chooseAccount.add(chooseAccount);
+    await gate;
     final e = error;
     if (e != null) throw e;
-    return 'id-token-1';
+    // 계정을 고르면 다른 사람으로 본다
+    return chooseAccount ? 'id-token-2' : 'id-token-1';
   }
 
   @override

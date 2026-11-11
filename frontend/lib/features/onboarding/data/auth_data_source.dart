@@ -30,7 +30,8 @@ abstract class AuthDataSource {
 
 class MockAuthDataSource implements AuthDataSource {
   /// 카카오 로그인 결과를 바꿀 때: --dart-define=MOCK_KAKAO=RESTORED
-  /// 지원 값: NEW(기본, 처음 로그인), RESTORED(기존 계정)
+  /// 지원 값: NEW(기본, 처음 로그인), RESTORED(기존 계정),
+  /// RECOVERY_FAILED(본인 확인은 됐지만 이전 기록 없음)
   static const _kakaoScenario = String.fromEnvironment(
     'MOCK_KAKAO',
     defaultValue: 'NEW',
@@ -88,9 +89,11 @@ class MockAuthDataSource implements AuthDataSource {
     required String deviceId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    final file = _kakaoScenario == 'RESTORED'
-        ? 'auth_recovery_draft'
-        : 'auth_kakao_new';
+    final file = switch (_kakaoScenario) {
+      'RESTORED' => 'auth_recovery_draft',
+      'RECOVERY_FAILED' => 'auth_recovery_failed',
+      _ => 'auth_kakao_new',
+    };
     final raw = await rootBundle.loadString('assets/mocks/$file.json');
     return jsonDecode(raw) as Map<String, dynamic>;
   }

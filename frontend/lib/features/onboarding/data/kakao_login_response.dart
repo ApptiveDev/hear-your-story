@@ -25,8 +25,10 @@ class KakaoLoginResponse {
       refreshToken: json['refreshToken'] as String,
       recoveryStatus: RecoveryStatus.fromApi(json['recoveryStatus'] as String),
     );
-    if (response.recoveryStatus == RecoveryStatus.restored && user == null) {
-      throw const FormatException('RESTORED인데 user가 없다');
+    // RESTORED만 사용자가 있다. 어긋나면 화면이 엉뚱한 곳으로 가므로 응답 오류로 본다
+    if ((response.recoveryStatus == RecoveryStatus.restored) !=
+        (user != null)) {
+      throw FormatException('${response.recoveryStatus.apiValue}와 user가 맞지 않다');
     }
     return response;
   }

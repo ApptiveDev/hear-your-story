@@ -24,7 +24,9 @@ class KakaoSignInFailed implements Exception {
 /// 쓰지 않으므로 서버로 보내지 않는다.
 abstract class KakaoSignIn {
   /// 실패하면 [KakaoSignInCancelled]나 [KakaoSignInFailed]를 던진다.
-  Future<String> signIn();
+  ///
+  /// [chooseAccount]면 카카오톡에 로그인된 계정을 바로 쓰지 않고 계정을 고르게 한다.
+  Future<String> signIn({bool chooseAccount = false});
 
   /// 카카오 SDK에 남은 로그인 정보를 지운다. 실패해도 던지지 않는다.
   Future<void> signOut();
@@ -32,13 +34,17 @@ abstract class KakaoSignIn {
 
 class KakaoSdkSignIn implements KakaoSignIn {
   @override
-  Future<String> signIn() async {
+  Future<String> signIn({bool chooseAccount = false}) async {
     if (AppConfig.kakaoNativeAppKey.isEmpty) {
       throw const KakaoSignInFailed('KAKAO_NATIVE_APP_KEY 없이 빌드했다');
     }
     final OAuthToken token;
     try {
-      token = await _login();
+      token = chooseAccount
+          ? await UserApi.instance.loginWithKakaoAccount(
+              prompts: [Prompt.selectAccount],
+            )
+          : await _login();
     } on KakaoSignInCancelled {
       rethrow;
     } on Object catch (e) {
@@ -92,7 +98,7 @@ class FakeKakaoSignIn implements KakaoSignIn {
   );
 
   @override
-  Future<String> signIn() async {
+  Future<String> signIn({bool chooseAccount = false}) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     switch (_scenario) {
       case 'CANCELLED':
@@ -100,7 +106,8 @@ class FakeKakaoSignIn implements KakaoSignIn {
       case 'FAILED':
         throw const KakaoSignInFailed('가짜 실패');
     }
-    return 'fake-kakao-id-token';
+    // 다른 계정을 고르면 다른 사람처럼 다른 id token을 준다
+    return chooseAccount ? 'fake-kakao-id-token-2' : 'fake-kakao-id-token';
   }
 
   @override

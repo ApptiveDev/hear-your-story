@@ -8,7 +8,8 @@ enum RecoveryStatus {
   /// 처음 로그인했다. 역할과 이름을 정해 가입을 마쳐야 한다
   newUser('NEW'),
 
-  /// 본인 확인은 됐지만 기존 기록을 찾지 못했다 (4단계에서 화면을 붙인다)
+  /// 본인 확인은 됐지만 기존 기록을 찾지 못했다. 다른 카카오 계정으로 다시
+  /// 로그인하거나, 이 계정으로 새로 시작(역할·이름)한다
   recoveryFailed('RECOVERY_FAILED');
 
   const RecoveryStatus(this.apiValue);

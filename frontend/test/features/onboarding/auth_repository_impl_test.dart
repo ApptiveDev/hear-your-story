@@ -219,6 +219,39 @@ void main() {
       expect(await tokenStorage.readRefresh(), 'kakao-refresh');
     });
 
+    test('이전 기록을 못 찾았으면 토큰만 저장하고 사용자 정보는 비운다', () async {
+      dataSource.kakao = kakaoLoginJson(status: 'RECOVERY_FAILED');
+
+      final result = await repository.loginWithKakao();
+
+      expect(result.recoveryStatus, RecoveryStatus.recoveryFailed);
+      expect(result.user, isNull);
+      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
+      expect(await userStorage.read(), isNull);
+    });
+
+    test('카카오 확인이 끝나면 서버에 묻기 전에 알린다', () async {
+      dataSource.kakao = kakaoLoginJson();
+      int? requestsWhenVerified;
+
+      await repository.loginWithKakao(
+        onVerified: () =>
+            requestsWhenVerified = dataSource.kakaoRequests.length,
+      );
+
+      expect(kakao.signInCalls, 1);
+      expect(requestsWhenVerified, 0);
+    });
+
+    test('계정을 고르게 하면 카카오에도 그렇게 요청한다', () async {
+      dataSource.kakao = kakaoLoginJson();
+
+      await repository.loginWithKakao(chooseAccount: true);
+
+      expect(kakao.chooseAccount, [true]);
+      expect(dataSource.kakaoRequests.single['idToken'], 'id-token-2');
+    });
+
     test('카카오 창을 닫으면 서버에 묻지 않고 아무것도 저장하지 않는다', () async {
       kakao.error = const KakaoSignInCancelled();
 
@@ -244,6 +277,10 @@ void main() {
     for (final (label, json) in [
       ('RESTORED인데 사용자가 없으면', {...kakaoLoginJson(), 'user': null}),
       ('모르는 상태 값이면', kakaoLoginJson(status: 'MERGED')),
+      (
+        '처음(NEW)인데 사용자가 있으면',
+        {...kakaoLoginJson(status: 'NEW'), 'user': kakaoLoginJson()['user']},
+      ),
       ('refresh token이 없으면', {...kakaoLoginJson(), 'refreshToken': null}),
     ]) {
       test('$label 응답 오류로 보고 저장하지 않는다', () async {
