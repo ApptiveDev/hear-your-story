@@ -101,6 +101,32 @@ lib/
 | `/child-answer` | 자녀 답변 | C 정우영 |
 | `/stories` | 지난 이야기 | C 정우영 |
 
+### 카카오 로그인 (초안, 기본 꺼짐)
+
+카카오 로그인·토큰 갱신·`GET /users/me` 복구는 API 계약 1.2·5.14가 초안이라 기본으로
+꺼져 있습니다. 끄면 기존 가입(`POST /users`)과 401 처리를 그대로 씁니다.
+
+```bash
+# Mock으로 화면 흐름 확인 (가짜 카카오 로그인)
+flutter run --dart-define=KAKAO_AUTH=true
+
+# 실제 카카오 로그인 (키는 카카오 개발자 콘솔에서 받고 커밋하지 않는다)
+flutter run --dart-define=USE_MOCK=false --dart-define=KAKAO_AUTH=true \
+  --dart-define=KAKAO_NATIVE_APP_KEY=네이티브_앱_키
+```
+
+| 값 | 기본 | 설명 |
+|---|---|---|
+| `KAKAO_AUTH` | `false` | 카카오 로그인 흐름 전체 스위치 |
+| `KAKAO_NATIVE_APP_KEY` | 없음 | 카카오 네이티브 앱 키. manifest의 돌아올 주소(`kakao{키}://oauth`)에도 들어간다 |
+| `KAKAO_FAKE_LOGIN` | `USE_MOCK` 값 | 카카오 SDK 대신 가짜 로그인 (앱 키 없이 확인할 때) |
+| `MOCK_KAKAO` | `NEW` | Mock 로그인 결과: `NEW`, `RESTORED`, `RECOVERY_FAILED` |
+| `MOCK_KAKAO_SIGN_IN` | `OK` | 가짜 카카오 로그인 결과: `OK`, `CANCELLED`, `FAILED` |
+| `MOCK_ME` | `SAME` | Mock `GET /users/me`: `SAME`, `UNPAIRED`, `TOKEN_EXPIRED`, `NETWORK` |
+
+실제 카카오 로그인에는 카카오 개발자 콘솔에서 Android 플랫폼(패키지명·키 해시) 등록과
+OpenID Connect 활성화가 필요합니다. 키 해시는 개발 PC의 debug 키마다 다릅니다.
+
 전체 팀 구성은 루트 [`README.md`](../README.md#팀)를 참고합니다.
 
 ## Mock 데이터
@@ -128,6 +154,9 @@ lib/
 | `stories_empty.json` | 5.9 변형 (이야기 없음) |
 | `stories_paged_1.json`, `stories_paged_2.json` | 5.9 변형 (다음 페이지가 있는 목록) |
 | `stories_month_2026_11.json` | 5.9 월별 조회 초안 (2026년 11월, 다른 달은 `stories_empty.json`) |
+| `auth_recovery_draft.json` | 5.14 로그인 성공 뼈대 (RESTORED, 초안) |
+| `auth_kakao_new.json` | 5.14 변형 (처음 로그인 NEW, `user: null`, 초안) |
+| `auth_recovery_failed.json` | 5.14 변형 (본인 확인은 됐지만 기록 없음 RECOVERY_FAILED, 초안) |
 
 - 필드명과 enum 값은 계약 문서와 정확히 일치해야 합니다.
 - 계약이 바뀌면 DTO와 Mock을 같은 PR에서 함께 수정합니다.
