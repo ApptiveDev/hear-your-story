@@ -12,7 +12,13 @@ spring:
 app:
   auth:
     jwt-secret: test-only-jwt-secret-at-least-32-bytes
-    access-token-expiration-days: 30
+    access-token-expiration-minutes: 30
+    registration-token-expiration-minutes: 10
+    refresh-token-expiration-days: 30
+    kakao:
+      native-app-key: test-kakao-native-app-key
+      issuer: https://kauth.kakao.com
+      jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
   recording:
     mock-processing-delay-ms: 5
   processing-recovery:

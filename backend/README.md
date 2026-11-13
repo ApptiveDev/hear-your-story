@@ -40,7 +40,10 @@ Spring Boot는 `.env`를 자동으로 읽지 않는다. IntelliJ로 실행한다
 |---|---|
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL 연결 정보 |
 | `APP_JWT_SECRET` | HS256 서명 키, 32바이트 이상 |
-| `APP_ACCESS_TOKEN_EXPIRATION_DAYS` | MVP 기본 30일 |
+| `APP_ACCESS_TOKEN_EXPIRATION_MINUTES` | 서비스 access token 만료 시간, 기본 30분 |
+| `APP_REGISTRATION_TOKEN_EXPIRATION_MINUTES` | 카카오 신규 가입용 token 만료 시간, 기본 10분 |
+| `APP_REFRESH_TOKEN_EXPIRATION_DAYS` | refresh token 만료 시간, 기본 30일 |
+| `KAKAO_NATIVE_APP_KEY` | 카카오 ID token의 `aud` 검증에 사용할 Native App Key |
 | `OPENAI_API_KEY` | STT·LLM·TTS 호출 키 |
 | `R2_ACCOUNT_ID` | Cloudflare 계정 ID |
 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | R2 S3 호환 자격증명 |

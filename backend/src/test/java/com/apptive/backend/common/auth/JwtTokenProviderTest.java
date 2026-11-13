@@ -1,6 +1,7 @@
 package com.apptive.backend.common.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,5 +25,14 @@ class JwtTokenProviderTest {
 
 		assertThat(authenticatedUser.userId()).isEqualTo("usr_test");
 		assertThat(authenticatedUser.role()).isEqualTo(Role.CHILD);
+	}
+
+	@Test
+	void registrationTokenCannotAuthenticateProtectedApi() {
+		IssuedRegistrationToken registrationToken = tokenProvider.issueRegistration("kakao-subject");
+
+		assertThat(tokenProvider.parseRegistration(registrationToken.value())).isEqualTo("kakao-subject");
+		assertThatThrownBy(() -> tokenProvider.parse(registrationToken.value()))
+		    .isInstanceOf(IllegalArgumentException.class);
 	}
 }

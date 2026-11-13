@@ -19,9 +19,13 @@ import io.jsonwebtoken.security.Keys;
 public class JwtTokenProvider {
 
 	private static final int MINIMUM_SECRET_BYTES = 32;
+	private static final String TOKEN_TYPE_CLAIM = "tokenType";
+	private static final String ACCESS_TOKEN_TYPE = "ACCESS";
+	private static final String REGISTRATION_TOKEN_TYPE = "REGISTRATION";
 
 	private final SecretKey signingKey;
-	private final long expirationDays;
+	private final long accessTokenExpirationMinutes;
+	private final long registrationTokenExpirationMinutes;
 	private final Clock clock;
 
 	public JwtTokenProvider(JwtProperties properties, Clock clock) {
@@ -30,22 +34,47 @@ public class JwtTokenProvider {
 			throw new IllegalStateException("APP_JWT_SECRET must be at least 32 bytes");
 		}
 		this.signingKey = Keys.hmacShaKeyFor(secretBytes);
-		this.expirationDays = properties.accessTokenExpirationDays();
+		this.accessTokenExpirationMinutes = properties.accessTokenExpirationMinutes();
+		this.registrationTokenExpirationMinutes = properties.registrationTokenExpirationMinutes();
 		this.clock = clock;
 	}
 
 	public IssuedToken issue(String userId, Role role) {
 		OffsetDateTime issuedAt = OffsetDateTime.now(clock).withNano(0);
-		OffsetDateTime expiresAt = issuedAt.plusDays(expirationDays);
+		OffsetDateTime expiresAt = issuedAt.plusMinutes(accessTokenExpirationMinutes);
 		String token = Jwts.builder().subject(userId).claim("role", role.name())
-		    .issuedAt(Date.from(issuedAt.toInstant())).expiration(Date.from(expiresAt.toInstant())).signWith(signingKey)
-		    .compact();
+		    .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE).issuedAt(Date.from(issuedAt.toInstant()))
+		    .expiration(Date.from(expiresAt.toInstant())).signWith(signingKey).compact();
 		return new IssuedToken(token, expiresAt);
 	}
 
+	public IssuedRegistrationToken issueRegistration(String authSubject) {
+		OffsetDateTime issuedAt = OffsetDateTime.now(clock).withNano(0);
+		OffsetDateTime expiresAt = issuedAt.plusMinutes(registrationTokenExpirationMinutes);
+		String token = Jwts.builder().subject(authSubject).claim(TOKEN_TYPE_CLAIM, REGISTRATION_TOKEN_TYPE)
+		    .issuedAt(Date.from(issuedAt.toInstant())).expiration(Date.from(expiresAt.toInstant())).signWith(signingKey)
+		    .compact();
+		return new IssuedRegistrationToken(token, expiresAt);
+	}
+
 	public AuthenticatedUser parse(String token) {
-		Claims claims = Jwts.parser().verifyWith(signingKey).clock(() -> Date.from(clock.instant())).build()
-		    .parseSignedClaims(token).getPayload();
+		Claims claims = parseClaims(token);
+		if (!ACCESS_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))) {
+			throw new IllegalArgumentException("access token이 아닙니다");
+		}
 		return new AuthenticatedUser(claims.getSubject(), Role.valueOf(claims.get("role", String.class)));
+	}
+
+	public String parseRegistration(String token) {
+		Claims claims = parseClaims(token);
+		if (!REGISTRATION_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))) {
+			throw new IllegalArgumentException("registration token이 아닙니다");
+		}
+		return claims.getSubject();
+	}
+
+	private Claims parseClaims(String token) {
+		return Jwts.parser().verifyWith(signingKey).clock(() -> Date.from(clock.instant())).build()
+		    .parseSignedClaims(token).getPayload();
 	}
 }
