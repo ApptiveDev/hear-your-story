@@ -9,6 +9,7 @@ import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/storage/token_storage.dart';
 import 'package:life_record/features/account/data/account_providers.dart';
 import 'package:life_record/features/account/data/account_repository_impl.dart';
+import 'package:life_record/features/account/domain/account_repository.dart';
 import 'package:life_record/features/account/presentation/account_deleted_page.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
@@ -18,6 +19,8 @@ import '../../helpers/phone_size.dart';
 Future<void> _pump(
   WidgetTester tester, {
   ApiException? deleteError,
+  Duration deleteDelay = Duration.zero,
+  AccountRepository? repository,
   String role = 'PARENT',
 }) async {
   usePhoneSize(tester);
@@ -45,7 +48,8 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         accountRepositoryProvider.overrideWithValue(
-          MockAccountRepository(failWith: deleteError, delay: Duration.zero),
+          repository ??
+              MockAccountRepository(failWith: deleteError, delay: deleteDelay),
         ),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -53,6 +57,18 @@ Future<void> _pump(
   );
   await tester.pumpAndSettle();
 }
+
+/// ApiException이 아닌 예외(저장소 오류 등)를 던지는 저장소
+class _BrokenAccountRepository implements AccountRepository {
+  @override
+  Future<void> deleteAccount() async => throw StateError('예상 밖 오류');
+}
+
+bool _canPop(WidgetTester tester) => tester
+    .widget<PopScope>(
+      find.descendant(of: find.byType(MyPage), matching: find.byType(PopScope)),
+    )
+    .canPop;
 
 Future<String?> _token() => TokenStorage(const FlutterSecureStorage()).read();
 
@@ -200,6 +216,67 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('가입 화면'), findsOneWidget);
+    });
+    testWidgets('요청하는 동안에는 뒤로 가지 못하고, 끝나면 완료 화면으로 간다', (tester) async {
+      await _pump(tester, deleteDelay: const Duration(seconds: 1));
+      expect(_canPop(tester), isTrue);
+
+      await tester.tap(find.text('탈퇴하기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('탈퇴하기').last);
+      await tester.pump(const Duration(milliseconds: 100)); // 요청 중
+      expect(_canPop(tester), isFalse);
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(find.text('탈퇴를 시작했어요'), findsOneWidget);
+      expect(await _token(), isNull);
+    });
+
+    testWidgets('실패하면 뒤로 갈 수 있게 풀고 다시 시도할 수 있다', (tester) async {
+      await _pump(tester, deleteError: ApiException(statusCode: 500));
+
+      await tester.tap(find.text('탈퇴하기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('탈퇴하기').last);
+      await tester.pumpAndSettle();
+
+      expect(_canPop(tester), isTrue);
+    });
+
+    testWidgets('예상 밖 오류여도 안내하고 화면이 막히지 않는다', (tester) async {
+      await _pump(tester, repository: _BrokenAccountRepository());
+
+      await tester.tap(find.text('탈퇴하기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('탈퇴하기').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('문제가 생겼어요. 다시 시도해 주세요.'), findsOneWidget);
+      expect(_canPop(tester), isTrue);
+      expect(await _token(), 'token');
+      // 다른 항목을 다시 누를 수 있다
+      await tester.tap(find.text('개인정보 처리방침'));
+      await tester.pumpAndSettle();
+      expect(find.text('준비 중이에요.'), findsOneWidget);
+    });
+
+    testWidgets('요청 중 화면이 사라져도 로그인 정보를 지운다', (tester) async {
+      await _pump(tester, deleteDelay: const Duration(seconds: 1));
+
+      await tester.tap(find.text('탈퇴하기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('탈퇴하기').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // 다른 곳(예: 401 처리)에서 화면을 닫은 상황
+      final router = GoRouter.of(tester.element(find.byType(MyPage)));
+      router.go('/onboarding');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(await _token(), isNull);
     });
   });
 }
