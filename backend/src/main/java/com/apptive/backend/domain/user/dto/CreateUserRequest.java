@@ -7,5 +7,5 @@ import jakarta.validation.constraints.Size;
 import com.apptive.backend.domain.user.entity.Role;
 
 public record CreateUserRequest(@NotBlank @Size(max = 50) String name, @NotNull Role role,
-    @NotBlank @Size(max = 255) String deviceId) {
+    @NotBlank @Size(max = 2000) String registrationToken) {
 }

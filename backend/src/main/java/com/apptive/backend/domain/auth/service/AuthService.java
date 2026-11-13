@@ -4,11 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.apptive.backend.common.auth.IssuedRegistrationToken;
-import com.apptive.backend.common.auth.IssuedToken;
 import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.domain.auth.dto.KakaoLoginResponse;
-import com.apptive.backend.domain.pair.repository.FamilyPairRepository;
-import com.apptive.backend.domain.user.dto.UserResponse;
 import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
@@ -21,9 +18,8 @@ public class AuthService {
 
 	private final KakaoIdTokenVerifier kakaoIdTokenVerifier;
 	private final UserRepository userRepository;
-	private final FamilyPairRepository familyPairRepository;
 	private final JwtTokenProvider jwtTokenProvider;
-	private final RefreshTokenService refreshTokenService;
+	private final SessionService sessionService;
 
 	@Transactional
 	public KakaoLoginResponse loginWithKakao(String idToken) {
@@ -35,10 +31,6 @@ public class AuthService {
 			return KakaoLoginResponse.registrationRequired(registrationToken);
 		}
 
-		IssuedToken accessToken = jwtTokenProvider.issue(user.getId(), user.getRole());
-		IssuedRefreshToken refreshToken = refreshTokenService.issue(user);
-		String pairingStatus = familyPairRepository.existsByMemberId(user.getId()) ? "PAIRED" : "UNPAIRED";
-		UserResponse userResponse = new UserResponse(user.getId(), user.getName(), user.getRole(), pairingStatus);
-		return KakaoLoginResponse.authenticated(userResponse, accessToken, refreshToken);
+		return KakaoLoginResponse.authenticated(sessionService.issue(user));
 	}
 }
