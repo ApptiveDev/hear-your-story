@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +29,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   final _nameController = TextEditingController();
   UserRole? _role;
+  bool _recoveringRegistrationConflict = false;
 
   @override
   void dispose() {
@@ -41,9 +44,34 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     ref.read(signUpControllerProvider.notifier).submit(name: name, role: role);
   }
 
+  Future<void> _recoverRegisteredAccount() async {
+    if (_recoveringRegistrationConflict) return;
+    _recoveringRegistrationConflict = true;
+    await ref.read(sessionExpiryProvider).clearLocal();
+    if (!mounted) return;
+
+    setState(() {
+      _role = null;
+      _nameController.clear();
+      _recoveringRegistrationConflict = false;
+    });
+    ref.invalidate(signUpControllerProvider);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('가입은 완료됐어요.\n같은 카카오 계정으로 다시 로그인해 주세요.')),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(signUpControllerProvider, (_, next) {
+      final error = next.error;
+      if (error is ApiException &&
+          error.errorCode == 'KAKAO_ACCOUNT_ALREADY_REGISTERED') {
+        unawaited(_recoverRegisteredAccount());
+        return;
+      }
       final user = next.value;
       if (user != null && !next.isLoading) {
         context.go(user.isPaired ? '/today' : '/pairing');

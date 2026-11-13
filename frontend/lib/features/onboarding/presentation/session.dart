@@ -71,7 +71,7 @@ class SessionExpiry {
 
     // 가입 중 메모리에만 있던 registration token도 함께 버린다.
     _ref.invalidate(authRepositoryProvider);
-    
+
     _ref.invalidate(currentUserProvider);
     // 앱 시작 때 계산한 "갈 곳"이 남아 있으면 가입 화면이 그 값을 다시 쓴다
     _ref.invalidate(launchDestinationProvider);
