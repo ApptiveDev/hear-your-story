@@ -67,6 +67,9 @@ class FakeStoriesRepository implements StoriesRepository {
   /// 값이 있으면 complete될 때까지 응답을 멈춘다. (불러오는 중 상태 테스트용)
   Completer<void>? gate;
 
+  /// cursor별로 응답을 멈춘다. (다음 페이지를 기다리는 중 상태 테스트용)
+  final Map<String, Completer<void>> cursorGates = {};
+
   /// 요청된 cursor 기록 (중복 요청 확인용)
   final List<String?> requestedCursors = [];
 
@@ -84,6 +87,8 @@ class FakeStoriesRepository implements StoriesRepository {
   Future<StoryPage> fetchPage({String? cursor}) async {
     requestedCursors.add(cursor);
     if (gate != null) await gate!.future;
+    final cursorGate = cursorGates[cursor];
+    if (cursorGate != null) await cursorGate.future;
     if (error != null) throw error!;
     return pages[cursor]!;
   }

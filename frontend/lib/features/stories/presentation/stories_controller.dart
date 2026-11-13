@@ -94,7 +94,8 @@ class StoriesController extends AsyncNotifier<StoriesState> {
       if (!ref.mounted) return; // 기다리는 사이 화면이 닫혔으면 무시
       state = AsyncData(
         StoriesState(
-          items: [...current.items, ...page.items],
+          // 기다리는 사이 지운 카드가 되살아나지 않게 지금 목록에 붙인다
+          items: [...(state.value?.items ?? current.items), ...page.items],
           nextCursor: page.nextCursor,
           hasNext: page.hasNext,
         ),
@@ -108,7 +109,7 @@ class StoriesController extends AsyncNotifier<StoriesState> {
       }
       state = AsyncData(
         StoriesState(
-          items: current.items,
+          items: state.value?.items ?? current.items,
           nextCursor: current.nextCursor,
           hasNext: current.hasNext,
           loadMoreFailed: true,

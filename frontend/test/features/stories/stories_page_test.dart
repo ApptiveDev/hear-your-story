@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -298,6 +300,49 @@ void main() {
     expect(find.text('잠시 후 다시 시도해 주세요.'), findsOneWidget);
     expect(find.text('자녀 답 1'), findsOneWidget);
     expect(find.text('내 답 지우기'), findsOneWidget); // 다시 시도할 수 있음
+  });
+
+  testWidgets('다음 페이지를 기다리는 중에 지워도 지운 카드가 되살아나지 않는다', (tester) async {
+    final repo = FakeStoriesRepository({
+      null: StoryPage(items: [testStory('1')], nextCursor: 'c2', hasNext: true),
+      'c2': StoryPage(
+        items: [testStory('2')],
+        nextCursor: null,
+        hasNext: false,
+      ),
+    })..cursorGates['c2'] = Completer<void>();
+    await pumpPage(tester, repo, role: UserRole.child);
+
+    await tester.tap(find.text('이전 이야기 더 보기'));
+    await tester.pump(); // 다음 페이지 응답 대기 중
+    // 불러오는 표시가 계속 돌아 pumpAndSettle을 쓸 수 없다
+    await tester.tap(find.text('내 답 지우기'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('지우기'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(repo.deletedAnswerIds, ['ans_1']);
+
+    repo.cursorGates['c2']!.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text('질문 2'), findsOneWidget);
+    expect(find.text('자녀 답 1'), findsNothing);
+    expect(find.text('삭제된 답이에요.'), findsOneWidget);
+  });
+
+  testWidgets('이미 지워진 기록이면(404) 안내하고 목록을 다시 불러온다', (tester) async {
+    final repo = oneStory(testStory('1'))
+      ..deleteError = ApiException(statusCode: 404);
+    await pumpPage(tester, repo, role: UserRole.child);
+
+    await tester.tap(find.text('내 답 지우기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('지우기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('이미 지워진 기록이에요.'), findsOneWidget);
+    expect(repo.requestedCursors.length, 2); // 처음 + 다시 불러오기
   });
 
   testWidgets('부모: TTS 만드는 중이면 안내만 하고 API는 부르지 않는다', (tester) async {
