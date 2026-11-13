@@ -2,35 +2,36 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
+import '../config/auth_flags.dart';
 import '../storage/token_storage.dart';
+import 'auth_interceptor.dart';
 import 'session_expired_signal.dart';
+import 'token_refresher.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final storage = ref.read(tokenStorageProvider);
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 20),
-    ),
+  final options = BaseOptions(
+    baseUrl: AppConfig.apiBaseUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 20),
   );
+  final dio = Dio(options);
+
+  final refresher = TokenRefresher(storage, (body) {
+    // 인증 interceptor가 없는 Dio로 보낸다. 통신 어댑터는 같은 것을 쓴다(테스트용 교체 포함).
+    final plain = Dio(options)..httpClientAdapter = dio.httpClientAdapter;
+    return plain.post<dynamic>('/auth/refresh', data: body);
+  });
 
   dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await storage.read();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        handler.next(options);
-      },
-      onError: (e, handler) {
-        handler.next(e);
-        if (e.response?.statusCode == 401) {
-          // 토큰·사용자 정보 정리와 가입 화면 이동은 앱 최상단(App)이 한다
-          ref.read(sessionExpiredSignalProvider.notifier).emit();
-        }
-      },
+    AuthInterceptor(
+      storage: storage,
+      refresher: refresher,
+      retry: dio.fetch,
+      onSessionExpired: () =>
+          ref.read(sessionExpiredSignalProvider.notifier).emit(),
+      // 401일 때 토큰을 갱신할지. 카카오 로그인(refresh token)을 켤 때만 갱신한다.
+      refreshEnabled: ref.read(kakaoAuthEnabledProvider),
     ),
   );
   return dio;

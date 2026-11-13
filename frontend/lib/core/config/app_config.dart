@@ -13,4 +13,24 @@ class AppConfig {
     'STORIES_MONTH_API',
     defaultValue: useMock,
   );
+
+  // 카카오 로그인·토큰 갱신·기록 복구(계약 1.2·5.14)는 아직 초안이다.
+  // 켜지 않으면 기존 가입(POST /users)과 401 처리를 그대로 쓴다.
+  static const kakaoAuth = bool.fromEnvironment(
+    'KAKAO_AUTH',
+    defaultValue: false,
+  );
+
+  // 카카오 개발자 콘솔의 네이티브 앱 키. 저장소에 넣지 않고 빌드할 때 넘긴다.
+  // flutter build apk --dart-define=KAKAO_NATIVE_APP_KEY=...
+  static const kakaoNativeAppKey = String.fromEnvironment(
+    'KAKAO_NATIVE_APP_KEY',
+  );
+
+  // 카카오 SDK 대신 가짜 로그인을 쓴다. Mock 모드와, 앱 키 없이 에뮬레이터에서
+  // 확인할 때 쓴다. 실제 출시 빌드에서는 켜지 않는다.
+  static const kakaoFakeLogin = bool.fromEnvironment(
+    'KAKAO_FAKE_LOGIN',
+    defaultValue: useMock,
+  );
 }
