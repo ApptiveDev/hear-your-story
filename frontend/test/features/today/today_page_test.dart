@@ -48,6 +48,7 @@ Future<_Harness> _pump(WidgetTester tester, FakeTodayDataSource source) async {
       ),
       GoRoute(path: '/parent-answer', builder: (_, _) => back('부모 답변 화면')),
       GoRoute(path: '/stories', builder: (_, _) => back('지난 이야기 화면')),
+      GoRoute(path: '/my', builder: (_, _) => back('마이페이지 화면')),
       GoRoute(path: '/pairing', builder: (_, _) => const Text('페어링 화면')),
     ],
   );
@@ -236,5 +237,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('지난 이야기 화면'), findsOneWidget);
+  });
+
+  testWidgets('마이페이지로 갈 수 있다', (tester) async {
+    await _pump(
+      tester,
+      FakeTodayDataSource(json: todayFixture('waiting_for_both')),
+    );
+
+    await tester.tap(find.byTooltip('마이페이지'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('마이페이지 화면'), findsOneWidget);
   });
 }

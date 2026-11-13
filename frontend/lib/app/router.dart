@@ -14,6 +14,8 @@ import '../features/child_answer/presentation/child_answer_args.dart';
 import '../features/child_answer/presentation/child_answer_page.dart';
 import '../features/stories/presentation/stories_calendar_page.dart';
 import '../features/stories/presentation/stories_page.dart';
+import '../features/account/presentation/account_deleted_page.dart';
+import '../features/account/presentation/my_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   const demo = String.fromEnvironment('PART_B_DEMO');
@@ -78,6 +80,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ), // C
+      GoRoute(path: '/my', builder: (context, state) => const MyPage()),
+      GoRoute(
+        path: '/account-deleted',
+        builder: (context, state) => const AccountDeletedPage(),
+      ),
     ],
   );
 });

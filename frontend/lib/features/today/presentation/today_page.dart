@@ -151,6 +151,14 @@ class _TodayContent extends ConsumerWidget {
       // Figma 홈: 내용 너비 361 (393 화면 좌우 16)
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            onPressed: () => context.push('/my'),
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: '마이페이지',
+          ),
+        ),
         Text(
           formatAssignedDate(today.assignedDate),
           textAlign: TextAlign.center,
