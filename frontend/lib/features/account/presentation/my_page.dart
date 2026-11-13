@@ -55,6 +55,7 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Future<void> _signOut() async {
+    final messenger = ScaffoldMessenger.of(context);
     if (!await _confirm(
       title: '로그아웃할까요?',
       message: ref.read(kakaoAuthEnabledProvider)
@@ -65,8 +66,17 @@ class _MyPageState extends ConsumerState<MyPage> {
       return;
     }
     if (!mounted) return;
-    // 카카오 로그아웃까지 포함한 기존 로그아웃을 그대로 쓴다
-    await signOut(context);
+    try {
+      // 카카오 로그아웃까지 포함한 기존 로그아웃을 그대로 쓴다
+      await signOut(context);
+    } on Object {
+      // 저장소 오류 등으로 정리하지 못하면 이 화면에 남아 다시 시도하게 한다
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('로그아웃하지 못했어요. 다시 시도해 주세요.')),
+        );
+    }
   }
 
   Future<void> _deleteAccount() async {

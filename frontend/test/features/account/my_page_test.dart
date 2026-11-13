@@ -14,6 +14,7 @@ import 'package:life_record/features/account/domain/account_repository.dart';
 import 'package:life_record/features/account/presentation/account_deleted_page.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
+import 'package:life_record/features/onboarding/domain/auth_repository.dart';
 
 import '../../helpers/phone_size.dart';
 
@@ -22,6 +23,7 @@ Future<void> _pump(
   ApiException? deleteError,
   Duration deleteDelay = Duration.zero,
   AccountRepository? repository,
+  AuthRepository? auth,
   String role = 'PARENT',
   bool kakao = false,
 }) async {
@@ -51,6 +53,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         kakaoAuthEnabledProvider.overrideWithValue(kakao),
+        if (auth != null) authRepositoryProvider.overrideWithValue(auth),
         accountRepositoryProvider.overrideWithValue(
           repository ??
               MockAccountRepository(failWith: deleteError, delay: deleteDelay),
@@ -66,6 +69,15 @@ Future<void> _pump(
 class _BrokenAccountRepository implements AccountRepository {
   @override
   Future<void> deleteAccount() async => throw StateError('예상 밖 오류');
+}
+
+/// 로그아웃이 저장소 오류로 실패하는 인증 저장소. 나머지는 쓰지 않는다.
+class _BrokenLogoutAuthRepository implements AuthRepository {
+  @override
+  Future<void> logout() async => throw StateError('저장소 오류');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 bool _canPop(WidgetTester tester) => tester
@@ -150,6 +162,19 @@ void main() {
 
       expect(find.text('가입 화면'), findsOneWidget);
       expect(await _refreshToken(), isNull);
+    });
+
+    testWidgets('정리하지 못하면 안내하고 이 화면에서 다시 시도할 수 있다', (tester) async {
+      await _pump(tester, auth: _BrokenLogoutAuthRepository());
+
+      await tester.tap(find.text('로그아웃'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('로그아웃').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('로그아웃하지 못했어요. 다시 시도해 주세요.'), findsOneWidget);
+      expect(find.text('마이페이지'), findsOneWidget);
+      expect(find.text('가입 화면'), findsNothing);
     });
 
     testWidgets('취소하면 그대로 둔다', (tester) async {
