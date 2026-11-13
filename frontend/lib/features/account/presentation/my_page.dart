@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/config/auth_flags.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../onboarding/data/auth_providers.dart';
@@ -11,6 +12,7 @@ import '../../onboarding/presentation/session.dart';
 import '../data/account_providers.dart';
 
 const logoutConfirmMessage = '같은 역할로 다시 시작하면 이야기가 그대로 이어져요.';
+const kakaoLogoutConfirmMessage = '같은 카카오 계정으로 다시 로그인하면\n이야기가 그대로 이어져요.';
 const deleteConfirmMessage =
     '내가 남긴 목소리·글·사진을 모두 지우고 연결도 끊어요.\n'
     '상대방이 남긴 답은 그대로 남아요.\n'
@@ -53,16 +55,18 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Future<void> _signOut() async {
-    final router = GoRouter.of(context);
     if (!await _confirm(
       title: '로그아웃할까요?',
-      message: logoutConfirmMessage,
+      message: ref.read(kakaoAuthEnabledProvider)
+          ? kakaoLogoutConfirmMessage
+          : logoutConfirmMessage,
       action: '로그아웃',
     )) {
       return;
     }
-    await ref.read(sessionExpiryProvider).clearLocal();
-    router.go('/onboarding');
+    if (!mounted) return;
+    // 카카오 로그아웃까지 포함한 기존 로그아웃을 그대로 쓴다
+    await signOut(context);
   }
 
   Future<void> _deleteAccount() async {
@@ -78,6 +82,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     // 요청 중 화면이 사라져도(예: 401로 가입 화면 이동) 끝까지 처리하도록
     // await 전에 필요한 객체를 미리 잡아 둔다. dispose된 뒤에는 ref를 쓸 수 없다.
     final repository = ref.read(accountRepositoryProvider);
+    final auth = ref.read(authRepositoryProvider);
     final session = ref.read(sessionExpiryProvider);
     setState(() => _busy = true);
     try {
@@ -94,7 +99,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     }
     // 서버가 탈퇴를 받았다. 기기 정리가 실패해도 완료로 보고 다음 요청의 401에 맡긴다.
     try {
-      await session.clearLocal();
+      await auth.logout(); // 토큰(access·refresh)·사용자 정보·카카오 로그인을 지운다
+      await session.clearLocal(); // 화면이 쓰던 로그인 상태도 비운다
     } on Object {
       // 아래에서 완료 화면으로 보낸다
     }

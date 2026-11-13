@@ -11,6 +11,7 @@ import '../../../core/widgets/error_retry_view.dart';
 import '../../child_answer/presentation/child_answer_args.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/presentation/session.dart';
+import '../../onboarding/presentation/widgets/logout_button.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../recording/presentation/recording_args.dart';
 import '../data/today_providers.dart';
@@ -99,6 +100,7 @@ class _TodayPageState extends ConsumerState<TodayPage>
 
     final today = ref.watch(todayProvider);
     return Scaffold(
+      persistentFooterButtons: logoutFooter(ref),
       body: SafeArea(
         child: today.when(
           skipLoadingOnRefresh: true,

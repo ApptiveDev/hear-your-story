@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:life_record/core/config/auth_flags.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/storage/token_storage.dart';
 import 'package:life_record/features/account/data/account_providers.dart';
@@ -22,10 +23,12 @@ Future<void> _pump(
   Duration deleteDelay = Duration.zero,
   AccountRepository? repository,
   String role = 'PARENT',
+  bool kakao = false,
 }) async {
   usePhoneSize(tester);
   FlutterSecureStorage.setMockInitialValues({
     'access_token': 'token',
+    'refresh_token': 'refresh',
     'current_user': jsonEncode({
       'id': 'usr_test',
       'name': '김민지',
@@ -47,6 +50,7 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        kakaoAuthEnabledProvider.overrideWithValue(kakao),
         accountRepositoryProvider.overrideWithValue(
           repository ??
               MockAccountRepository(failWith: deleteError, delay: deleteDelay),
@@ -69,6 +73,9 @@ bool _canPop(WidgetTester tester) => tester
       find.descendant(of: find.byType(MyPage), matching: find.byType(PopScope)),
     )
     .canPop;
+
+Future<String?> _refreshToken() =>
+    TokenStorage(const FlutterSecureStorage()).readRefresh();
 
 Future<String?> _token() => TokenStorage(const FlutterSecureStorage()).read();
 
@@ -130,6 +137,21 @@ void main() {
       expect(await container.read(currentUserProvider.future), isNull);
     });
 
+    testWidgets('카카오 로그인을 켰으면 카카오 계정 안내를 보여주고 refresh token도 지운다', (
+      tester,
+    ) async {
+      await _pump(tester, kakao: true);
+
+      await tester.tap(find.text('로그아웃'));
+      await tester.pumpAndSettle();
+      expect(find.text(kakaoLogoutConfirmMessage), findsOneWidget);
+      await tester.tap(find.text('로그아웃').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('가입 화면'), findsOneWidget);
+      expect(await _refreshToken(), isNull);
+    });
+
     testWidgets('취소하면 그대로 둔다', (tester) async {
       await _pump(tester);
 
@@ -152,6 +174,7 @@ void main() {
 
       expect(find.text('탈퇴를 시작했어요'), findsOneWidget);
       expect(await _token(), isNull);
+      expect(await _refreshToken(), isNull); // 갱신 토큰도 남기지 않는다
     });
 
     testWidgets('취소하면 아무것도 지우지 않는다', (tester) async {
