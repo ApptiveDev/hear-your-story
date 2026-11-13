@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +29,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   final _nameController = TextEditingController();
   UserRole? _role;
+  bool _recoveringRegistrationConflict = false;
 
   @override
   void dispose() {
@@ -41,9 +44,34 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     ref.read(signUpControllerProvider.notifier).submit(name: name, role: role);
   }
 
+  Future<void> _recoverRegisteredAccount() async {
+    if (_recoveringRegistrationConflict) return;
+    _recoveringRegistrationConflict = true;
+    await ref.read(sessionExpiryProvider).clearLocal();
+    if (!mounted) return;
+
+    setState(() {
+      _role = null;
+      _nameController.clear();
+      _recoveringRegistrationConflict = false;
+    });
+    ref.invalidate(signUpControllerProvider);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('가입은 완료됐어요.\n같은 카카오 계정으로 다시 로그인해 주세요.')),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(signUpControllerProvider, (_, next) {
+      final error = next.error;
+      if (error is ApiException &&
+          error.errorCode == 'KAKAO_ACCOUNT_ALREADY_REGISTERED') {
+        unawaited(_recoverRegisteredAccount());
+        return;
+      }
       final user = next.value;
       if (user != null && !next.isLoading) {
         context.go(user.isPaired ? '/today' : '/pairing');
@@ -80,9 +108,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     }
     // 로그인 결과(NEW)를 받았으면 저장된 토큰을 다시 읽지 않고 역할 선택으로 간다
     if (needsLogin.value == true) {
-      if (kakao.recoveryFailed) {
-        return const Scaffold(body: SafeArea(child: _RecoveryFailedStep()));
-      }
       if (kakao.result == null) {
         return const Scaffold(body: SafeArea(child: _KakaoLoginStep()));
       }
@@ -188,49 +213,6 @@ class _PhaseText extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),
-    );
-  }
-}
-
-/// 본인 확인은 됐지만 이전 기록을 찾지 못했을 때. 다른 계정으로 다시 로그인하거나
-/// 이 계정으로 새로 시작한다. 디자인이 붙기 전의 기능 확인용 화면이다.
-class _RecoveryFailedStep extends ConsumerWidget {
-  const _RecoveryFailedStep();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(kakaoLoginControllerProvider);
-    final controller = ref.read(kakaoLoginControllerProvider.notifier);
-    final textTheme = Theme.of(context).textTheme;
-    return ListView(
-      padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
-      children: [
-        const SizedBox(height: 120),
-        Text(
-          '이전 기록을 찾지 못했어요',
-          textAlign: TextAlign.center,
-          style: textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '예전에 다른 카카오 계정으로 쓰셨다면\n그 계정으로 로그인해 주세요.',
-          textAlign: TextAlign.center,
-          style: textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 72),
-        FilledButton(
-          onPressed: state.busy ? null : controller.useOtherAccount,
-          child: state.busy
-              ? const _ButtonSpinner()
-              : const Text('다른 카카오 계정으로 로그인'),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton(
-          onPressed: state.busy ? null : controller.startFresh,
-          child: const Text('이 계정으로 새로 시작하기'),
-        ),
-        _PhaseText(phase: state.phase),
-      ],
     );
   }
 }

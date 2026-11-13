@@ -16,7 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 class FlywayMigrationTest {
 
 	private static final List<String> TABLES = List.of("APP_USERS", "FAMILY_PAIRS", "PAIR_INVITATIONS", "QUESTIONS",
-	    "ASSIGNMENTS", "CHILD_ANSWERS", "RECORDINGS");
+	    "ASSIGNMENTS", "CHILD_ANSWERS", "RECORDINGS", "REFRESH_TOKENS");
 
 	@Autowired
 	private Flyway flyway;
@@ -26,7 +26,7 @@ class FlywayMigrationTest {
 
 	@Test
 	void appliesInitialSchemaAndPassesValidation() {
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
 		List<String> migratedTables = jdbcTemplate.queryForList("""
@@ -34,8 +34,17 @@ class FlywayMigrationTest {
 		    from information_schema.tables
 		    where table_schema = 'PUBLIC'
 		      and table_name in ('APP_USERS', 'FAMILY_PAIRS', 'PAIR_INVITATIONS', 'QUESTIONS',
-		                         'ASSIGNMENTS', 'CHILD_ANSWERS', 'RECORDINGS')
+		                          'ASSIGNMENTS', 'CHILD_ANSWERS', 'RECORDINGS', 'REFRESH_TOKENS')
 		    """, String.class);
 		assertThat(migratedTables).containsExactlyInAnyOrderElementsOf(TABLES);
+
+		String deviceIdNullable = jdbcTemplate.queryForObject("""
+		    select is_nullable
+		    from information_schema.columns
+		    where table_schema = 'PUBLIC'
+		      and table_name = 'APP_USERS'
+		      and column_name = 'DEVICE_ID'
+		    """, String.class);
+		assertThat(deviceIdNullable).isEqualTo("YES");
 	}
 }

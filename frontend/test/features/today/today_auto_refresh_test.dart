@@ -98,6 +98,9 @@ void main() {
       );
       await _pump(tester, source);
 
+      await tester.ensureVisible(find.text('답 고치기'));
+      await tester.drag(find.byType(ListView), const Offset(0, -100));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('답 고치기'));
       await tester.pumpAndSettle();
       await tester.pump(_interval * 3);

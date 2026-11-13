@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/app/app.dart';
-import 'package:life_record/core/config/auth_flags.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
@@ -35,7 +34,6 @@ Future<FakeTodayDataSource> _launch(
   required Map<String, String> stored,
   FakeTodayDataSource? today,
   FakeAuthDataSource? auth,
-  bool kakaoAuth = false,
 }) async {
   FlutterSecureStorage.setMockInitialValues(stored);
   final todaySource =
@@ -47,7 +45,6 @@ Future<FakeTodayDataSource> _launch(
         pairingDataSourceProvider.overrideWithValue(
           FakePairingDataSource(pairedAfterChecks: 99),
         ),
-        kakaoAuthEnabledProvider.overrideWithValue(kakaoAuth),
         if (auth != null) authDataSourceProvider.overrideWithValue(auth),
       ],
       child: const App(),
@@ -62,10 +59,10 @@ Future<FakeTodayDataSource> _launch(
 
 void main() {
   group('앱을 켰을 때', () {
-    testWidgets('가입 정보가 없으면 역할 선택부터 시작한다', (tester) async {
+    testWidgets('가입 정보가 없으면 카카오 로그인부터 시작한다', (tester) async {
       await _launch(tester, stored: {});
 
-      expect(find.text('누구로 시작할까요?'), findsOneWidget);
+      expect(find.text('카카오로 시작하기'), findsOneWidget);
     });
 
     testWidgets('연결된 사용자는 바로 오늘 질문으로 간다', (tester) async {
@@ -81,10 +78,10 @@ void main() {
       expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
     });
 
-    testWidgets('토큰이 없으면 사용자 정보가 있어도 가입부터 한다', (tester) async {
+    testWidgets('토큰이 없으면 사용자 정보가 있어도 카카오 로그인부터 한다', (tester) async {
       await _launch(tester, stored: _stored(token: null));
 
-      expect(find.text('누구로 시작할까요?'), findsOneWidget);
+      expect(find.text('카카오로 시작하기'), findsOneWidget);
     });
   });
 
@@ -98,15 +95,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('누구로 시작할까요?'), findsOneWidget);
-    expect(find.textContaining('같은 역할을 고르면 이야기가 그대로 이어져요.'), findsOneWidget);
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.textContaining('같은 카카오 계정이면 이야기가 이어져요.'), findsOneWidget);
 
     const storage = FlutterSecureStorage();
     expect(await storage.read(key: 'access_token'), isNull);
     expect(await storage.read(key: 'current_user'), isNull);
   });
 
-  group('카카오 로그인을 켜고 앱을 켰을 때 서버에서 사용자를 다시 받는다', () {
+  group('앱을 켰을 때 서버에서 사용자를 다시 받는다', () {
     Map<String, dynamic> me(String pairingStatus) => {
       'id': 'usr_test',
       'name': '김민지',
@@ -117,7 +114,7 @@ void main() {
     testWidgets('상대가 연결을 끊었으면 페어링으로 보낸다', (tester) async {
       final auth = FakeAuthDataSource(me: me('UNPAIRED'));
 
-      await _launch(tester, stored: _stored(), auth: auth, kakaoAuth: true);
+      await _launch(tester, stored: _stored(), auth: auth);
 
       expect(auth.meCalls, 1);
       expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
@@ -134,7 +131,6 @@ void main() {
         tester,
         stored: _stored(pairingStatus: 'UNPAIRED'),
         auth: auth,
-        kakaoAuth: true,
       );
 
       expect(find.text('어릴 때 가장 좋아했던 놀이는 무엇이었나요?'), findsOneWidget);
@@ -143,7 +139,7 @@ void main() {
     testWidgets('바뀐 이름을 홈 인사에 바로 보여준다', (tester) async {
       final auth = FakeAuthDataSource(me: {...me('PAIRED'), 'name': '이민지'});
 
-      await _launch(tester, stored: _stored(), auth: auth, kakaoAuth: true);
+      await _launch(tester, stored: _stored(), auth: auth);
 
       expect(find.text('안녕하세요 이민지님'), findsOneWidget);
       expect(find.text('안녕하세요 김민지님'), findsNothing);
@@ -152,7 +148,7 @@ void main() {
     testWidgets('인터넷이 없으면 저장된 정보로 오늘 질문에 들어간다', (tester) async {
       final auth = FakeAuthDataSource(meError: ApiException());
 
-      await _launch(tester, stored: _stored(), auth: auth, kakaoAuth: true);
+      await _launch(tester, stored: _stored(), auth: auth);
 
       expect(find.text('어릴 때 가장 좋아했던 놀이는 무엇이었나요?'), findsOneWidget);
     });
@@ -161,7 +157,7 @@ void main() {
       final auth = FakeAuthDataSource(me: me('UNPAIRED'))
         ..meGate = Completer<void>().future;
 
-      await _launch(tester, stored: _stored(), auth: auth, kakaoAuth: true);
+      await _launch(tester, stored: _stored(), auth: auth);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 5));
@@ -176,7 +172,7 @@ void main() {
         meError: ApiException(statusCode: 401, errorCode: 'TOKEN_EXPIRED'),
       );
 
-      await _launch(tester, stored: _stored(), auth: auth, kakaoAuth: true);
+      await _launch(tester, stored: _stored(), auth: auth);
       await tester.pumpAndSettle();
 
       expect(find.text('카카오로 시작하기'), findsOneWidget);
@@ -189,26 +185,10 @@ void main() {
     testWidgets('로그인 전이면 서버에 묻지 않고 카카오 로그인을 보여준다', (tester) async {
       final auth = FakeAuthDataSource(me: me('PAIRED'));
 
-      await _launch(tester, stored: {}, auth: auth, kakaoAuth: true);
+      await _launch(tester, stored: {}, auth: auth);
 
       expect(auth.meCalls, 0);
       expect(find.text('카카오로 시작하기'), findsOneWidget);
     });
-  });
-
-  testWidgets('카카오 로그인을 끄면 서버에 묻지 않고 저장된 정보로 들어간다', (tester) async {
-    final auth = FakeAuthDataSource(
-      me: {
-        'id': 'usr_test',
-        'name': '김민지',
-        'role': 'CHILD',
-        'pairingStatus': 'UNPAIRED',
-      },
-    );
-
-    await _launch(tester, stored: _stored(), auth: auth);
-
-    expect(auth.meCalls, 0);
-    expect(find.text('어릴 때 가장 좋아했던 놀이는 무엇이었나요?'), findsOneWidget);
   });
 }

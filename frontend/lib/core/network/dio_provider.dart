@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
-import '../config/auth_flags.dart';
 import '../storage/token_storage.dart';
 import 'auth_interceptor.dart';
 import 'session_expired_signal.dart';
@@ -30,8 +29,7 @@ final dioProvider = Provider<Dio>((ref) {
       retry: dio.fetch,
       onSessionExpired: () =>
           ref.read(sessionExpiredSignalProvider.notifier).emit(),
-      // 401일 때 토큰을 갱신할지. 카카오 로그인(refresh token)을 켤 때만 갱신한다.
-      refreshEnabled: ref.read(kakaoAuthEnabledProvider),
+      refreshEnabled: true,
     ),
   );
   return dio;

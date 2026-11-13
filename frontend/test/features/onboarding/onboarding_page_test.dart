@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/app/app.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
+import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/presentation/onboarding_page.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
@@ -19,10 +20,12 @@ Future<void> _pumpApp(
   FakeAuthDataSource dataSource,
 ) async {
   usePhoneSize(tester);
+  dataSource.kakao = kakaoLoginJson(status: 'REGISTRATION_REQUIRED');
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authDataSourceProvider.overrideWithValue(dataSource),
+        kakaoSignInProvider.overrideWithValue(FakeKakao()),
         pairingDataSourceProvider.overrideWithValue(
           FakePairingDataSource(pairedAfterChecks: 99),
         ),
@@ -33,6 +36,8 @@ Future<void> _pumpApp(
       child: const App(),
     ),
   );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('카카오로 시작하기'));
   await tester.pumpAndSettle();
 }
 
@@ -124,6 +129,28 @@ void main() {
     expect(find.text('이름을 다시 확인해 주세요.'), findsOneWidget);
     expect(find.text('김민지'), findsOneWidget);
     expect(_startButton(tester).onPressed, isNotNull); // 다시 시도 가능
+  });
+
+  testWidgets('가입은 완료됐지만 응답을 못 받았으면 카카오 재로그인으로 복구한다', (tester) async {
+    await _pumpApp(
+      tester,
+      FakeAuthDataSource(
+        error: ApiException(
+          statusCode: 409,
+          errorCode: 'KAKAO_ACCOUNT_ALREADY_REGISTERED',
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('자녀예요'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '김민지');
+    await tester.pump();
+    await tester.tap(find.text('시작하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.textContaining('같은 카카오 계정으로 다시 로그인해 주세요.'), findsOneWidget);
   });
 
   testWidgets('네트워크가 끊기면 연결 확인 안내를 보여준다', (tester) async {

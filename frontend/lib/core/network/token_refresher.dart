@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../storage/token_storage.dart';
 
-/// refresh token으로 access token을 다시 받는다. (계약 5.14 `POST /auth/refresh`, 초안)
+/// refresh token으로 access token을 다시 받는다. (계약 5.14 `POST /auth/refresh`)
 ///
 /// 여러 요청이 동시에 401을 받아도 갱신 요청은 한 번만 보낸다. refresh token을
 /// 서버가 교체하는 경우 같은 토큰을 두 번 쓰면 둘 다 무효가 될 수 있기 때문이다.
@@ -38,8 +38,7 @@ class TokenRefresher {
 
     final data = response.data as Map<String, dynamic>;
     final access = data['accessToken'] as String;
-    // 서버가 refresh token을 바꿔 주지 않으면 쓰던 것을 계속 쓴다
-    final refresh = data['refreshToken'] as String? ?? refreshToken;
+    final refresh = data['refreshToken'] as String;
 
     // 기다리는 사이 로그아웃(또는 다른 계정 로그인)했으면 되살리지 않는다
     if (await _storage.readRefresh() != refreshToken) return null;

@@ -29,7 +29,13 @@ server:
 app:
   auth:
     jwt-secret: ${APP_JWT_SECRET}
-    access-token-expiration-days: ${APP_ACCESS_TOKEN_EXPIRATION_DAYS:30}
+    access-token-expiration-minutes: ${APP_ACCESS_TOKEN_EXPIRATION_MINUTES:30}
+    registration-token-expiration-minutes: ${APP_REGISTRATION_TOKEN_EXPIRATION_MINUTES:10}
+    refresh-token-expiration-days: ${APP_REFRESH_TOKEN_EXPIRATION_DAYS:30}
+    kakao:
+      native-app-key: ${KAKAO_NATIVE_APP_KEY:}
+      issuer: https://kauth.kakao.com
+      jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
   storage:
     type: ${STORAGE_TYPE:local}
     local-directory: ${LOCAL_STORAGE_DIRECTORY:${java.io.tmpdir}/4team-recordings}
