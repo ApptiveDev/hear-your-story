@@ -157,6 +157,7 @@ OpenID Connect 활성화가 필요합니다. 키 해시는 개발 PC의 debug �
 | `auth_recovery_draft.json` | 5.14 로그인 성공 뼈대 (RESTORED, 초안) |
 | `auth_kakao_new.json` | 5.14 변형 (처음 로그인 NEW, `user: null`, 초안) |
 | `auth_recovery_failed.json` | 5.14 변형 (본인 확인은 됐지만 기록 없음 RECOVERY_FAILED, 초안) |
+| `story_recording_deleted.json` | 5.12·5.13 초안 (부모 녹음 삭제·자녀 탈퇴로 `availability=DELETED`인 답, `MOCK_STORIES=deleted`) |
 
 - 필드명과 enum 값은 계약 문서와 정확히 일치해야 합니다.
 - 계약이 바뀌면 DTO와 Mock을 같은 PR에서 함께 수정합니다.

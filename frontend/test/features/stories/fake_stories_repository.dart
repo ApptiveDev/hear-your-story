@@ -12,6 +12,8 @@ Story testStory(
   String? processingNotice,
   String? originalAudioUrl,
   String ttsStatus = 'READY',
+  bool parentDeleted = false,
+  bool childDeleted = false,
 }) {
   return Story(
     storyId: 'story_$id',
@@ -19,18 +21,33 @@ Story testStory(
     assignedDate: assignedDate ?? DateTime(2026, 9, 24),
     questionText: '질문 $id',
     questionCategory: 'CHILDHOOD',
-    parentAnswer: StoryParentAnswer(
-      recordingId: 'rec_$id',
-      processingStatus: processingStatus,
-      summaryText: summaryText,
-      processingNotice: processingNotice,
-      originalAudioUrl: originalAudioUrl,
-    ),
-    childAnswer: StoryChildAnswer(
-      answerId: 'ans_$id',
-      text: '자녀 답 $id',
-      ttsStatus: ttsStatus,
-    ),
+    parentAnswer: parentDeleted
+        ? StoryParentAnswer(
+            availability: AnswerAvailability.deleted,
+            recordingId: null,
+            processingStatus: null,
+            processingNotice: processingNotice,
+            originalAudioUrl: originalAudioUrl,
+          )
+        : StoryParentAnswer(
+            recordingId: 'rec_$id',
+            processingStatus: processingStatus,
+            summaryText: summaryText,
+            processingNotice: processingNotice,
+            originalAudioUrl: originalAudioUrl,
+          ),
+    childAnswer: childDeleted
+        ? const StoryChildAnswer(
+            availability: AnswerAvailability.deleted,
+            answerId: null,
+            text: null,
+            ttsStatus: null,
+          )
+        : StoryChildAnswer(
+            answerId: 'ans_$id',
+            text: '자녀 답 $id',
+            ttsStatus: ttsStatus,
+          ),
     revealedAt: DateTime(2026, 9, 24, 21),
   );
 }
@@ -50,16 +67,28 @@ class FakeStoriesRepository implements StoriesRepository {
   /// 값이 있으면 complete될 때까지 응답을 멈춘다. (불러오는 중 상태 테스트용)
   Completer<void>? gate;
 
+  /// cursor별로 응답을 멈춘다. (다음 페이지를 기다리는 중 상태 테스트용)
+  final Map<String, Completer<void>> cursorGates = {};
+
   /// 요청된 cursor 기록 (중복 요청 확인용)
   final List<String?> requestedCursors = [];
 
   /// 요청된 달 기록
   final List<String> requestedMonths = [];
 
+  /// 지우기 요청 기록
+  final List<String> deletedRecordingIds = [];
+  final List<String> deletedAnswerIds = [];
+
+  /// 값이 있으면 지우기 요청에서 이 에러를 던진다.
+  Object? deleteError;
+
   @override
   Future<StoryPage> fetchPage({String? cursor}) async {
     requestedCursors.add(cursor);
     if (gate != null) await gate!.future;
+    final cursorGate = cursorGates[cursor];
+    if (cursorGate != null) await cursorGate.future;
     if (error != null) throw error!;
     return pages[cursor]!;
   }
@@ -70,5 +99,17 @@ class FakeStoriesRepository implements StoriesRepository {
     if (gate != null) await gate!.future;
     if (error != null) throw error!;
     return months[month] ?? const [];
+  }
+
+  @override
+  Future<void> deleteParentRecording(String recordingId) async {
+    if (deleteError != null) throw deleteError!;
+    deletedRecordingIds.add(recordingId);
+  }
+
+  @override
+  Future<void> deleteChildAnswer(String answerId) async {
+    if (deleteError != null) throw deleteError!;
+    deletedAnswerIds.add(answerId);
   }
 }
