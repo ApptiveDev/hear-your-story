@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
+import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/domain/app_user.dart';
@@ -158,6 +159,24 @@ void main() {
         expect(find.text('2026년 11월'), findsOneWidget);
         await tester.scrollUntilVisible(find.text('질문 1'), 200);
         expect(find.text('질문 1'), findsOneWidget);
+      });
+
+      testWidgets('마이페이지', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentUserProvider.overrideWith(
+                (ref) async => _user(UserRole.parent),
+              ),
+            ],
+            child: const MaterialApp(home: MyPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // 글씨가 크면 화면 아래로 밀리지만 스크롤로 닿아야 한다
+        await tester.scrollUntilVisible(find.text('탈퇴하기'), 200);
+        expect(find.text('탈퇴하기'), findsOneWidget);
       });
 
       final todayCases = <String, Map<String, dynamic> Function()>{

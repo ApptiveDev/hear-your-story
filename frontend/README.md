@@ -63,6 +63,10 @@ flutter run --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=http://192.1
 ```
 
 - API 주소는 코드에 고정하지 않고 `--dart-define`으로 전달합니다. (`lib/core/config/app_config.dart`)
+- 아직 백엔드가 없는 기능은 기본값이 `USE_MOCK`과 같아서 실제 서버에서는 화면에 나오지 않습니다.
+  서버가 준비되면 `STORIES_MONTH_API=true`(달력), `ACCOUNT_DELETION_API=true`(탈퇴)로 켭니다.
+- 마이페이지의 개인정보 처리방침 주소와 문의처는 `PRIVACY_POLICY_URL`, `SUPPORT_CONTACT`로
+  넣습니다. 비어 있으면 "준비 중이에요."로 보입니다.
 - `http://` 로컬 통신은 debug 빌드에서만 허용됩니다. (`android/app/src/debug/AndroidManifest.xml`)
 - 운영·스테이징 URL과 API key는 커밋하지 않습니다.
 

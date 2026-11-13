@@ -55,24 +55,29 @@ class SessionExpiry {
     GoRouter router,
     ScaffoldMessengerState? messenger,
   ) async {
-    final tokens = _ref.read(tokenStorageProvider);
-    final users = _ref.read(userStorageProvider);
+    await clearLocal();
 
-    await tokens.clear();
-    await users.clear();
-    // 가입 중 메모리에만 있던 registration token도 함께 버린다
+    messenger?.showSnackBar(
+      const SnackBar(content: Text('다시 로그인해 주세요.\n같은 카카오 계정이면 이야기가 이어져요.')),
+    );
+    router.go('/onboarding');
+  }
+
+  /// 기기에 남은 로그인 정보만 지운다. 안내·이동은 하지 않는다.
+  /// 로그아웃·탈퇴도 같은 정리를 써야 하므로, 지울 것이 늘면 여기에만 더한다.
+  Future<void> clearLocal() async {
+    await _ref.read(tokenStorageProvider).clear();
+    await _ref.read(userStorageProvider).clear();
+
+    // 가입 중 메모리에만 있던 registration token도 함께 버린다.
     _ref.invalidate(authRepositoryProvider);
+    
     _ref.invalidate(currentUserProvider);
     // 앱 시작 때 계산한 "갈 곳"이 남아 있으면 가입 화면이 그 값을 다시 쓴다
     _ref.invalidate(launchDestinationProvider);
     // 가입을 마치지 않은 채(역할 선택 중) 만료되면 같은 화면에 머무르므로 로그인 결과도 비운다
     _ref.invalidate(needsKakaoLoginProvider);
     _ref.invalidate(kakaoLoginControllerProvider);
-
-    messenger?.showSnackBar(
-      const SnackBar(content: Text('다시 로그인해 주세요.\n같은 카카오 계정이면 이야기가 이어져요.')),
-    );
-    router.go('/onboarding');
   }
 }
 
