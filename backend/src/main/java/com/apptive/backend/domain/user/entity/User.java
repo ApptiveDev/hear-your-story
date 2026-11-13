@@ -14,8 +14,8 @@ import lombok.Getter;
 
 @Getter
 @Entity
-@Table(name = "app_users", uniqueConstraints = @UniqueConstraint(name = "uk_app_users_device_role", columnNames = {
-        "device_id", "role"}))
+@Table(name = "app_users", uniqueConstraints = @UniqueConstraint(name = "uk_app_users_auth_identity", columnNames = {
+        "auth_provider", "auth_subject"}))
 public class User {
 
 	@Id
@@ -29,8 +29,15 @@ public class User {
 	@Column(length = 10, nullable = false, updatable = false)
 	private Role role;
 
-	@Column(name = "device_id", length = 255, nullable = false, updatable = false)
+	@Column(name = "device_id", length = 255, updatable = false)
 	private String deviceId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "auth_provider", length = 20, updatable = false)
+	private AuthProvider authProvider;
+
+	@Column(name = "auth_subject", length = 255, updatable = false)
+	private String authSubject;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;
@@ -43,6 +50,16 @@ public class User {
 		this.name = name;
 		this.role = role;
 		this.deviceId = deviceId;
+		this.createdAt = createdAt;
+	}
+
+	public User(String id, String name, Role role, AuthProvider authProvider, String authSubject,
+	    OffsetDateTime createdAt) {
+		this.id = id;
+		this.name = name;
+		this.role = role;
+		this.authProvider = authProvider;
+		this.authSubject = authSubject;
 		this.createdAt = createdAt;
 	}
 
