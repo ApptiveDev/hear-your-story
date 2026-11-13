@@ -10,7 +10,7 @@
 - 인증: `Authorization: Bearer {accessToken}`
 - Content-Type: 기본 `application/json`, 녹음·사진 업로드는
   `multipart/form-data`
-- 출시 준비 범위: 월별 지난 이야기, 사진 첨부, 녹음·계정 삭제
+- 출시 준비 범위: 월별 지난 이야기, 사진 첨부, 녹음·답변·계정 삭제
 
 ## 1. 공개 정책과 미확정 계약
 
@@ -40,7 +40,14 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 | `PUT /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 저장·권한·DTO·테스트, 프론트 모델·업로드·Mock·테스트 |
 | `DELETE /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 삭제·권한·테스트, 프론트 삭제 흐름·Mock·테스트 |
 | `DELETE /recordings/{recordingId}`와 삭제된 답변 응답 | 삭제 endpoint와 `availability=DELETED` 응답이 미구현이며, 현재 프론트는 `recordingId`와 `processingStatus`를 필수 문자열로 파싱한다. | 백엔드 삭제·nullable DTO·테스트, 프론트 nullable 모델·재생 차단·Mock·파싱 테스트 |
+| `DELETE /answers/{answerId}` | 미구현 | 백엔드 삭제·권한·nullable DTO·테스트, 프론트 삭제 흐름·Mock·테스트 |
 | `DELETE /users/me` | 미구현 | 백엔드 비활성화·삭제 작업·테스트, 프론트 세션 정리·Mock·테스트 |
+
+**답변 삭제 단위 (2026-11-10 개발 회의 결정)**: 부모와 자녀는 각자 **본인 답만
+개별로** 삭제한다. 부모는 본인 녹음(5.12), 자녀는 본인 텍스트 답(5.15)을 지우며,
+하루치 이야기(질문과 양쪽 답)를 한 번에 지우는 기능은 두지 않는다. 한쪽 답을 지워도
+이야기는 지난 이야기·월별 목록에 남고, 지운 쪽 답만 `availability=DELETED`로
+반환한다.
 
 이 기능에만 쓰이는 `availability`, `myPhoto`, `partnerPhoto`, `parentPhoto`,
 `childPhoto`, `AnswerAvailability`와 사진·삭제 관련 `errorCode`도 모두 초안이다.
@@ -111,7 +118,7 @@ JSON을 기록하고 프론트·백엔드 담당자가 확인한 뒤, 구현과 
 | 400 | `VALIDATION_ERROR`, `INVALID_AUDIO_FORMAT`, `INVALID_IMAGE_FORMAT` | 요청값 오류 |
 | 401 | `UNAUTHORIZED`, `TOKEN_EXPIRED` | 토큰 없음·만료 |
 | 403 | `ROLE_NOT_ALLOWED`, `PAIR_ACCESS_DENIED`, `RESOURCE_ACCESS_DENIED` | 역할·소유권 오류 |
-| 404 | `USER_NOT_FOUND`, `ASSIGNMENT_NOT_FOUND`, `RECORDING_NOT_FOUND`, `PHOTO_NOT_FOUND`, `INVITE_CODE_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` | 리소스 없음 |
+| 404 | `USER_NOT_FOUND`, `ASSIGNMENT_NOT_FOUND`, `RECORDING_NOT_FOUND`, `ANSWER_NOT_FOUND`, `PHOTO_NOT_FOUND`, `INVITE_CODE_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` | 리소스 없음 |
 | 409 | `ALREADY_PAIRED`, `PAIR_NOT_FOUND`, `INVITE_CODE_USED`, `INVITE_CODE_EXPIRED`, `ANSWER_LOCKED`, `ACCOUNT_DELETION_IN_PROGRESS` | 현재 상태와 충돌 |
 | 413 | `AUDIO_FILE_TOO_LARGE`, `IMAGE_FILE_TOO_LARGE` | 파일 크기 초과 |
 | 422 | `AUDIO_DURATION_OUT_OF_RANGE`, `IMAGE_DIMENSION_OUT_OF_RANGE` | 파일 제약 조건 오류 |
@@ -671,7 +678,8 @@ photoFile: family-photo.jpg
 `processingStatus`는 non-nullable 문자열이다. 아래 nullable 응답은 양쪽 구현과
 파싱 테스트가 함께 반영되기 전에는 서버가 반환하지 않는다.
 
-녹음을 제출한 부모만 호출할 수 있다. 성공하면 원본 음성, STT 원문, LLM 정리본과
+녹음을 제출한 부모만 호출할 수 있다. 자녀 답변은 함께 지우지 않으며 자녀 본인이
+5.15로 지운다. 성공하면 원본 음성, STT 원문, LLM 정리본과
 관련 저장소 객체를 삭제하고 `204 No Content`를 반환한다. 질문, 자녀 답변과 사진은
 유지한다.
 
@@ -759,6 +767,32 @@ SIGNED_OUT -> VERIFYING -> RESTORING -> AUTHENTICATED
 Mock으로 구현한다. 현재 `401` 처리와 `POST /users` 가입 동작은 회의 결과가 계약에
 반영될 때까지 유지한다.
 
+### 5.15 자녀 답변 삭제 — `DELETE /answers/{answerId}` — 초안, 미구현
+
+1.1의 답변 삭제 단위 결정에 따라 추가한 초안이다. 현재 백엔드에는 이 endpoint가
+없다.
+
+답변을 작성한 자녀만 호출할 수 있다. 성공하면 답변 텍스트와 해당 답변의 TTS 음성
+파일 등 관련 저장소 객체를 삭제하고 `204 No Content`를 반환한다. 질문, 부모 녹음과
+사진은 유지한다.
+
+삭제된 답변이 포함된 지난 이야기는 `childAnswer`를 다음처럼 반환한다.
+
+```json
+{
+  "availability": "DELETED",
+  "answerId": null,
+  "text": null,
+  "ttsStatus": null
+}
+```
+
+- 부모 화면은 삭제된 답변의 TTS 상태·재생 URL을 요청하지 않고 안내 문구만 표시한다.
+- 다른 자녀의 답변 또는 본인 Pair 밖의 답변은 `403 RESOURCE_ACCESS_DENIED`다.
+- 이미 삭제됐거나 없는 답변은 `404 ANSWER_NOT_FOUND`다.
+- 삭제한 날의 답을 다시 작성할 수 있는지는 미정이다. 확정 전에는 다시 작성하는
+  화면을 노출하지 않는다.
+
 ## 6. 프론트 Mock 파일 권장 구조
 
 ```text
@@ -802,3 +836,4 @@ frontend/
 | 2026-09-28 | v0 | 공통 오류 표와 `POST /pairs/join` 실패 응답에 `INVITE_CODE_NOT_FOUND`, `INVITE_CODE_EXPIRED`, `PAIR_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` 추가 (백엔드 구현과 맞춤) |
 | 2026-11-04 | v0.1 | 월별 지난 이야기, 사진 첨부·삭제, 녹음 삭제, 회원 탈퇴, 재로그인·기록 복구 요구사항을 미구현 초안으로 추가 |
 | 2026-11-07 | v0.2 | 월별 지난 이야기 조회 계약 확정 및 백엔드 구현 반영 |
+| 2026-11-11 | v0.3 | 개발 회의 결정(부모·자녀 각자 본인 답만 개별 삭제)을 반영해 자녀 답변 삭제 `DELETE /answers/{answerId}`와 `ANSWER_NOT_FOUND`를 초안으로 추가 |

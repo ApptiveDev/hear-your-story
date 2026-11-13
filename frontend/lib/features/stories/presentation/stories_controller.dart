@@ -55,6 +55,25 @@ class StoriesController extends AsyncNotifier<StoriesState> {
     throw StateError('이야기를 다시 찾지 못했어요');
   }
 
+  /// 불러온 목록에서 이야기 하나만 바꾼다.
+  /// 내 답을 지운 뒤 목록을 처음부터 다시 불러오지 않고 그 카드만 반영한다.
+  void replaceStory(String storyId, Story Function(Story story) update) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData(
+      StoriesState(
+        items: [
+          for (final story in current.items)
+            story.storyId == storyId ? update(story) : story,
+        ],
+        nextCursor: current.nextCursor,
+        hasNext: current.hasNext,
+        isLoadingMore: current.isLoadingMore,
+        loadMoreFailed: current.loadMoreFailed,
+      ),
+    );
+  }
+
   Future<void> loadMore() async {
     final current = state.value;
     if (current == null || !current.hasNext || current.isLoadingMore) return;
@@ -75,7 +94,8 @@ class StoriesController extends AsyncNotifier<StoriesState> {
       if (!ref.mounted) return; // 기다리는 사이 화면이 닫혔으면 무시
       state = AsyncData(
         StoriesState(
-          items: [...current.items, ...page.items],
+          // 기다리는 사이 지운 카드가 되살아나지 않게 지금 목록에 붙인다
+          items: [...(state.value?.items ?? current.items), ...page.items],
           nextCursor: page.nextCursor,
           hasNext: page.hasNext,
         ),
@@ -89,7 +109,7 @@ class StoriesController extends AsyncNotifier<StoriesState> {
       }
       state = AsyncData(
         StoriesState(
-          items: current.items,
+          items: state.value?.items ?? current.items,
           nextCursor: current.nextCursor,
           hasNext: current.hasNext,
           loadMoreFailed: true,

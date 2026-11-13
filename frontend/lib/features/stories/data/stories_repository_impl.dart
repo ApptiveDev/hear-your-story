@@ -24,4 +24,12 @@ class StoriesRepositoryImpl implements StoriesRepository {
     final json = await _dataSource.fetchStoriesByMonth(month);
     return StoriesDto.pageFromJson(json).items;
   }
+
+  @override
+  Future<void> deleteParentRecording(String recordingId) =>
+      _dataSource.deleteRecording(recordingId);
+
+  @override
+  Future<void> deleteChildAnswer(String answerId) =>
+      _dataSource.deleteAnswer(answerId);
 }

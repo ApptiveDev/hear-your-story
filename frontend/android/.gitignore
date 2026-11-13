@@ -4,6 +4,8 @@ gradle-wrapper.jar
 /gradlew
 /gradlew.bat
 /local.properties
+# local.properties 백업·사본도 개인 경로를 담고 있어 추적하지 않는다
+/local.properties.*
 GeneratedPluginRegistrant.java
 .cxx/
 

@@ -74,10 +74,35 @@ class AnswerSection extends StatelessWidget {
   }
 }
 
-/// 부모 답을 화면에 보여줄 글로 바꾼다: 정리본 → 원문 → 안내 문구
+/// 부모 답을 화면에 보여줄 글로 바꾼다: 정리본 → 원문 → 안내 문구.
+/// 지워진 답은 서버 안내 문구를 쓰고, 없으면 기본 문구를 쓴다.
 String parentAnswerText(StoryParentAnswer parent) {
+  if (parent.isDeleted) {
+    return parent.processingNotice ?? deletedParentAnswerText;
+  }
   final text = parent.displayText;
   if (text != null) return text;
   if (parent.isProcessing) return '글로 정리하고 있어요.';
   return '목소리로 남긴 답이에요.';
 }
+
+/// 자녀 답을 화면에 보여줄 글로 바꾼다. 지워진 답은 안내 문구로 대신한다.
+String childAnswerText(StoryChildAnswer child) {
+  final text = child.text;
+  if (child.isDeleted || text == null) return deletedChildAnswerText;
+  return text;
+}
+
+/// 서버 안내 문구가 없을 때 쓰는 기본 문구
+const deletedParentAnswerText = '부모님이 이 음성 기록을 삭제했어요.';
+const deletedChildAnswerText = '삭제된 답이에요.';
+
+/// 지우기 전에 보여주는 영향 범위 안내
+const parentDeleteConfirmMessage =
+    '목소리와 받아쓴 글, 정리된 글이 모두 지워져요.\n'
+    '질문과 자녀의 답은 그대로 남아요.\n'
+    '지운 녹음은 되돌릴 수 없어요.';
+const childDeleteConfirmMessage =
+    '내가 쓴 답과 부모님께 들려드린 목소리가 지워져요.\n'
+    '질문과 부모님의 답은 그대로 남아요.\n'
+    '지운 답은 되돌릴 수 없어요.';
