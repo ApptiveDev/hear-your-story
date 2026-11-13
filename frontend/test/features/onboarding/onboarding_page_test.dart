@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/app/app.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
+import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/presentation/onboarding_page.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
@@ -19,10 +20,12 @@ Future<void> _pumpApp(
   FakeAuthDataSource dataSource,
 ) async {
   usePhoneSize(tester);
+  dataSource.kakao = kakaoLoginJson(status: 'REGISTRATION_REQUIRED');
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authDataSourceProvider.overrideWithValue(dataSource),
+        kakaoSignInProvider.overrideWithValue(FakeKakao()),
         pairingDataSourceProvider.overrideWithValue(
           FakePairingDataSource(pairedAfterChecks: 99),
         ),
@@ -33,6 +36,8 @@ Future<void> _pumpApp(
       child: const App(),
     ),
   );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('카카오로 시작하기'));
   await tester.pumpAndSettle();
 }
 

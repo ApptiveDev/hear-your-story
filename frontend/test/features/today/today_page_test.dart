@@ -90,6 +90,9 @@ void main() {
       final harness = await _pump(tester, source);
 
       expect(find.text('저는 놀이터에서 숨바꼭질하던 시간이 기억나요.'), findsOneWidget);
+      await tester.ensureVisible(find.text('답 고치기'));
+      await tester.drag(find.byType(ListView), const Offset(0, -100));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('답 고치기'));
       await tester.pumpAndSettle();
 

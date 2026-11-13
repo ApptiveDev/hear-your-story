@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/config/auth_flags.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_providers.dart';
@@ -22,12 +21,10 @@ final launchDestinationProvider = FutureProvider.autoDispose<String?>((
   final token = await ref.read(tokenStorageProvider).read();
   var user = await ref.read(currentUserProvider.future);
   if (token == null || user == null) return null;
-  if (ref.read(kakaoAuthEnabledProvider)) {
-    user = await ref.read(authRepositoryProvider).restoreUser(cached: user);
-    if (!ref.mounted) return null;
-    // 홈·페어링 화면이 새로 받은 사용자를 읽게 한다
-    ref.invalidate(currentUserProvider);
-  }
+  user = await ref.read(authRepositoryProvider).restoreUser(cached: user);
+  if (!ref.mounted) return null;
+  // 홈·페어링 화면이 새로 받은 사용자를 읽게 한다
+  ref.invalidate(currentUserProvider);
   return user.isPaired ? '/today' : '/pairing';
 });
 
@@ -37,7 +34,7 @@ final launchDestinationProvider = FutureProvider.autoDispose<String?>((
 /// [handleSessionExpired]로 부른다. 같은 401을 둘 다 받아도 안내와 이동은 한 번만 한다.
 ///
 /// 토큰과 사용자 정보를 함께 지워야 한다. 사용자 정보만 남으면 가입 화면이 다시
-/// 홈으로 보내서 401이 반복된다. `device_id`는 남긴다.
+/// 홈으로 보내서 401이 반복된다.
 class SessionExpiry {
   SessionExpiry(this._ref);
   final Ref _ref;
@@ -60,11 +57,11 @@ class SessionExpiry {
   ) async {
     final tokens = _ref.read(tokenStorageProvider);
     final users = _ref.read(userStorageProvider);
-    // 이미 정리됐으면 앞선 401이 처리한 것이다
-    if (await tokens.read() == null && await users.read() == null) return;
 
     await tokens.clear();
     await users.clear();
+    // 가입 중 메모리에만 있던 registration token도 함께 버린다
+    _ref.invalidate(authRepositoryProvider);
     _ref.invalidate(currentUserProvider);
     // 앱 시작 때 계산한 "갈 곳"이 남아 있으면 가입 화면이 그 값을 다시 쓴다
     _ref.invalidate(launchDestinationProvider);
@@ -73,15 +70,7 @@ class SessionExpiry {
     _ref.invalidate(kakaoLoginControllerProvider);
 
     messenger?.showSnackBar(
-      SnackBar(
-        content: Text(
-          _ref.read(kakaoAuthEnabledProvider)
-              // 같은 카카오 계정으로 로그인하면 서버가 기존 계정을 돌려준다
-              ? '다시 로그인해 주세요.\n같은 카카오 계정이면 이야기가 이어져요.'
-              // 같은 기기·같은 역할로 다시 가입하면 서버가 기존 계정을 돌려준다
-              : '다시 시작해 주세요.\n같은 역할을 고르면 이야기가 그대로 이어져요.',
-        ),
-      ),
+      const SnackBar(content: Text('다시 로그인해 주세요.\n같은 카카오 계정이면 이야기가 이어져요.')),
     );
     router.go('/onboarding');
   }
@@ -90,7 +79,6 @@ class SessionExpiry {
 /// 카카오 로그인을 켰고 아직 로그인하지 않았는지. 로그인은 했지만 가입(역할·이름)을
 /// 마치지 않았으면 false라서 가입 화면이 역할 선택부터 보여준다.
 final needsKakaoLoginProvider = FutureProvider.autoDispose<bool>((ref) async {
-  if (!ref.read(kakaoAuthEnabledProvider)) return false;
   return await ref.read(tokenStorageProvider).read() == null;
 });
 

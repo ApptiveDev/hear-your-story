@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/storage/token_storage.dart';
 import 'package:life_record/features/onboarding/data/auth_repository_impl.dart';
-import 'package:life_record/features/onboarding/data/device_id_storage.dart';
 import 'package:life_record/features/onboarding/data/user_storage.dart';
 import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/domain/app_user.dart';
@@ -29,20 +28,26 @@ void main() {
     userStorage = UserStorage(secure);
     repository = AuthRepositoryImpl(
       dataSource: dataSource,
-      deviceIdStorage: DeviceIdStorage(secure),
       tokenStorage: tokenStorage,
       userStorage: userStorage,
       kakaoSignIn: kakao,
     );
   });
 
+  Future<void> prepareRegistration() async {
+    dataSource.kakao = kakaoLoginJson(status: 'REGISTRATION_REQUIRED');
+    await repository.loginWithKakao();
+  }
+
   test('가입하면 토큰과 사용자 정보를 저장한다', () async {
+    await prepareRegistration();
     final user = await repository.signUp(name: '김민지', role: UserRole.child);
 
     expect(user.name, '김민지');
     expect(user.role, UserRole.child);
     expect(user.isPaired, isFalse);
     expect(await tokenStorage.read(), 'token_for_김민지');
+    expect(await tokenStorage.readRefresh(), 'refresh_for_김민지');
 
     final saved = await userStorage.read();
     expect(saved?.id, 'usr_test');
@@ -50,18 +55,25 @@ void main() {
   });
 
   test('이름 앞뒤 공백을 지우고 역할을 API 값으로 보낸다', () async {
+    await prepareRegistration();
     await repository.signUp(name: '  김영희 ', role: UserRole.parent);
 
     expect(dataSource.requests.single['name'], '김영희');
     expect(dataSource.requests.single['role'], 'PARENT');
   });
 
-  test('다시 가입해도 같은 기기 ID를 보낸다', () async {
-    await repository.signUp(name: '김영희', role: UserRole.parent);
+  test('카카오 로그인에서 받은 가입용 token을 가입 요청에만 보낸다', () async {
+    await prepareRegistration();
     await repository.signUp(name: '김영희', role: UserRole.parent);
 
-    final ids = dataSource.requests.map((r) => r['deviceId']).toSet();
-    expect(ids, hasLength(1));
+    expect(
+      dataSource.requests.single['registrationToken'],
+      'registration-token',
+    );
+    await expectLater(
+      repository.signUp(name: '김영희', role: UserRole.parent),
+      throwsStateError,
+    );
   });
 
   test('저장된 사용자 정보가 손상되면 비우고 null을 돌려준다', () async {
@@ -171,26 +183,24 @@ void main() {
 
       final result = await repository.loginWithKakao();
 
-      expect(result.recoveryStatus, RecoveryStatus.restored);
+      expect(result.authStatus, AuthStatus.authenticated);
       expect(result.user?.name, '김영희');
       expect(await tokenStorage.read(), 'kakao-access');
       expect(await tokenStorage.readRefresh(), 'kakao-refresh');
       expect((await userStorage.read())?.id, 'usr_kakao');
     });
 
-    test('카카오 id token과 기기 ID를 보낸다', () async {
+    test('카카오 id token만 서버에 보낸다', () async {
       dataSource.kakao = kakaoLoginJson();
-      await repository.signUp(name: '김영희', role: UserRole.parent);
 
       await repository.loginWithKakao();
 
       final request = dataSource.kakaoRequests.single;
       expect(request['idToken'], 'id-token-1');
-      // 기존 기기 계정을 카카오 계정에 연결할 수 있게 같은 기기 ID를 보낸다
-      expect(request['deviceId'], dataSource.requests.single['deviceId']);
+      expect(request.containsKey('deviceId'), isFalse);
     });
 
-    test('처음이면 토큰만 저장하고 예전 사용자 정보는 지운다', () async {
+    test('처음이면 가입용 token만 메모리에 두고 예전 로그인 정보는 지운다', () async {
       await userStorage.save(
         const AppUser(
           id: 'usr_old',
@@ -199,35 +209,25 @@ void main() {
           pairingStatus: PairingStatus.paired,
         ),
       );
-      dataSource.kakao = kakaoLoginJson(status: 'NEW');
+      dataSource.kakao = kakaoLoginJson(status: 'REGISTRATION_REQUIRED');
 
       final result = await repository.loginWithKakao();
 
-      expect(result.recoveryStatus, RecoveryStatus.newUser);
+      expect(result.authStatus, AuthStatus.registrationRequired);
       expect(result.user, isNull);
-      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
+      expect(await tokenStorage.read(), isNull);
+      expect(await tokenStorage.readRefresh(), isNull);
       expect(await userStorage.read(), isNull);
     });
 
-    test('처음 로그인 후 가입을 마치면 refresh token은 그대로 둔다', () async {
-      dataSource.kakao = kakaoLoginJson(status: 'NEW');
+    test('처음 로그인 후 가입을 마치면 서비스 token 두 개를 저장한다', () async {
+      dataSource.kakao = kakaoLoginJson(status: 'REGISTRATION_REQUIRED');
       await repository.loginWithKakao();
 
       await repository.signUp(name: '김민지', role: UserRole.child);
 
       expect(await tokenStorage.read(), 'token_for_김민지');
-      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
-    });
-
-    test('이전 기록을 못 찾았으면 토큰만 저장하고 사용자 정보는 비운다', () async {
-      dataSource.kakao = kakaoLoginJson(status: 'RECOVERY_FAILED');
-
-      final result = await repository.loginWithKakao();
-
-      expect(result.recoveryStatus, RecoveryStatus.recoveryFailed);
-      expect(result.user, isNull);
-      expect(await tokenStorage.readRefresh(), 'kakao-refresh');
-      expect(await userStorage.read(), isNull);
+      expect(await tokenStorage.readRefresh(), 'refresh_for_김민지');
     });
 
     test('카카오 확인이 끝나면 서버에 묻기 전에 알린다', () async {
@@ -275,11 +275,14 @@ void main() {
     });
 
     for (final (label, json) in [
-      ('RESTORED인데 사용자가 없으면', {...kakaoLoginJson(), 'user': null}),
+      ('AUTHENTICATED인데 사용자가 없으면', {...kakaoLoginJson(), 'user': null}),
       ('모르는 상태 값이면', kakaoLoginJson(status: 'MERGED')),
       (
-        '처음(NEW)인데 사용자가 있으면',
-        {...kakaoLoginJson(status: 'NEW'), 'user': kakaoLoginJson()['user']},
+        '가입 필요인데 사용자가 있으면',
+        {
+          ...kakaoLoginJson(status: 'REGISTRATION_REQUIRED'),
+          'user': kakaoLoginJson()['user'],
+        },
       ),
       ('refresh token이 없으면', {...kakaoLoginJson(), 'refreshToken': null}),
     ]) {
@@ -291,19 +294,30 @@ void main() {
       });
     }
 
-    test('로그아웃하면 토큰·사용자를 지우고 기기 ID는 남긴다', () async {
+    test('로그아웃하면 서버 token을 폐기하고 로컬 token·사용자를 지운다', () async {
       dataSource.kakao = kakaoLoginJson();
-      await repository.signUp(name: '김영희', role: UserRole.parent);
       await repository.loginWithKakao();
-      final deviceId = await secure.read(key: 'device_id');
 
       await repository.logout();
 
       expect(await tokenStorage.read(), isNull);
       expect(await tokenStorage.readRefresh(), isNull);
       expect(await userStorage.read(), isNull);
-      expect(await secure.read(key: 'device_id'), deviceId);
-      expect(deviceId, isNotNull);
+      expect(dataSource.logoutRequests, ['kakao-refresh']);
+      expect(kakao.signOutCalls, 1);
+    });
+
+    test('서버 로그아웃이 실패해도 로컬 로그인 정보는 지운다', () async {
+      dataSource
+        ..kakao = kakaoLoginJson()
+        ..logoutError = ApiException();
+      await repository.loginWithKakao();
+
+      await repository.logout();
+
+      expect(await tokenStorage.read(), isNull);
+      expect(await tokenStorage.readRefresh(), isNull);
+      expect(await userStorage.read(), isNull);
       expect(kakao.signOutCalls, 1);
     });
   });

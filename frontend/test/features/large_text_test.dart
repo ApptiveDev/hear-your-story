@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
+import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/domain/app_user.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/pairing/presentation/pairing_page.dart';
@@ -90,14 +91,19 @@ void main() {
     group('글씨 $scale배', () {
       testWidgets('역할 선택과 이름 입력', (tester) async {
         _phoneWithTextScale(tester, scale);
+        final auth = FakeAuthDataSource()
+          ..kakao = kakaoLoginJson(status: 'REGISTRATION_REQUIRED');
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              authDataSourceProvider.overrideWithValue(FakeAuthDataSource()),
+              authDataSourceProvider.overrideWithValue(auth),
+              kakaoSignInProvider.overrideWithValue(FakeKakao()),
             ],
             child: const App(),
           ),
         );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('카카오로 시작하기'));
         await tester.pumpAndSettle();
         expect(find.text('누구로 시작할까요?'), findsOneWidget);
 
