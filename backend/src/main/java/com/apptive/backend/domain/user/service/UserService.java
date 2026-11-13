@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
@@ -14,6 +15,7 @@ import com.apptive.backend.common.id.IdGenerator;
 import com.apptive.backend.domain.auth.dto.AuthenticatedResponse;
 import com.apptive.backend.domain.auth.service.SessionService;
 import com.apptive.backend.domain.user.dto.CreateUserRequest;
+import com.apptive.backend.domain.user.dto.UserResponse;
 import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
@@ -46,6 +48,13 @@ public class UserService {
 			throw new ApiException(ErrorCode.KAKAO_ACCOUNT_ALREADY_REGISTERED);
 		}
 		return sessionService.issue(user);
+	}
+
+	@Transactional(readOnly = true)
+	public UserResponse getMe(AuthenticatedUser authenticatedUser) {
+		User user = userRepository.findById(authenticatedUser.userId())
+		    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+		return sessionService.toUserResponse(user);
 	}
 
 	private String parseRegistrationToken(String registrationToken) {

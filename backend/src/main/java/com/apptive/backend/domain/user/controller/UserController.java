@@ -4,13 +4,17 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.auth.dto.AuthenticatedResponse;
 import com.apptive.backend.domain.user.dto.CreateUserRequest;
+import com.apptive.backend.domain.user.dto.UserResponse;
 import com.apptive.backend.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,5 +29,10 @@ public class UserController {
 	@PostMapping
 	public ResponseEntity<AuthenticatedResponse> register(@Valid @RequestBody CreateUserRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(request));
+	}
+
+	@GetMapping("/me")
+	public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return ResponseEntity.ok(userService.getMe(authenticatedUser));
 	}
 }

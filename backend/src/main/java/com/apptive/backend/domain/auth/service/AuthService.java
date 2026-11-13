@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.apptive.backend.common.auth.IssuedRegistrationToken;
 import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.domain.auth.dto.KakaoLoginResponse;
+import com.apptive.backend.domain.auth.dto.TokenRefreshResponse;
 import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
@@ -32,5 +33,13 @@ public class AuthService {
 		}
 
 		return KakaoLoginResponse.authenticated(sessionService.issue(user));
+	}
+
+	public TokenRefreshResponse refresh(String refreshToken) {
+		return sessionService.refresh(refreshToken);
+	}
+
+	public void logout(String refreshToken) {
+		sessionService.logout(refreshToken);
 	}
 }

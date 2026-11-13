@@ -12,6 +12,8 @@ import java.util.HexFormat;
 import org.springframework.stereotype.Service;
 
 import com.apptive.backend.common.auth.JwtProperties;
+import com.apptive.backend.common.exception.ApiException;
+import com.apptive.backend.common.exception.ErrorCode;
 import com.apptive.backend.common.id.IdGenerator;
 import com.apptive.backend.domain.auth.entity.RefreshToken;
 import com.apptive.backend.domain.auth.repository.RefreshTokenRepository;
@@ -39,6 +41,23 @@ public class RefreshTokenService {
 		refreshTokenRepository
 		    .save(new RefreshToken(idGenerator.generate("rft"), user, hash(value), expiresAt, createdAt));
 		return new IssuedRefreshToken(value, expiresAt);
+	}
+
+	public RotatedRefreshToken rotate(String value) {
+		OffsetDateTime now = OffsetDateTime.now(clock).withNano(0);
+		RefreshToken current = refreshTokenRepository.findByTokenHashForUpdate(hash(value))
+		    .orElseThrow(() -> new ApiException(ErrorCode.REFRESH_TOKEN_INVALID));
+		if (!current.isUsableAt(now)) {
+			throw new ApiException(ErrorCode.REFRESH_TOKEN_INVALID);
+		}
+
+		current.revoke(now);
+		return new RotatedRefreshToken(current.getUser(), issue(current.getUser()));
+	}
+
+	public void revoke(String value) {
+		OffsetDateTime now = OffsetDateTime.now(clock).withNano(0);
+		refreshTokenRepository.findByTokenHashForUpdate(hash(value)).ifPresent(token -> token.revoke(now));
 	}
 
 	String hash(String value) {

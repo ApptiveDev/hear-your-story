@@ -108,6 +108,51 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void refreshRotatesBothServiceTokensAndRejectsReusingOldToken() throws Exception {
+		createExistingUser("refresh-subject");
+		when(kakaoIdTokenVerifier.verify("existing-id-token")).thenReturn(new KakaoIdentity("refresh-subject"));
+		String firstRefreshToken = body(login("existing-id-token").andReturn()).get("refreshToken").asText();
+
+		MvcResult refreshed = refresh(firstRefreshToken).andExpect(status().isOk())
+		    .andExpect(jsonPath("$.accessToken").isNotEmpty()).andExpect(jsonPath("$.refreshToken").isNotEmpty())
+		    .andExpect(jsonPath("$.tokenType").value("Bearer")).andExpect(jsonPath("$.expiresAt").isNotEmpty())
+		    .andReturn();
+		String rotatedRefreshToken = body(refreshed).get("refreshToken").asText();
+
+		org.assertj.core.api.Assertions.assertThat(rotatedRefreshToken).isNotEqualTo(firstRefreshToken);
+		refresh(firstRefreshToken).andExpect(status().isUnauthorized())
+		    .andExpect(jsonPath("$.errorCode").value("REFRESH_TOKEN_INVALID"));
+		org.assertj.core.api.Assertions.assertThat(refreshTokenRepository.findAll()).hasSize(2)
+		    .anySatisfy(token -> org.assertj.core.api.Assertions.assertThat(token.getRevokedAt()).isNotNull());
+	}
+
+	@Test
+	void logoutRevokesRefreshTokenAndIsIdempotent() throws Exception {
+		createExistingUser("logout-subject");
+		when(kakaoIdTokenVerifier.verify("existing-id-token")).thenReturn(new KakaoIdentity("logout-subject"));
+		String refreshToken = body(login("existing-id-token").andReturn()).get("refreshToken").asText();
+
+		logout(refreshToken).andExpect(status().isNoContent());
+		logout(refreshToken).andExpect(status().isNoContent());
+		refresh(refreshToken).andExpect(status().isUnauthorized())
+		    .andExpect(jsonPath("$.errorCode").value("REFRESH_TOKEN_INVALID"));
+	}
+
+	@Test
+	void unknownRefreshTokenReturnsContractError() throws Exception {
+		refresh("unknown-refresh-token").andExpect(status().isUnauthorized())
+		    .andExpect(jsonPath("$.errorCode").value("REFRESH_TOKEN_INVALID"));
+	}
+
+	@Test
+	void blankRefreshTokenReturnsValidationError() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON).content("""
+		    {"refreshToken":" "}
+		    """)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+		    .andExpect(jsonPath("$.fieldErrors[?(@.field == 'refreshToken')]").exists());
+	}
+
+	@Test
 	void invalidKakaoIdTokenReturnsContractError() throws Exception {
 		when(kakaoIdTokenVerifier.verify("invalid-id-token"))
 		    .thenThrow(new ApiException(ErrorCode.KAKAO_ID_TOKEN_INVALID));
@@ -140,10 +185,28 @@ class AuthControllerTest {
 		    .content(objectMapper.writeValueAsString(new LoginBody(idToken))));
 	}
 
+	private org.springframework.test.web.servlet.ResultActions refresh(String refreshToken) throws Exception {
+		return mockMvc.perform(post("/api/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON)
+		    .content(objectMapper.writeValueAsString(new RefreshBody(refreshToken))));
+	}
+
+	private org.springframework.test.web.servlet.ResultActions logout(String refreshToken) throws Exception {
+		return mockMvc.perform(post("/api/v1/auth/logout").contentType(MediaType.APPLICATION_JSON)
+		    .content(objectMapper.writeValueAsString(new RefreshBody(refreshToken))));
+	}
+
+	private void createExistingUser(String authSubject) {
+		userRepository.save(new User("usr_" + authSubject, "김영희", Role.PARENT, AuthProvider.KAKAO, authSubject,
+		    OffsetDateTime.now(clock)));
+	}
+
 	private JsonNode body(MvcResult result) throws Exception {
 		return objectMapper.readTree(result.getResponse().getContentAsByteArray());
 	}
 
 	private record LoginBody(String idToken) {
+	}
+
+	private record RefreshBody(String refreshToken) {
 	}
 }

@@ -2,6 +2,7 @@ package com.apptive.backend.domain.user.controller;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -160,6 +161,21 @@ class UserPairControllerTest {
 	void malformedTokenReturnsUnauthorized() throws Exception {
 		mockMvc.perform(post("/api/v1/pairs/invitations").header("Authorization", "Bearer malformed-token"))
 		    .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
+	}
+
+	@Test
+	void authenticatedUserCanRestoreCurrentUser() throws Exception {
+		MvcResult registration = register("김영희", "PARENT", "restore-subject", 201);
+
+		mockMvc.perform(get("/api/v1/users/me").header("Authorization", bearer(token(registration))))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("김영희"))
+		    .andExpect(jsonPath("$.role").value("PARENT")).andExpect(jsonPath("$.pairingStatus").value("UNPAIRED"));
+	}
+
+	@Test
+	void currentUserRequiresAccessToken() throws Exception {
+		mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized())
+		    .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
 	}
 
 	@Test

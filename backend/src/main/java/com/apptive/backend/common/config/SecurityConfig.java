@@ -34,8 +34,9 @@ public class SecurityConfig {
 		    .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
 		        .accessDeniedHandler(accessDeniedHandler))
 		    .authorizeHttpRequests(authorize -> authorize.requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
-		        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/auth/kakao").permitAll()
-		        .requestMatchers(HttpMethod.POST, "/api/v1/pairs/invitations").hasRole("CHILD")
+		        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/auth/kakao", "/api/v1/auth/refresh",
+		            "/api/v1/auth/logout")
+		        .permitAll().requestMatchers(HttpMethod.POST, "/api/v1/pairs/invitations").hasRole("CHILD")
 		        .requestMatchers(HttpMethod.POST, "/api/v1/pairs/join").hasRole("PARENT")
 		        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/child-answer").hasRole("CHILD")
 		        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/parent-recording").hasRole("PARENT")
