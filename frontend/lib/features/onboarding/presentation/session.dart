@@ -51,17 +51,23 @@ class SessionExpiry {
     // 이미 정리됐으면 앞선 401이 처리한 것이다
     if (await tokens.read() == null && await users.read() == null) return;
 
-    await tokens.clear();
-    await users.clear();
-    _ref.invalidate(currentUserProvider);
-    // 앱 시작 때 계산한 "갈 곳"이 남아 있으면 가입 화면이 그 값을 다시 쓴다
-    _ref.invalidate(launchDestinationProvider);
+    await clearLocal();
 
     // 같은 기기·같은 역할로 다시 가입하면 서버가 기존 계정을 돌려준다
     messenger?.showSnackBar(
       const SnackBar(content: Text('다시 시작해 주세요.\n같은 역할을 고르면 이야기가 그대로 이어져요.')),
     );
     router.go('/onboarding');
+  }
+
+  /// 기기에 남은 로그인 정보만 지운다. 안내·이동은 하지 않는다.
+  /// 로그아웃·탈퇴도 같은 정리를 써야 하므로, 지울 것이 늘면 여기에만 더한다.
+  Future<void> clearLocal() async {
+    await _ref.read(tokenStorageProvider).clear();
+    await _ref.read(userStorageProvider).clear();
+    _ref.invalidate(currentUserProvider);
+    // 앱 시작 때 계산한 "갈 곳"이 남아 있으면 가입 화면이 그 값을 다시 쓴다
+    _ref.invalidate(launchDestinationProvider);
   }
 }
 

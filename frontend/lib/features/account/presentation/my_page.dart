@@ -9,7 +9,6 @@ import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
 import '../data/account_providers.dart';
-import 'account_session.dart';
 
 const logoutConfirmMessage = '같은 역할로 다시 시작하면 이야기가 그대로 이어져요.';
 const deleteConfirmMessage =
@@ -62,7 +61,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     )) {
       return;
     }
-    await ref.read(accountSessionProvider).clear();
+    await ref.read(sessionExpiryProvider).clearLocal();
     router.go('/onboarding');
   }
 
@@ -79,7 +78,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     // 요청 중 화면이 사라져도(예: 401로 가입 화면 이동) 끝까지 처리하도록
     // await 전에 필요한 객체를 미리 잡아 둔다. dispose된 뒤에는 ref를 쓸 수 없다.
     final repository = ref.read(accountRepositoryProvider);
-    final session = ref.read(accountSessionProvider);
+    final session = ref.read(sessionExpiryProvider);
     setState(() => _busy = true);
     try {
       await repository.deleteAccount();
@@ -95,7 +94,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     }
     // 서버가 탈퇴를 받았다. 기기 정리가 실패해도 완료로 보고 다음 요청의 401에 맡긴다.
     try {
-      await session.clear();
+      await session.clearLocal();
     } on Object {
       // 아래에서 완료 화면으로 보낸다
     }
