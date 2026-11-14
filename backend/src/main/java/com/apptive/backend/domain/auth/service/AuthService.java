@@ -10,6 +10,7 @@ import com.apptive.backend.domain.auth.dto.TokenRefreshResponse;
 import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
+import com.apptive.backend.domain.user.service.AccountDeletionGuard;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,12 +20,14 @@ public class AuthService {
 
 	private final KakaoIdTokenVerifier kakaoIdTokenVerifier;
 	private final UserRepository userRepository;
+	private final AccountDeletionGuard accountDeletionGuard;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final SessionService sessionService;
 
 	@Transactional
 	public KakaoLoginResponse loginWithKakao(String idToken) {
 		KakaoIdentity identity = kakaoIdTokenVerifier.verify(idToken);
+		accountDeletionGuard.requireNotProcessing(AuthProvider.KAKAO, identity.subject());
 		User user = userRepository.findByAuthProviderAndAuthSubject(AuthProvider.KAKAO, identity.subject())
 		    .orElse(null);
 		if (user == null) {

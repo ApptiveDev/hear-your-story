@@ -41,7 +41,6 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 | `DELETE /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 삭제·권한·테스트, 프론트 삭제 흐름·Mock·테스트 |
 | `DELETE /recordings/{recordingId}`와 삭제된 답변 응답 | 삭제 endpoint와 `availability=DELETED` 응답이 미구현이며, 현재 프론트는 `recordingId`와 `processingStatus`를 필수 문자열로 파싱한다. | 백엔드 삭제·nullable DTO·테스트, 프론트 nullable 모델·재생 차단·Mock·파싱 테스트 |
 | `DELETE /answers/{answerId}` | 미구현 | 백엔드 삭제·권한·nullable DTO·테스트, 프론트 삭제 흐름·Mock·테스트 |
-| `DELETE /users/me` | 미구현 | 백엔드 비활성화·삭제 작업·테스트, 프론트 세션 정리·Mock·테스트 |
 
 **답변 삭제 단위 (2026-11-10 개발 회의 결정)**: 부모와 자녀는 각자 **본인 답만
 개별로** 삭제한다. 부모는 본인 녹음(5.12), 자녀는 본인 텍스트 답(5.15)을 지우며,
@@ -49,9 +48,9 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 이야기는 지난 이야기·월별 목록에 남고, 지운 쪽 답만 `availability=DELETED`로
 반환한다.
 
-이 기능에만 쓰이는 `availability`, `myPhoto`, `partnerPhoto`, `parentPhoto`,
-`childPhoto`, `AnswerAvailability`와 사진·삭제 관련 `errorCode`도 모두 초안이다.
-확정 endpoint의 예시 JSON에 표시되어 있더라도 현재 응답에는 포함되지 않는다.
+사진과 개별 답변 삭제에만 쓰이는 `myPhoto`, `partnerPhoto`, `parentPhoto`,
+`childPhoto`와 관련 `errorCode`는 초안이다. `DELETE /users/me`에서 사용하는
+`AnswerAvailability`와 `availability`는 회원 탈퇴 계약에 한해 확정이다.
 
 각 기능은 루트 `AGENTS.md`의 API 계약 변경 절차에 따라 `[API]` Issue에 현재·제안
 JSON을 기록하고 프론트·백엔드 담당자가 확인한 뒤, 구현과 같은 PR에서 해당 항목을
@@ -233,7 +232,7 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 | `ProcessingStatus` | `UPLOADED`, `STT_PROCESSING`, `STT_DONE`, `LLM_PROCESSING`, `READY`, `FAILED` |
 | `TtsStatus` | `NOT_REQUESTED`, `PROCESSING`, `READY`, `FAILED` |
 | `RevealStatus` | `WAITING_FOR_PARENT`, `WAITING_FOR_CHILD`, `WAITING_FOR_BOTH`, `REVEALED` |
-| `AnswerAvailability` (초안) | `AVAILABLE`, `DELETED` |
+| `AnswerAvailability` | `AVAILABLE`, `DELETED` |
 
 `SKIPPED`는 공개 정책 회의에 대비해 enum에 예약하지만, 확정 전에는 클라이언트가
 건너뛰기 버튼을 노출하지 않는다.
@@ -253,6 +252,7 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 | 8 | `GET /answers/{answerId}/audio` | 부모 | 자녀 답변 TTS 상태·재생 URL 조회 |
 | 9 | `GET /stories?cursor=&limit=` | 공통 | 공개된 지난 이야기 목록 |
 | 10 | `GET /stories?month=YYYY-MM` | 공통 | 공개된 지난 이야기 월별 목록 |
+| 11 | `DELETE /users/me` | 공통 | 회원 탈퇴 요청·본인 데이터 삭제 시작 |
 
 `GET /questions/today`와 `GET /today?pairId=`는 제거한다. 오늘 화면은 `GET
 /today` 하나로 통합하고 Pair는 인증 사용자로부터 서버가 결정한다.
@@ -714,7 +714,10 @@ photoFile: family-photo.jpg
 프론트는 삭제된 음성의 재생·재발급을 시도하지 않고 안내 문구만 표시한다. 다른
 부모의 녹음 또는 본인 Pair 밖의 녹음은 `403 RESOURCE_ACCESS_DENIED`다.
 
-### 5.13 회원 탈퇴 — `DELETE /users/me` — 초안, 미구현
+### 5.13 회원 탈퇴 — `DELETE /users/me` — 확정
+
+[API Issue #75](https://github.com/ApptiveDev/hear-your-story/issues/75)에서 부모·자녀별
+삭제 범위, 상대방 기록 보존, 카카오 연결 해제와 비동기 삭제 재시도 기준을 확정했다.
 
 성공하면 인증 사용자의 계정과 본인이 올린 음성·텍스트·사진의 삭제 작업을 시작하고
 `202 Accepted`를 반환한다. Pair는 즉시 비활성화하며 상대방이 올린 원본 데이터는
@@ -730,10 +733,33 @@ photoFile: family-photo.jpg
 
 - 프론트는 성공 응답을 받은 즉시 local access token과 저장된 사용자 정보를 지우고
   탈퇴 완료 화면으로 이동한다.
+- 요청을 수락한 즉시 access token을 더 이상 인정하지 않고 모든 refresh token과
+  사용하지 않은 초대 코드를 폐기한다. 탈퇴 처리 중 같은 카카오 계정으로 다시
+  로그인하면 `409 ACCOUNT_DELETION_IN_PROGRESS`를 반환한다.
+- 카카오 계정과 서비스 앱의 연결 해제를 삭제 작업에 포함한다. 연결 해제나 저장소
+  삭제가 일시적으로 실패하면 백엔드가 자동 재시도하며 계정 접근은 복구하지 않는다.
+- 부모가 탈퇴하면 부모가 올린 원본 녹음, STT 원문, LLM 정리본을 삭제한다. 자녀가
+  탈퇴하면 자녀가 작성한 텍스트 답과 해당 답에서 생성한 TTS 파일을 삭제한다.
+  상대방이 작성한 원본 데이터는 삭제하지 않는다.
+- Pair는 즉시 비활성화한다. 상대방은 다시 페어링할 수 있으며, 비활성화된 Pair의
+  공개 완료 이야기도 지난 이야기·월별 목록에서 계속 조회할 수 있다.
 - 상대방 화면에는 탈퇴한 사용자의 답변을 `DELETED` 상태로 표시하고 재생·다운로드
-  버튼을 노출하지 않는다.
-- 삭제된 부모·자녀 답변 객체는 `availability=DELETED`를 반환하고 식별자, 음성 URL,
-  텍스트와 AI 결과는 `null`로 반환한다. 질문과 상대방이 작성한 답변은 유지한다.
+  버튼을 노출하지 않는다. 부모 답변은
+  `processingNotice="부모님이 탈퇴하여 음성 기록이 삭제되었어요."`를 반환한다.
+  자녀 답변은 아래처럼 반환하며 프론트는
+  `자녀가 탈퇴하여 답변 기록이 삭제되었어요.`를 표시한다.
+
+```json
+{
+  "availability": "DELETED",
+  "answerId": null,
+  "text": null,
+  "ttsStatus": null
+}
+```
+
+- 삭제된 부모·자녀 답변의 식별자, 음성 URL, 텍스트와 AI 결과는 `null`로 반환한다.
+  질문과 상대방이 작성한 답변은 유지한다.
 - 백업을 포함한 실제 삭제 완료 기한은 개인정보 처리방침에서 관리한다. API 응답은
   완료 시각을 보장하지 않는다.
 - 이미 탈퇴 처리 중인 사용자의 재요청은 `409 ACCOUNT_DELETION_IN_PROGRESS`다.
@@ -914,3 +940,4 @@ frontend/
 | 2026-11-07 | v0.2 | 월별 지난 이야기 조회 계약 확정 및 백엔드 구현 반영 |
 | 2026-11-11 | v0.3 | 개발 회의 결정(부모·자녀 각자 본인 답만 개별 삭제)을 반영해 자녀 답변 삭제 `DELETE /answers/{answerId}`와 `ANSWER_NOT_FOUND`를 초안으로 추가 |
 | 2026-11-14 | v0.4 | Issue #73 결정에 따라 카카오 OIDC 로그인, 가입용 token, access·refresh token 갱신, 로그아웃, `GET /users/me` 계약 확정 |
+| 2026-11-14 | v0.5 | 부모·자녀 회원 탈퇴 정책, 카카오 연결 해제, Pair 비활성화와 작성자별 데이터 삭제 계약 확정 |

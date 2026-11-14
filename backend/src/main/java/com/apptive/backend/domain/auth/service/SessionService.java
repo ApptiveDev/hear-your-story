@@ -28,7 +28,7 @@ public class SessionService {
 	}
 
 	public UserResponse toUserResponse(User user) {
-		String pairingStatus = familyPairRepository.existsByMemberId(user.getId()) ? "PAIRED" : "UNPAIRED";
+		String pairingStatus = familyPairRepository.existsActiveByMemberId(user.getId()) ? "PAIRED" : "UNPAIRED";
 		return new UserResponse(user.getId(), user.getName(), user.getRole(), pairingStatus);
 	}
 

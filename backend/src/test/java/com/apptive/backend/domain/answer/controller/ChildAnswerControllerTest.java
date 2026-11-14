@@ -73,6 +73,7 @@ class ChildAnswerControllerTest {
 
 	private User parent;
 	private User child;
+	private FamilyPair pair;
 	private Assignment assignment;
 
 	@BeforeEach
@@ -86,7 +87,7 @@ class ChildAnswerControllerTest {
 		OffsetDateTime now = OffsetDateTime.now(clock);
 		parent = userRepository.save(new User("usr_answer_parent", "부모", Role.PARENT, "answer-parent", now));
 		child = userRepository.save(new User("usr_answer_child", "자녀", Role.CHILD, "answer-child", now));
-		FamilyPair pair = familyPairRepository.save(new FamilyPair("pair_answer", parent, child, now));
+		pair = familyPairRepository.save(new FamilyPair("pair_answer", parent, child, now));
 		LocalDate today = LocalDate.now(clock);
 		Question question = questionRepository.findByScheduledDateAndActiveTrue(today)
 		    .orElseGet(() -> new Question("qst_answer", today, "오늘 어떤 일이 있었나요?", "DAILY", null, true));
@@ -153,6 +154,16 @@ class ChildAnswerControllerTest {
 	void missingAssignmentReturnsNotFound() throws Exception {
 		putAnswer(child, "asg_missing", "답변").andExpect(status().isNotFound())
 		    .andExpect(jsonPath("$.errorCode").value("ASSIGNMENT_NOT_FOUND"));
+	}
+
+	@Test
+	void childAnswerCannotBeStoredAfterPairIsDeactivated() throws Exception {
+		pair.deactivate(OffsetDateTime.now(clock));
+		familyPairRepository.saveAndFlush(pair);
+
+		putAnswer(child, assignment.getId(), "탈퇴 후 답변").andExpect(status().isForbidden())
+		    .andExpect(jsonPath("$.errorCode").value("PAIR_ACCESS_DENIED"));
+		org.assertj.core.api.Assertions.assertThat(childAnswerRepository.count()).isZero();
 	}
 
 	private org.springframework.test.web.servlet.ResultActions putAnswer(User user, String assignmentId, String text)

@@ -50,6 +50,9 @@ public class RefreshTokenService {
 		if (!current.isUsableAt(now)) {
 			throw new ApiException(ErrorCode.REFRESH_TOKEN_INVALID);
 		}
+		if (!current.getUser().isActive()) {
+			throw new ApiException(ErrorCode.REFRESH_TOKEN_INVALID);
+		}
 
 		current.revoke(now);
 		return new RotatedRefreshToken(current.getUser(), issue(current.getUser()));

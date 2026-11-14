@@ -105,7 +105,7 @@ public class RecordingStatusService {
 	}
 
 	private boolean isCurrent(Recording recording, String version) {
-		return recording.getProcessingVersion().equals(version);
+		return version != null && version.equals(recording.getProcessingVersion());
 	}
 
 	private OffsetDateTime now() {

@@ -18,4 +18,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Stri
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select token from RefreshToken token join fetch token.user where token.tokenHash = :tokenHash")
 	Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
+
+	void deleteAllByUser_Id(String userId);
 }

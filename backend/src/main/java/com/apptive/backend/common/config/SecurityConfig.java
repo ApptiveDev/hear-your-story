@@ -15,6 +15,7 @@ import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.common.auth.RestAccessDeniedHandler;
 import com.apptive.backend.common.auth.RestAuthenticationEntryPoint;
 import com.apptive.backend.common.web.TraceIdFilter;
+import com.apptive.backend.domain.user.repository.UserRepository;
 
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
@@ -23,10 +24,10 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http,
 	    RestAuthenticationEntryPoint authenticationEntryPoint, RestAccessDeniedHandler accessDeniedHandler,
-	    JwtTokenProvider jwtTokenProvider) throws Exception {
+	    JwtTokenProvider jwtTokenProvider, UserRepository userRepository) throws Exception {
 		TraceIdFilter traceIdFilter = new TraceIdFilter();
 		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtTokenProvider,
-		    authenticationEntryPoint);
+		    authenticationEntryPoint, userRepository);
 		http.addFilterBefore(traceIdFilter, SecurityContextHolderFilter.class)
 		    .addFilterAfter(jwtAuthenticationFilter, SecurityContextHolderFilter.class).csrf(csrf -> csrf.disable())
 		    .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable())

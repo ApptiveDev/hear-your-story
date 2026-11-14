@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,8 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.auth.dto.AuthenticatedResponse;
+import com.apptive.backend.domain.user.dto.AccountDeletionResponse;
 import com.apptive.backend.domain.user.dto.CreateUserRequest;
 import com.apptive.backend.domain.user.dto.UserResponse;
+import com.apptive.backend.domain.user.service.AccountDeletionService;
 import com.apptive.backend.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
 	private final UserService userService;
+	private final AccountDeletionService accountDeletionService;
 
 	@PostMapping
 	public ResponseEntity<AuthenticatedResponse> register(@Valid @RequestBody CreateUserRequest request) {
@@ -34,5 +38,11 @@ public class UserController {
 	@GetMapping("/me")
 	public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return ResponseEntity.ok(userService.getMe(authenticatedUser));
+	}
+
+	@DeleteMapping("/me")
+	public ResponseEntity<AccountDeletionResponse> deleteMe(
+	    @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+		return ResponseEntity.accepted().body(accountDeletionService.requestDeletion(authenticatedUser));
 	}
 }

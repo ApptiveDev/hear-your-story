@@ -42,7 +42,7 @@ public class PairService {
 	public InvitationResponse createInvitation(AuthenticatedUser authenticatedUser) {
 		requireRole(authenticatedUser, Role.CHILD);
 		User child = findUser(authenticatedUser.userId());
-		if (familyPairRepository.existsByMemberId(child.getId())) {
+		if (familyPairRepository.existsActiveByMemberId(child.getId())) {
 			throw new ApiException(ErrorCode.ALREADY_PAIRED);
 		}
 
@@ -58,7 +58,7 @@ public class PairService {
 	public JoinPairResponse join(AuthenticatedUser authenticatedUser, String inviteCode) {
 		requireRole(authenticatedUser, Role.PARENT);
 		User parent = findUser(authenticatedUser.userId());
-		if (familyPairRepository.existsByMemberId(parent.getId())) {
+		if (familyPairRepository.existsActiveByMemberId(parent.getId())) {
 			throw new ApiException(ErrorCode.ALREADY_PAIRED);
 		}
 
@@ -73,7 +73,7 @@ public class PairService {
 			throw new ApiException(ErrorCode.INVITE_CODE_EXPIRED);
 		}
 		User child = invitation.getChild();
-		if (familyPairRepository.existsByMemberId(child.getId())) {
+		if (familyPairRepository.existsActiveByMemberId(child.getId())) {
 			throw new ApiException(ErrorCode.ALREADY_PAIRED);
 		}
 

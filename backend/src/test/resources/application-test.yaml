@@ -17,6 +17,7 @@ app:
     refresh-token-expiration-days: 30
     kakao:
       native-app-key: test-kakao-native-app-key
+      admin-key: test-kakao-admin-key
       issuer: https://kauth.kakao.com
       jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
   recording:
@@ -25,3 +26,6 @@ app:
     enabled: false
     stale-after: 1m
     batch-size: 50
+  account-deletion:
+    initial-delay: 1h
+    fixed-delay: 1h
