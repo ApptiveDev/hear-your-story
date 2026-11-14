@@ -48,10 +48,10 @@ public class AccountDeletionTaskService {
 			return;
 		}
 		String requestId = task.getDeletionRequest().getId();
+		AccountDeletionRequest request = requestRepository.findByIdForUpdate(requestId).orElseThrow();
 		taskRepository.delete(task);
 		taskRepository.flush();
 		if (!taskRepository.existsByDeletionRequest_Id(requestId)) {
-			AccountDeletionRequest request = requestRepository.findById(requestId).orElseThrow();
 			request.complete(OffsetDateTime.now(clock));
 		}
 	}

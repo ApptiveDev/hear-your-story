@@ -73,6 +73,7 @@ class RecordingControllerTest {
 
 	private User parent;
 	private User child;
+	private FamilyPair pair;
 	private Assignment assignment;
 
 	@BeforeEach
@@ -86,7 +87,7 @@ class RecordingControllerTest {
 		OffsetDateTime now = OffsetDateTime.now(clock);
 		parent = userRepository.save(new User("usr_recording_parent", "부모", Role.PARENT, "recording-parent", now));
 		child = userRepository.save(new User("usr_recording_child", "자녀", Role.CHILD, "recording-child", now));
-		FamilyPair pair = familyPairRepository.save(new FamilyPair("pair_recording", parent, child, now));
+		pair = familyPairRepository.save(new FamilyPair("pair_recording", parent, child, now));
 		LocalDate today = LocalDate.now(clock);
 		Question question = questionRepository.findByScheduledDateAndActiveTrue(today)
 		    .orElseGet(() -> new Question("qst_recording", today, "오늘 기억하고 싶은 일은 무엇인가요?", "DAILY", null, true));
@@ -191,6 +192,16 @@ class RecordingControllerTest {
 	void missingAssignmentReturnsNotFound() throws Exception {
 		upload(parent, "asg_missing", validAudio("answer.m4a"), "missing-assignment").andExpect(status().isNotFound())
 		    .andExpect(jsonPath("$.errorCode").value("ASSIGNMENT_NOT_FOUND"));
+	}
+
+	@Test
+	void recordingCannotBeStoredAfterPairIsDeactivated() throws Exception {
+		pair.deactivate(OffsetDateTime.now(clock));
+		familyPairRepository.saveAndFlush(pair);
+
+		upload(parent, assignment.getId(), validAudio("after-deletion.m4a"), "after-deletion")
+		    .andExpect(status().isForbidden()).andExpect(jsonPath("$.errorCode").value("PAIR_ACCESS_DENIED"));
+		org.assertj.core.api.Assertions.assertThat(recordingRepository.count()).isZero();
 	}
 
 	private org.springframework.test.web.servlet.ResultActions upload(User user, String assignmentId,

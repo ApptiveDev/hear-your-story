@@ -18,6 +18,8 @@ import com.apptive.backend.domain.answer.repository.ChildAnswerRepository;
 import com.apptive.backend.domain.assignment.entity.Assignment;
 import com.apptive.backend.domain.assignment.entity.SubmissionStatus;
 import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
+import com.apptive.backend.domain.pair.entity.FamilyPair;
+import com.apptive.backend.domain.pair.service.ActivePairAccessService;
 import com.apptive.backend.domain.recording.dto.RecordingUploadResponse;
 import com.apptive.backend.domain.recording.entity.Recording;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
@@ -31,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class RecordingUploadService {
 
 	private final AssignmentRepository assignmentRepository;
+	private final ActivePairAccessService activePairAccessService;
 	private final RecordingRepository recordingRepository;
 	private final ChildAnswerRepository childAnswerRepository;
 	private final RecordingStorage recordingStorage;
@@ -46,9 +49,11 @@ public class RecordingUploadService {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
 		}
 
+		FamilyPair activePair = activePairAccessService.lockForSubmission(authenticatedUser);
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId)
 		    .orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
-		if (!assignment.belongsToParent(authenticatedUser.userId())) {
+		if (!assignment.getFamilyPair().getId().equals(activePair.getId())
+		    || !assignment.belongsToParent(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 

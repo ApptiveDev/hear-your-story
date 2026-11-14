@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
 
 	private final UserRepository userRepository;
+	private final AccountDeletionGuard accountDeletionGuard;
 	private final JwtTokenProvider tokenProvider;
 	private final SessionService sessionService;
 	private final IdGenerator idGenerator;
@@ -36,6 +37,7 @@ public class UserService {
 	@Transactional
 	public AuthenticatedResponse register(CreateUserRequest request) {
 		String authSubject = parseRegistrationToken(request.registrationToken());
+		accountDeletionGuard.requireNotProcessing(AuthProvider.KAKAO, authSubject);
 		if (userRepository.findByAuthProviderAndAuthSubject(AuthProvider.KAKAO, authSubject).isPresent()) {
 			throw new ApiException(ErrorCode.KAKAO_ACCOUNT_ALREADY_REGISTERED);
 		}

@@ -11,6 +11,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +55,7 @@ import com.apptive.backend.domain.user.repository.AccountDeletionRequestReposito
 import com.apptive.backend.domain.user.repository.AccountDeletionTaskRepository;
 import com.apptive.backend.domain.user.repository.UserRepository;
 import com.apptive.backend.domain.user.service.AccountDeletionProcessor;
+import com.apptive.backend.domain.user.service.AccountDeletionTaskService;
 import com.apptive.backend.domain.user.service.KakaoAccountUnlinker;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
@@ -85,6 +92,8 @@ class AccountDeletionControllerTest {
 	private AccountDeletionTaskRepository deletionTaskRepository;
 	@Autowired
 	private AccountDeletionProcessor deletionProcessor;
+	@Autowired
+	private AccountDeletionTaskService deletionTaskService;
 
 	@MockitoBean
 	private RecordingStorage recordingStorage;
@@ -215,6 +224,50 @@ class AccountDeletionControllerTest {
 	}
 
 	@Test
+	void registrationTokenCannotBypassDeletionInProgress() throws Exception {
+		String registrationToken = tokenProvider.issueRegistration("kakao-parent").value();
+		mockMvc.perform(delete("/api/v1/users/me").header("Authorization", bearer(parent)))
+		    .andExpect(status().isAccepted());
+
+		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content("""
+		    {
+		      "name":"재가입 부모",
+		      "role":"PARENT",
+		      "registrationToken":"%s"
+		    }
+		    """.formatted(registrationToken))).andExpect(status().isConflict())
+		    .andExpect(jsonPath("$.errorCode").value("ACCOUNT_DELETION_IN_PROGRESS"));
+	}
+
+	@Test
+	void concurrentLastTasksCompleteDeletionExactlyOnce() throws Exception {
+		mockMvc.perform(delete("/api/v1/users/me").header("Authorization", bearer(parent)))
+		    .andExpect(status().isAccepted());
+		List<String> taskIds = deletionTaskRepository.findAll().stream().map(task -> task.getId()).toList();
+		assertThat(taskIds).hasSize(2);
+
+		CountDownLatch ready = new CountDownLatch(2);
+		CountDownLatch start = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			Future<?> first = executor.submit(() -> completeAfterSignal(taskIds.get(0), ready, start));
+			Future<?> second = executor.submit(() -> completeAfterSignal(taskIds.get(1), ready, start));
+			assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+			start.countDown();
+			first.get(5, TimeUnit.SECONDS);
+			second.get(5, TimeUnit.SECONDS);
+		} finally {
+			executor.shutdownNow();
+		}
+
+		assertThat(deletionTaskRepository.count()).isZero();
+		assertThat(deletionRequestRepository.findByUser_Id(parent.getId())).get()
+		    .satisfies(request -> assertThat(request.getStatus()).isEqualTo(AccountDeletionStatus.COMPLETED));
+		assertThat(userRepository.findById(parent.getId()).orElseThrow().getAccountStatus())
+		    .isEqualTo(AccountStatus.DELETED);
+	}
+
+	@Test
 	void failedFileDeletionIsRetriedWithoutRestoringAccountAccess() throws Exception {
 		doThrow(new IllegalStateException("temporary storage failure")).when(recordingStorage)
 		    .delete("recordings/parent.m4a");
@@ -232,5 +285,18 @@ class AccountDeletionControllerTest {
 
 	private String bearer(User user) {
 		return "Bearer " + tokenProvider.issue(user.getId(), user.getRole()).value();
+	}
+
+	private void completeAfterSignal(String taskId, CountDownLatch ready, CountDownLatch start) {
+		try {
+			ready.countDown();
+			if (!start.await(5, TimeUnit.SECONDS)) {
+				throw new IllegalStateException("concurrent completion did not start");
+			}
+			deletionTaskService.complete(taskId);
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("concurrent completion interrupted", exception);
+		}
 	}
 }
