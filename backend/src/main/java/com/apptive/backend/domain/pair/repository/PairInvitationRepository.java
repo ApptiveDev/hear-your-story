@@ -22,4 +22,6 @@ public interface PairInvitationRepository extends JpaRepository<PairInvitation, 
 	Optional<PairInvitation> findByInviteCodeForUpdate(@Param("inviteCode") String inviteCode);
 
 	boolean existsByInviteCode(String inviteCode);
+
+	void deleteAllByChild_Id(String childId);
 }

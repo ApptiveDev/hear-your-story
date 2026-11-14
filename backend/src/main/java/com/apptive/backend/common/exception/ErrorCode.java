@@ -24,17 +24,19 @@ public enum ErrorCode {
 	                                                                    HttpStatus.CONFLICT,
 	                                                                    "만료된 초대 코드입니다."), KAKAO_ACCOUNT_ALREADY_REGISTERED(
 	                                                                        HttpStatus.CONFLICT,
-	                                                                        "이미 가입된 카카오 계정입니다."), ANSWER_LOCKED(
+	                                                                        "이미 가입된 카카오 계정입니다."), ACCOUNT_DELETION_IN_PROGRESS(
 	                                                                            HttpStatus.CONFLICT,
-	                                                                            "공개된 답변은 수정할 수 없습니다."), AUDIO_FILE_TOO_LARGE(
-	                                                                                HttpStatus.PAYLOAD_TOO_LARGE,
-	                                                                                "녹음 파일은 10MiB 이하여야 합니다."), AUDIO_DURATION_OUT_OF_RANGE(
-	                                                                                    HttpStatus.UNPROCESSABLE_ENTITY,
-	                                                                                    "녹음 길이는 1초 이상 60초 이하여야 합니다."), STORAGE_ERROR(
-	                                                                                        HttpStatus.BAD_GATEWAY,
-	                                                                                        "녹음 파일 저장 중 오류가 발생했습니다."), INTERNAL_ERROR(
-	                                                                                            HttpStatus.INTERNAL_SERVER_ERROR,
-	                                                                                            "서버 내부 오류가 발생했습니다.");
+	                                                                            "회원 탈퇴를 처리하고 있습니다."), ANSWER_LOCKED(
+	                                                                                HttpStatus.CONFLICT,
+	                                                                                "공개된 답변은 수정할 수 없습니다."), AUDIO_FILE_TOO_LARGE(
+	                                                                                    HttpStatus.PAYLOAD_TOO_LARGE,
+	                                                                                    "녹음 파일은 10MiB 이하여야 합니다."), AUDIO_DURATION_OUT_OF_RANGE(
+	                                                                                        HttpStatus.UNPROCESSABLE_ENTITY,
+	                                                                                        "녹음 길이는 1초 이상 60초 이하여야 합니다."), STORAGE_ERROR(
+	                                                                                            HttpStatus.BAD_GATEWAY,
+	                                                                                            "녹음 파일 저장 중 오류가 발생했습니다."), INTERNAL_ERROR(
+	                                                                                                HttpStatus.INTERNAL_SERVER_ERROR,
+	                                                                                                "서버 내부 오류가 발생했습니다.");
 
 	private final HttpStatus status;
 	private final String message;

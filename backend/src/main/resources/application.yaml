@@ -34,6 +34,7 @@ app:
     refresh-token-expiration-days: ${APP_REFRESH_TOKEN_EXPIRATION_DAYS:30}
     kakao:
       native-app-key: ${KAKAO_NATIVE_APP_KEY:}
+      admin-key: ${KAKAO_ADMIN_KEY:}
       issuer: https://kauth.kakao.com
       jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
   storage:
@@ -47,6 +48,9 @@ app:
     initial-delay: ${PROCESSING_RECOVERY_INITIAL_DELAY:10s}
     fixed-delay: ${PROCESSING_RECOVERY_FIXED_DELAY:1m}
     batch-size: ${PROCESSING_RECOVERY_BATCH_SIZE:50}
+  account-deletion:
+    initial-delay: ${ACCOUNT_DELETION_INITIAL_DELAY:10s}
+    fixed-delay: ${ACCOUNT_DELETION_FIXED_DELAY:1m}
   openai:
     api-key: ${OPENAI_API_KEY:}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

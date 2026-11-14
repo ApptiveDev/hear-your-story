@@ -5,11 +5,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.apptive.backend.common.auth.IssuedRegistrationToken;
 import com.apptive.backend.common.auth.JwtTokenProvider;
+import com.apptive.backend.common.exception.ApiException;
+import com.apptive.backend.common.exception.ErrorCode;
 import com.apptive.backend.domain.auth.dto.KakaoLoginResponse;
 import com.apptive.backend.domain.auth.dto.TokenRefreshResponse;
+import com.apptive.backend.domain.user.entity.AccountDeletionStatus;
 import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
+import com.apptive.backend.domain.user.repository.AccountDeletionRequestRepository;
 import com.apptive.backend.domain.user.repository.UserRepository;
+import com.apptive.backend.domain.user.service.AuthSubjectHasher;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,12 +24,18 @@ public class AuthService {
 
 	private final KakaoIdTokenVerifier kakaoIdTokenVerifier;
 	private final UserRepository userRepository;
+	private final AccountDeletionRequestRepository deletionRequestRepository;
+	private final AuthSubjectHasher authSubjectHasher;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final SessionService sessionService;
 
 	@Transactional
 	public KakaoLoginResponse loginWithKakao(String idToken) {
 		KakaoIdentity identity = kakaoIdTokenVerifier.verify(idToken);
+		if (deletionRequestRepository.existsByAuthProviderAndAuthSubjectHashAndStatus(AuthProvider.KAKAO,
+		    authSubjectHasher.hash(identity.subject()), AccountDeletionStatus.PROCESSING)) {
+			throw new ApiException(ErrorCode.ACCOUNT_DELETION_IN_PROGRESS);
+		}
 		User user = userRepository.findByAuthProviderAndAuthSubject(AuthProvider.KAKAO, identity.subject())
 		    .orElse(null);
 		if (user == null) {

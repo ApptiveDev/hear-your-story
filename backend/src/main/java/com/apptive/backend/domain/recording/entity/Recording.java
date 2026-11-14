@@ -30,13 +30,13 @@ public class Recording {
 	@JoinColumn(name = "assignment_id", nullable = false, updatable = false)
 	private Assignment assignment;
 
-	@Column(name = "object_key", length = 1000, nullable = false)
+	@Column(name = "object_key", length = 1000)
 	private String objectKey;
 
-	@Column(name = "original_filename", length = 255, nullable = false)
+	@Column(name = "original_filename", length = 255)
 	private String originalFilename;
 
-	@Column(name = "content_type", length = 100, nullable = false)
+	@Column(name = "content_type", length = 100)
 	private String contentType;
 
 	@Column(name = "size_bytes", nullable = false)
@@ -45,11 +45,11 @@ public class Recording {
 	@Column(name = "idempotency_key", length = 100)
 	private String idempotencyKey;
 
-	@Column(name = "processing_version", length = 36, nullable = false)
+	@Column(name = "processing_version", length = 36)
 	private String processingVersion;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "processing_status", length = 30, nullable = false)
+	@Column(name = "processing_status", length = 30)
 	private ProcessingStatus processingStatus;
 
 	@Column(name = "stt_text", columnDefinition = "text")
@@ -72,6 +72,9 @@ public class Recording {
 
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
+
+	@Column(name = "deleted_at")
+	private OffsetDateTime deletedAt;
 
 	protected Recording() {
 	}
@@ -140,6 +143,29 @@ public class Recording {
 		this.failureCode = null;
 		this.processingNotice = null;
 		this.updatedAt = now;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
+	public String deletePersonalData(OffsetDateTime now) {
+		String deletedObjectKey = objectKey;
+		objectKey = null;
+		originalFilename = null;
+		contentType = null;
+		sizeBytes = 0;
+		idempotencyKey = null;
+		processingVersion = null;
+		processingStatus = null;
+		sttText = null;
+		summaryText = null;
+		failedStage = null;
+		failureCode = null;
+		processingNotice = null;
+		deletedAt = now;
+		updatedAt = now;
+		return deletedObjectKey;
 	}
 
 }

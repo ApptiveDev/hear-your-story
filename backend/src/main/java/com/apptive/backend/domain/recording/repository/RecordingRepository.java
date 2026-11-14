@@ -23,6 +23,10 @@ public interface RecordingRepository extends JpaRepository<Recording, String> {
 	List<Recording> findAllByAssignment_IdIn(List<String> assignmentIds);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select r from Recording r where r.assignment.familyPair.parent.id = :parentId and r.deletedAt is null")
+	List<Recording> findAllOwnedByParentForUpdate(@Param("parentId") String parentId);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select r from Recording r where r.id = :recordingId")
 	Optional<Recording> findByIdForUpdate(@Param("recordingId") String recordingId);
 

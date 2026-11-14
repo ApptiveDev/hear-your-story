@@ -29,15 +29,22 @@ public class User {
 	@Column(length = 10, nullable = false, updatable = false)
 	private Role role;
 
-	@Column(name = "device_id", length = 255, updatable = false)
+	@Column(name = "device_id", length = 255)
 	private String deviceId;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "auth_provider", length = 20, updatable = false)
+	@Column(name = "auth_provider", length = 20)
 	private AuthProvider authProvider;
 
-	@Column(name = "auth_subject", length = 255, updatable = false)
+	@Column(name = "auth_subject", length = 255)
 	private String authSubject;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "account_status", length = 30, nullable = false)
+	private AccountStatus accountStatus = AccountStatus.ACTIVE;
+
+	@Column(name = "deleted_at")
+	private OffsetDateTime deletedAt;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;
@@ -61,6 +68,23 @@ public class User {
 		this.authProvider = authProvider;
 		this.authSubject = authSubject;
 		this.createdAt = createdAt;
+	}
+
+	public boolean isActive() {
+		return accountStatus == AccountStatus.ACTIVE;
+	}
+
+	public void requestDeletion(OffsetDateTime now) {
+		this.name = "탈퇴한 사용자";
+		this.deviceId = null;
+		this.authProvider = null;
+		this.authSubject = null;
+		this.accountStatus = AccountStatus.DELETION_PENDING;
+		this.deletedAt = now;
+	}
+
+	public void completeDeletion() {
+		this.accountStatus = AccountStatus.DELETED;
 	}
 
 }

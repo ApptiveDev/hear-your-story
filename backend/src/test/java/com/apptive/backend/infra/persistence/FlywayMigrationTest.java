@@ -16,7 +16,8 @@ import org.springframework.test.context.ActiveProfiles;
 class FlywayMigrationTest {
 
 	private static final List<String> TABLES = List.of("APP_USERS", "FAMILY_PAIRS", "PAIR_INVITATIONS", "QUESTIONS",
-	    "ASSIGNMENTS", "CHILD_ANSWERS", "RECORDINGS", "REFRESH_TOKENS");
+	    "ASSIGNMENTS", "CHILD_ANSWERS", "RECORDINGS", "REFRESH_TOKENS", "ACCOUNT_DELETION_REQUESTS",
+	    "ACCOUNT_DELETION_TASKS");
 
 	@Autowired
 	private Flyway flyway;
@@ -26,7 +27,7 @@ class FlywayMigrationTest {
 
 	@Test
 	void appliesInitialSchemaAndPassesValidation() {
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
 		List<String> migratedTables = jdbcTemplate.queryForList("""
@@ -34,7 +35,8 @@ class FlywayMigrationTest {
 		    from information_schema.tables
 		    where table_schema = 'PUBLIC'
 		      and table_name in ('APP_USERS', 'FAMILY_PAIRS', 'PAIR_INVITATIONS', 'QUESTIONS',
-		                          'ASSIGNMENTS', 'CHILD_ANSWERS', 'RECORDINGS', 'REFRESH_TOKENS')
+		                          'ASSIGNMENTS', 'CHILD_ANSWERS', 'RECORDINGS', 'REFRESH_TOKENS',
+		                          'ACCOUNT_DELETION_REQUESTS', 'ACCOUNT_DELETION_TASKS')
 		    """, String.class);
 		assertThat(migratedTables).containsExactlyInAnyOrderElementsOf(TABLES);
 

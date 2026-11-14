@@ -7,5 +7,6 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "app.auth.kakao")
-public record KakaoAuthProperties(@NotBlank String nativeAppKey, @NotBlank String issuer, @NotBlank String jwkSetUri) {
+public record KakaoAuthProperties(@NotBlank String nativeAppKey, String adminKey, @NotBlank String issuer,
+    @NotBlank String jwkSetUri) {
 }

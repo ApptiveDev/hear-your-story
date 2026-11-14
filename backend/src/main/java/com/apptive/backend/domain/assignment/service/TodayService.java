@@ -50,7 +50,7 @@ public class TodayService {
 
 	@Transactional
 	public TodayResponse getToday(AuthenticatedUser authenticatedUser) {
-		FamilyPair familyPair = familyPairRepository.findByMemberIdForUpdate(authenticatedUser.userId())
+		FamilyPair familyPair = familyPairRepository.findActiveByMemberIdForUpdate(authenticatedUser.userId())
 		    .orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
 		LocalDate today = LocalDate.now(clock);
 		Assignment assignment = assignmentRepository.findByFamilyPair_IdAndAssignedDate(familyPair.getId(), today)
