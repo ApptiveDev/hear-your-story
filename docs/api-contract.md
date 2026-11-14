@@ -716,6 +716,9 @@ photoFile: family-photo.jpg
 
 ### 5.13 회원 탈퇴 — `DELETE /users/me` — 확정
 
+[API Issue #75](https://github.com/ApptiveDev/hear-your-story/issues/75)에서 부모·자녀별
+삭제 범위, 상대방 기록 보존, 카카오 연결 해제와 비동기 삭제 재시도 기준을 확정했다.
+
 성공하면 인증 사용자의 계정과 본인이 올린 음성·텍스트·사진의 삭제 작업을 시작하고
 `202 Accepted`를 반환한다. Pair는 즉시 비활성화하며 상대방이 올린 원본 데이터는
 삭제하지 않는다.
