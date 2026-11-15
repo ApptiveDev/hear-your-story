@@ -22,6 +22,10 @@ public interface ChildAnswerRepository extends JpaRepository<ChildAnswer, String
 	List<ChildAnswer> findAllByAssignment_IdIn(List<String> assignmentIds);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select ca from ChildAnswer ca where ca.assignment.familyPair.child.id = :childId and ca.deletedAt is null")
+	List<ChildAnswer> findAllOwnedByChildForUpdate(@Param("childId") String childId);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select ca from ChildAnswer ca where ca.id = :answerId")
 	Optional<ChildAnswer> findByIdForUpdate(@Param("answerId") String answerId);
 

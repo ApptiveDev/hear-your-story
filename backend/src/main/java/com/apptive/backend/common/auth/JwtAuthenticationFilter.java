@@ -15,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.apptive.backend.common.exception.ErrorCode;
+import com.apptive.backend.domain.user.entity.AccountStatus;
+import com.apptive.backend.domain.user.repository.UserRepository;
 
 import io.jsonwebtoken.ExpiredJwtException;
 
@@ -25,17 +27,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtTokenProvider tokenProvider;
 	private final RestAuthenticationEntryPoint authenticationEntryPoint;
+	private final UserRepository userRepository;
 
 	public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
-	    RestAuthenticationEntryPoint authenticationEntryPoint) {
+	    RestAuthenticationEntryPoint authenticationEntryPoint, UserRepository userRepository) {
 		this.tokenProvider = tokenProvider;
 		this.authenticationEntryPoint = authenticationEntryPoint;
+		this.userRepository = userRepository;
 	}
 
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
-		return ("GET".equals(request.getMethod()) && "/api/v1/health".equals(request.getRequestURI()))
-		    || ("POST".equals(request.getMethod()) && "/api/v1/users".equals(request.getRequestURI()));
+		return ("GET".equals(request.getMethod()) && "/api/v1/health".equals(request.getRequestURI())) || ("POST"
+		    .equals(request.getMethod())
+		    && ("/api/v1/users".equals(request.getRequestURI()) || "/api/v1/auth/kakao".equals(request.getRequestURI())
+		        || "/api/v1/auth/refresh".equals(request.getRequestURI())
+		        || "/api/v1/auth/logout".equals(request.getRequestURI())));
 	}
 
 	@Override
@@ -58,6 +65,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			failAuthentication(request, response, ErrorCode.TOKEN_EXPIRED);
 			return;
 		} catch (RuntimeException exception) {
+			failAuthentication(request, response, ErrorCode.UNAUTHORIZED);
+			return;
+		}
+		if (!userRepository.existsByIdAndAccountStatus(user.userId(), AccountStatus.ACTIVE)) {
 			failAuthentication(request, response, ErrorCode.UNAUTHORIZED);
 			return;
 		}

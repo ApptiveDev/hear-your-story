@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:life_record/core/config/auth_flags.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/storage/token_storage.dart';
 import 'package:life_record/features/account/data/account_providers.dart';
@@ -25,7 +24,6 @@ Future<void> _pump(
   AccountRepository? repository,
   AuthRepository? auth,
   String role = 'PARENT',
-  bool kakao = false,
 }) async {
   usePhoneSize(tester);
   FlutterSecureStorage.setMockInitialValues({
@@ -52,7 +50,6 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        kakaoAuthEnabledProvider.overrideWithValue(kakao),
         if (auth != null) authRepositoryProvider.overrideWithValue(auth),
         accountRepositoryProvider.overrideWithValue(
           repository ??
@@ -132,27 +129,8 @@ void main() {
   });
 
   group('로그아웃', () {
-    testWidgets('확인하면 로그인 정보를 지우고 가입 화면으로 간다', (tester) async {
+    testWidgets('확인하면 카카오 안내를 보여주고 로그인 정보를 지운다', (tester) async {
       await _pump(tester);
-
-      await tester.tap(find.text('로그아웃'));
-      await tester.pumpAndSettle();
-      expect(find.text(logoutConfirmMessage), findsOneWidget);
-      await tester.tap(find.text('로그아웃').last);
-      await tester.pumpAndSettle();
-
-      expect(find.text('가입 화면'), findsOneWidget);
-      expect(await _token(), isNull);
-      final container = ProviderScope.containerOf(
-        tester.element(find.text('가입 화면')),
-      );
-      expect(await container.read(currentUserProvider.future), isNull);
-    });
-
-    testWidgets('카카오 로그인을 켰으면 카카오 계정 안내를 보여주고 refresh token도 지운다', (
-      tester,
-    ) async {
-      await _pump(tester, kakao: true);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -161,7 +139,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('가입 화면'), findsOneWidget);
+      expect(await _token(), isNull);
       expect(await _refreshToken(), isNull);
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('가입 화면')),
+      );
+      expect(await container.read(currentUserProvider.future), isNull);
     });
 
     testWidgets('정리하지 못하면 안내하고 이 화면에서 다시 시도할 수 있다', (tester) async {

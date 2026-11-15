@@ -30,11 +30,11 @@ public class ChildAnswer {
 	@JoinColumn(name = "assignment_id", nullable = false, updatable = false)
 	private Assignment assignment;
 
-	@Column(length = 1000, nullable = false)
+	@Column(length = 1000)
 	private String text;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "tts_status", length = 20, nullable = false)
+	@Column(name = "tts_status", length = 20)
 	private TtsStatus ttsStatus;
 
 	@Column(name = "tts_object_key", length = 1000)
@@ -51,6 +51,9 @@ public class ChildAnswer {
 
 	@Column(name = "updated_at", nullable = false)
 	private OffsetDateTime updatedAt;
+
+	@Column(name = "deleted_at")
+	private OffsetDateTime deletedAt;
 
 	protected ChildAnswer() {
 	}
@@ -98,6 +101,22 @@ public class ChildAnswer {
 		this.ttsVersion = ttsVersion;
 		this.ttsProcessingNotice = null;
 		this.updatedAt = updatedAt;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
+	public String deletePersonalData(OffsetDateTime now) {
+		String deletedObjectKey = ttsObjectKey;
+		text = null;
+		ttsStatus = null;
+		ttsObjectKey = null;
+		ttsVersion = null;
+		ttsProcessingNotice = null;
+		deletedAt = now;
+		updatedAt = now;
+		return deletedObjectKey;
 	}
 
 }

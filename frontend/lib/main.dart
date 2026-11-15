@@ -6,7 +6,7 @@ import 'app/app.dart';
 import 'core/config/app_config.dart';
 
 Future<void> main() async {
-  if (AppConfig.kakaoAuth && AppConfig.kakaoNativeAppKey.isNotEmpty) {
+  if (AppConfig.kakaoNativeAppKey.isNotEmpty) {
     WidgetsFlutterBinding.ensureInitialized();
     await KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
   }

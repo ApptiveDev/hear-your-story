@@ -208,7 +208,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('누구로 시작할까요?'), findsOneWidget);
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
   });
 
   testWidgets('지난 이야기 화면의 달력 버튼으로 들어가고 뒤로 돌아온다', (tester) async {

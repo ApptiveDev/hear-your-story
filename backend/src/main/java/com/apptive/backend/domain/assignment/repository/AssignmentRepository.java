@@ -25,35 +25,35 @@ public interface AssignmentRepository extends JpaRepository<Assignment, String> 
 	@Query("""
 	    select a from Assignment a
 	    join fetch a.question
-	    where a.familyPair.id = :pairId
+	    where (a.familyPair.parent.id = :userId or a.familyPair.child.id = :userId)
 	      and exists (select r.id from Recording r where r.assignment = a)
 	      and exists (select ca.id from ChildAnswer ca where ca.assignment = a)
 	    order by a.assignedDate desc, a.id desc
 	    """)
-	List<Assignment> findRevealedFirstPage(@Param("pairId") String pairId, Pageable pageable);
+	List<Assignment> findRevealedFirstPage(@Param("userId") String userId, Pageable pageable);
 
 	@Query("""
 	    select a from Assignment a
 	    join fetch a.question
-	    where a.familyPair.id = :pairId
+	    where (a.familyPair.parent.id = :userId or a.familyPair.child.id = :userId)
 	      and exists (select r.id from Recording r where r.assignment = a)
 	      and exists (select ca.id from ChildAnswer ca where ca.assignment = a)
 	      and (a.assignedDate < :cursorDate
 	           or (a.assignedDate = :cursorDate and a.id < :cursorId))
 	    order by a.assignedDate desc, a.id desc
 	    """)
-	List<Assignment> findRevealedAfter(@Param("pairId") String pairId, @Param("cursorDate") LocalDate cursorDate,
+	List<Assignment> findRevealedAfter(@Param("userId") String userId, @Param("cursorDate") LocalDate cursorDate,
 	    @Param("cursorId") String cursorId, Pageable pageable);
 
 	@Query("""
 	    select a from Assignment a
 	    join fetch a.question
-	    where a.familyPair.id = :pairId
+	    where (a.familyPair.parent.id = :userId or a.familyPair.child.id = :userId)
 	      and a.assignedDate between :startDate and :endDate
 	      and exists (select r.id from Recording r where r.assignment = a)
 	      and exists (select ca.id from ChildAnswer ca where ca.assignment = a)
 	    order by a.assignedDate asc, a.id asc
 	    """)
-	List<Assignment> findRevealedByMonth(@Param("pairId") String pairId, @Param("startDate") LocalDate startDate,
+	List<Assignment> findRevealedByMonth(@Param("userId") String userId, @Param("startDate") LocalDate startDate,
 	    @Param("endDate") LocalDate endDate);
 }

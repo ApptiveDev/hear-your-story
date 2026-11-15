@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
-import '../../../core/config/auth_flags.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../onboarding/data/auth_providers.dart';
@@ -11,7 +10,6 @@ import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
 import '../data/account_providers.dart';
 
-const logoutConfirmMessage = '같은 역할로 다시 시작하면 이야기가 그대로 이어져요.';
 const kakaoLogoutConfirmMessage = '같은 카카오 계정으로 다시 로그인하면\n이야기가 그대로 이어져요.';
 const deleteConfirmMessage =
     '내가 남긴 목소리·글·사진을 모두 지우고 연결도 끊어요.\n'
@@ -58,9 +56,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     final messenger = ScaffoldMessenger.of(context);
     if (!await _confirm(
       title: '로그아웃할까요?',
-      message: ref.read(kakaoAuthEnabledProvider)
-          ? kakaoLogoutConfirmMessage
-          : logoutConfirmMessage,
+      message: kakaoLogoutConfirmMessage,
       action: '로그아웃',
     )) {
       return;

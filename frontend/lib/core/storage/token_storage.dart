@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// 로그인 토큰. 기존 가입(`POST /users`)은 access token만, 카카오 로그인은
-/// refresh token까지 저장한다.
+/// 서비스 access token과 refresh token을 보안 저장소에 저장한다.
 class TokenStorage {
   TokenStorage(this._storage);
   final FlutterSecureStorage _storage;

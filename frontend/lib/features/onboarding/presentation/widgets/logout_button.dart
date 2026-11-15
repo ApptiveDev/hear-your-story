@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/config/auth_flags.dart';
 import '../session.dart';
 
 /// 화면 아래(Scaffold.persistentFooterButtons)에 둘 로그아웃 버튼 목록.
-/// 카카오 로그인을 켜지 않았으면 null이라 화면이 바뀌지 않는다.
-List<Widget>? logoutFooter(WidgetRef ref) =>
-    ref.watch(kakaoAuthEnabledProvider) ? const [LogoutButton()] : null;
+List<Widget> logoutFooter(WidgetRef _) => const [LogoutButton()];
 
 /// 로그아웃 버튼. 실수로 누르지 않게 한 번 더 묻는다.
 class LogoutButton extends StatefulWidget {

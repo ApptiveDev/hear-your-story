@@ -19,6 +19,8 @@ import com.apptive.backend.domain.answer.repository.ChildAnswerRepository;
 import com.apptive.backend.domain.assignment.entity.Assignment;
 import com.apptive.backend.domain.assignment.entity.SubmissionStatus;
 import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
+import com.apptive.backend.domain.pair.entity.FamilyPair;
+import com.apptive.backend.domain.pair.service.ActivePairAccessService;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
 import com.apptive.backend.domain.user.entity.Role;
 
@@ -31,6 +33,7 @@ public class ChildAnswerService {
 	private static final int MAX_TEXT_LENGTH = 1000;
 
 	private final AssignmentRepository assignmentRepository;
+	private final ActivePairAccessService activePairAccessService;
 	private final ChildAnswerRepository childAnswerRepository;
 	private final RecordingRepository recordingRepository;
 	private final IdGenerator idGenerator;
@@ -43,9 +46,11 @@ public class ChildAnswerService {
 			throw new ApiException(ErrorCode.ROLE_NOT_ALLOWED);
 		}
 
+		FamilyPair activePair = activePairAccessService.lockForSubmission(authenticatedUser);
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId)
 		    .orElseThrow(() -> new ApiException(ErrorCode.ASSIGNMENT_NOT_FOUND));
-		if (!assignment.belongsToChild(authenticatedUser.userId())) {
+		if (!assignment.getFamilyPair().getId().equals(activePair.getId())
+		    || !assignment.belongsToChild(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
 

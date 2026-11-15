@@ -2,6 +2,7 @@ package com.apptive.backend.domain.user.controller;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,11 +20,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
+import com.apptive.backend.domain.auth.repository.RefreshTokenRepository;
 import com.apptive.backend.domain.pair.entity.PairInvitation;
 import com.apptive.backend.domain.pair.repository.FamilyPairRepository;
 import com.apptive.backend.domain.pair.repository.PairInvitationRepository;
-import com.apptive.backend.domain.user.entity.Role;
+import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
 import com.apptive.backend.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,6 +56,12 @@ class UserPairControllerTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
+
+	@Autowired
+	private JwtTokenProvider jwtTokenProvider;
+
+	@Autowired
 	private Clock clock;
 
 	@BeforeEach
@@ -60,31 +69,32 @@ class UserPairControllerTest {
 		assignmentRepository.deleteAll();
 		invitationRepository.deleteAll();
 		familyPairRepository.deleteAll();
+		refreshTokenRepository.deleteAll();
 		userRepository.deleteAll();
 	}
 
 	@Test
-	void firstRegistrationCreatesUserAndDuplicateReturnsExistingUser() throws Exception {
-		MvcResult first = register("김영희", "PARENT", "parent-device-1", 201);
-		JsonNode firstBody = body(first);
+	void registrationCreatesUserAndReusedTokenIsRejected() throws Exception {
+		String registrationToken = registrationToken("parent-subject-1");
+		registerWithToken("김영희", "PARENT", registrationToken, 201);
 
-		MvcResult duplicate = register("다른 이름", "PARENT", "parent-device-1", 200);
-		JsonNode duplicateBody = body(duplicate);
+		registerWithToken("다른 이름", "PARENT", registrationToken, 409);
 
-		org.assertj.core.api.Assertions.assertThat(duplicateBody.at("/user/id").asText())
-		    .isEqualTo(firstBody.at("/user/id").asText());
-		org.assertj.core.api.Assertions.assertThat(duplicateBody.at("/user/name").asText()).isEqualTo("김영희");
-		org.assertj.core.api.Assertions.assertThat(duplicateBody.get("accessToken").asText()).isNotBlank();
 		org.assertj.core.api.Assertions.assertThat(userRepository.count()).isEqualTo(1);
 	}
 
 	@Test
 	void invalidRegistrationReturnsFieldErrorsInCommonFormat() throws Exception {
 		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content("""
-		    {"name":" ","role":"PARENT","deviceId":""}
+		    {"name":" ","role":"PARENT","registrationToken":""}
 		    """)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
 		    .andExpect(jsonPath("$.fieldErrors[?(@.field == 'name')]").exists())
-		    .andExpect(jsonPath("$.fieldErrors[?(@.field == 'deviceId')]").exists());
+		    .andExpect(jsonPath("$.fieldErrors[?(@.field == 'registrationToken')]").exists());
+	}
+
+	@Test
+	void malformedRegistrationTokenIsRejected() throws Exception {
+		registerWithToken("김영희", "PARENT", "malformed-token", 401);
 	}
 
 	@Test
@@ -137,7 +147,8 @@ class UserPairControllerTest {
 	void expiredInvitationCannotBeJoined() throws Exception {
 		register("자녀", "CHILD", "child-device-1", 201);
 		String parentToken = token(register("부모", "PARENT", "parent-device-1", 201));
-		User child = userRepository.findByDeviceIdAndRole("child-device-1", Role.CHILD).orElseThrow();
+		User child = userRepository.findByAuthProviderAndAuthSubject(AuthProvider.KAKAO, "child-device-1")
+		    .orElseThrow();
 		OffsetDateTime now = OffsetDateTime.now(clock);
 		invitationRepository
 		    .save(new PairInvitation("inv_expired_test", child, "123456", now.minusMinutes(1), now.minusDays(1)));
@@ -153,21 +164,55 @@ class UserPairControllerTest {
 	}
 
 	@Test
+	void authenticatedUserCanRestoreCurrentUser() throws Exception {
+		MvcResult registration = register("김영희", "PARENT", "restore-subject", 201);
+
+		mockMvc.perform(get("/api/v1/users/me").header("Authorization", bearer(token(registration))))
+		    .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("김영희"))
+		    .andExpect(jsonPath("$.role").value("PARENT")).andExpect(jsonPath("$.pairingStatus").value("UNPAIRED"));
+	}
+
+	@Test
+	void currentUserRequiresAccessToken() throws Exception {
+		mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized())
+		    .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
+	}
+
+	@Test
 	void publicRegistrationIgnoresStaleAuthorizationHeader() throws Exception {
+		String registrationToken = registrationToken("parent-subject-1");
 		mockMvc
 		    .perform(post("/api/v1/users").header("Authorization", "Bearer stale-token")
 		        .contentType(MediaType.APPLICATION_JSON)
-		        .content(objectMapper.writeValueAsString(new RegisterBody("김영희", "PARENT", "parent-device-1"))))
+		        .content(objectMapper.writeValueAsString(new RegisterBody("김영희", "PARENT", registrationToken))))
 		    .andExpect(status().isCreated()).andExpect(jsonPath("$.user.role").value("PARENT"));
 	}
 
-	private MvcResult register(String name, String role, String deviceId, int expectedStatus) throws Exception {
-		return mockMvc
+	private MvcResult register(String name, String role, String authSubject, int expectedStatus) throws Exception {
+		return registerWithToken(name, role, registrationToken(authSubject), expectedStatus);
+	}
+
+	private MvcResult registerWithToken(String name, String role, String registrationToken, int expectedStatus)
+	    throws Exception {
+		org.springframework.test.web.servlet.ResultActions result = mockMvc
 		    .perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
-		        .content(objectMapper.writeValueAsString(new RegisterBody(name, role, deviceId))))
-		    .andExpect(status().is(expectedStatus)).andExpect(jsonPath("$.user.pairingStatus").value("UNPAIRED"))
-		    .andExpect(jsonPath("$.tokenType").value("Bearer")).andExpect(jsonPath("$.accessToken").isNotEmpty())
-		    .andReturn();
+		        .content(objectMapper.writeValueAsString(new RegisterBody(name, role, registrationToken))))
+		    .andExpect(status().is(expectedStatus));
+		if (expectedStatus == 201) {
+			result.andExpect(jsonPath("$.authStatus").value("AUTHENTICATED"))
+			    .andExpect(jsonPath("$.user.pairingStatus").value("UNPAIRED"))
+			    .andExpect(jsonPath("$.tokenType").value("Bearer")).andExpect(jsonPath("$.accessToken").isNotEmpty())
+			    .andExpect(jsonPath("$.refreshToken").isNotEmpty());
+		} else if (expectedStatus == 401) {
+			result.andExpect(jsonPath("$.errorCode").value("REGISTRATION_TOKEN_INVALID"));
+		} else if (expectedStatus == 409) {
+			result.andExpect(jsonPath("$.errorCode").value("KAKAO_ACCOUNT_ALREADY_REGISTERED"));
+		}
+		return result.andReturn();
+	}
+
+	private String registrationToken(String authSubject) {
+		return jwtTokenProvider.issueRegistration(authSubject).value();
 	}
 
 	private String createInvitation(String childToken) throws Exception {
@@ -196,7 +241,7 @@ class UserPairControllerTest {
 		return "Bearer " + token;
 	}
 
-	private record RegisterBody(String name, String role, String deviceId) {
+	private record RegisterBody(String name, String role, String registrationToken) {
 	}
 
 	private record InviteCodeBody(String inviteCode) {

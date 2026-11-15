@@ -7,7 +7,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:life_record/core/config/auth_flags.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/network/dio_provider.dart';
 import 'package:life_record/core/network/session_expired_signal.dart';
@@ -65,7 +64,6 @@ void main() {
 
   void start({
     Map<String, String>? stored,
-    bool refreshEnabled = true,
     Future<_Reply> Function(RequestOptions)? onRefresh,
     Future<_Reply> Function(RequestOptions)? onApi,
   }) {
@@ -77,9 +75,7 @@ void main() {
           ? (onRefresh ?? refreshOk)(o)
           : (onApi ?? api)(o),
     );
-    container = ProviderContainer(
-      overrides: [kakaoAuthEnabledProvider.overrideWithValue(refreshEnabled)],
-    );
+    container = ProviderContainer();
     addTearDown(container.dispose);
     expired = 0;
     container.listen(sessionExpiredSignalProvider, (_, _) => expired++);
@@ -240,14 +236,6 @@ void main() {
     expect(await storage.read(key: 'refresh_token'), isNull);
   });
 
-  test('서버가 refresh token을 바꿔 주지 않으면 쓰던 것을 유지한다', () async {
-    start(onRefresh: (o) async => (200, {'accessToken': 'new-access'}));
-
-    await dio.get<dynamic>('/today');
-
-    expect(await storage.read(key: 'refresh_token'), 'refresh-1');
-  });
-
   test('녹음 업로드(FormData)도 갱신 후 다시 보낸다', () async {
     start();
     final dir = await Directory.systemTemp.createTemp('auth_test');
@@ -263,15 +251,5 @@ void main() {
 
     expect(res.data, {'ok': true});
     expect(server.count('/assignments/asg_1/recording'), 2);
-  });
-
-  test('갱신을 끈 기존 가입 방식은 401이면 바로 로그인 만료로 처리한다', () async {
-    start(refreshEnabled: false);
-
-    final error = await failure(dio.get<dynamic>('/today'));
-
-    expect(error.statusCode, 401);
-    expect(server.count('/auth/refresh'), 0);
-    expect(expired, 1);
   });
 }

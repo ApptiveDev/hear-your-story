@@ -18,8 +18,8 @@ import lombok.Getter;
 @Getter
 @Entity
 @Table(name = "family_pairs", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_family_pairs_parent", columnNames = "parent_id"),
-        @UniqueConstraint(name = "uk_family_pairs_child", columnNames = "child_id")})
+        @UniqueConstraint(name = "uk_family_pairs_parent_slot", columnNames = {"parent_id", "pairing_slot"}),
+        @UniqueConstraint(name = "uk_family_pairs_child_slot", columnNames = {"child_id", "pairing_slot"})})
 public class FamilyPair {
 
 	@Id
@@ -37,6 +37,12 @@ public class FamilyPair {
 	@Column(name = "paired_at", nullable = false, updatable = false)
 	private OffsetDateTime pairedAt;
 
+	@Column(name = "pairing_slot", length = 40, nullable = false)
+	private String pairingSlot = "ACTIVE";
+
+	@Column(name = "deactivated_at")
+	private OffsetDateTime deactivatedAt;
+
 	protected FamilyPair() {
 	}
 
@@ -53,6 +59,17 @@ public class FamilyPair {
 
 	public boolean hasChild(String userId) {
 		return child.getId().equals(userId);
+	}
+
+	public boolean isActive() {
+		return deactivatedAt == null;
+	}
+
+	public void deactivate(OffsetDateTime now) {
+		if (deactivatedAt == null) {
+			deactivatedAt = now;
+			pairingSlot = id;
+		}
 	}
 
 }

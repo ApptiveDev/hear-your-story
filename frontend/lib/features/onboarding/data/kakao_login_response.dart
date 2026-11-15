@@ -1,38 +1,47 @@
 import '../domain/app_user.dart';
 import '../domain/login_result.dart';
 
-/// `POST /auth/kakao` 응답. 계약 5.14의 로그인 성공 응답 뼈대에 `user: null`(NEW)을
-/// 더한 모양으로 가정한다.
+/// `POST /auth/kakao` 응답 (API 계약 5.14).
 class KakaoLoginResponse {
   const KakaoLoginResponse({
+    required this.authStatus,
     required this.user,
-    required this.accessToken,
-    required this.refreshToken,
-    required this.recoveryStatus,
+    this.accessToken,
+    this.refreshToken,
+    this.registrationToken,
   });
 
-  /// 가입을 마치기 전(NEW)에는 null
+  final AuthStatus authStatus;
   final AppUser? user;
-  final String accessToken;
-  final String refreshToken;
-  final RecoveryStatus recoveryStatus;
+  final String? accessToken;
+  final String? refreshToken;
+  final String? registrationToken;
 
   factory KakaoLoginResponse.fromJson(Map<String, dynamic> json) {
+    final status = AuthStatus.fromApi(json['authStatus'] as String);
     final user = json['user'] as Map<String, dynamic>?;
     final response = KakaoLoginResponse(
+      authStatus: status,
       user: user == null ? null : AppUser.fromJson(user),
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
-      recoveryStatus: RecoveryStatus.fromApi(json['recoveryStatus'] as String),
+      accessToken: json['accessToken'] as String?,
+      refreshToken: json['refreshToken'] as String?,
+      registrationToken: json['registrationToken'] as String?,
     );
-    // RESTORED만 사용자가 있다. 어긋나면 화면이 엉뚱한 곳으로 가므로 응답 오류로 본다
-    if ((response.recoveryStatus == RecoveryStatus.restored) !=
-        (user != null)) {
-      throw FormatException('${response.recoveryStatus.apiValue}와 user가 맞지 않다');
+    if (status == AuthStatus.authenticated) {
+      if (response.user == null ||
+          response.accessToken == null ||
+          response.refreshToken == null ||
+          response.registrationToken != null) {
+        throw const FormatException('AUTHENTICATED 응답 필드가 올바르지 않다');
+      }
+    } else if (response.user != null ||
+        response.accessToken != null ||
+        response.refreshToken != null ||
+        response.registrationToken == null) {
+      throw const FormatException('REGISTRATION_REQUIRED 응답 필드가 올바르지 않다');
     }
     return response;
   }
 
-  LoginResult toResult() =>
-      LoginResult(user: user, recoveryStatus: recoveryStatus);
+  LoginResult toResult() => LoginResult(user: user, authStatus: authStatus);
 }

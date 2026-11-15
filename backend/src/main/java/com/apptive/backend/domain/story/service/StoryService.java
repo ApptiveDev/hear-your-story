@@ -20,7 +20,6 @@ import com.apptive.backend.domain.answer.entity.ChildAnswer;
 import com.apptive.backend.domain.answer.repository.ChildAnswerRepository;
 import com.apptive.backend.domain.assignment.entity.Assignment;
 import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
-import com.apptive.backend.domain.pair.entity.FamilyPair;
 import com.apptive.backend.domain.pair.repository.FamilyPairRepository;
 import com.apptive.backend.domain.question.entity.Question;
 import com.apptive.backend.domain.recording.entity.Recording;
@@ -60,14 +59,13 @@ public class StoryService {
 		if (limit < 1 || limit > MAX_LIMIT) {
 			throw new ApiException(ErrorCode.VALIDATION_ERROR);
 		}
-		FamilyPair pair = familyPairRepository.findByMemberId(authenticatedUser.userId())
-		    .orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
+		requirePairHistory(authenticatedUser.userId());
 		StoryCursor cursor = StoryCursor.decode(encodedCursor);
 		PageRequest pageRequest = PageRequest.of(0, limit + 1);
 		List<Assignment> fetched = cursor == null
-		    ? assignmentRepository.findRevealedFirstPage(pair.getId(), pageRequest)
-		    : assignmentRepository.findRevealedAfter(pair.getId(), cursor.assignedDate(), cursor.assignmentId(),
-		        pageRequest);
+		    ? assignmentRepository.findRevealedFirstPage(authenticatedUser.userId(), pageRequest)
+		    : assignmentRepository.findRevealedAfter(authenticatedUser.userId(), cursor.assignedDate(),
+		        cursor.assignmentId(), pageRequest);
 
 		boolean hasNext = fetched.size() > limit;
 		List<Assignment> page = hasNext ? fetched.subList(0, limit) : fetched;
@@ -94,10 +92,9 @@ public class StoryService {
 			throw new ApiException(ErrorCode.VALIDATION_ERROR);
 		}
 
-		FamilyPair pair = familyPairRepository.findByMemberId(authenticatedUser.userId())
-		    .orElseThrow(() -> new ApiException(ErrorCode.PAIR_NOT_FOUND));
-		List<Assignment> assignments = assignmentRepository.findRevealedByMonth(pair.getId(), yearMonth.atDay(1),
-		    yearMonth.atEndOfMonth());
+		requirePairHistory(authenticatedUser.userId());
+		List<Assignment> assignments = assignmentRepository.findRevealedByMonth(authenticatedUser.userId(),
+		    yearMonth.atDay(1), yearMonth.atEndOfMonth());
 		return toResponse(assignments, false);
 	}
 
@@ -123,17 +120,35 @@ public class StoryService {
 
 	private StoryItemResponse toItem(Assignment assignment, Recording recording, ChildAnswer childAnswer) {
 		Question question = assignment.getQuestion();
-		SignedAudioUrl signedAudio = recordingStorage.createSignedReadUrl(recording.getObjectKey()).orElse(null);
 		OffsetDateTime revealedAt = recording.getSubmittedAt().isAfter(childAnswer.getSubmittedAt())
 		    ? recording.getSubmittedAt()
 		    : childAnswer.getSubmittedAt();
 		return new StoryItemResponse(storyId(assignment.getId()), assignment.getId(), assignment.getAssignedDate(),
 		    new StoryQuestionResponse(question.getId(), question.getText(), question.getCategory()),
-		    new StoryParentAnswerResponse(recording.getId(), recording.getProcessingStatus(),
-		        signedAudio == null ? null : signedAudio.url(), signedAudio == null ? null : signedAudio.expiresAt(),
-		        recording.getSttText(), recording.getSummaryText(), recording.getProcessingNotice()),
-		    new StoryChildAnswerResponse(childAnswer.getId(), childAnswer.getText(), childAnswer.getTtsStatus()),
-		    revealedAt);
+		    toParentAnswer(recording), toChildAnswer(childAnswer), revealedAt);
+	}
+
+	private StoryParentAnswerResponse toParentAnswer(Recording recording) {
+		if (recording.isDeleted()) {
+			return StoryParentAnswerResponse.deleted();
+		}
+		SignedAudioUrl signedAudio = recordingStorage.createSignedReadUrl(recording.getObjectKey()).orElse(null);
+		return new StoryParentAnswerResponse("AVAILABLE", recording.getId(), recording.getProcessingStatus(),
+		    signedAudio == null ? null : signedAudio.url(), signedAudio == null ? null : signedAudio.expiresAt(),
+		    recording.getSttText(), recording.getSummaryText(), recording.getProcessingNotice());
+	}
+
+	private StoryChildAnswerResponse toChildAnswer(ChildAnswer childAnswer) {
+		return childAnswer.isDeleted()
+		    ? StoryChildAnswerResponse.deleted()
+		    : new StoryChildAnswerResponse("AVAILABLE", childAnswer.getId(), childAnswer.getText(),
+		        childAnswer.getTtsStatus());
+	}
+
+	private void requirePairHistory(String userId) {
+		if (!familyPairRepository.existsAnyByMemberId(userId)) {
+			throw new ApiException(ErrorCode.PAIR_NOT_FOUND);
+		}
 	}
 
 	private String storyId(String assignmentId) {

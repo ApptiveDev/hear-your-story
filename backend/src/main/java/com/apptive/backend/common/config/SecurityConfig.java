@@ -15,6 +15,7 @@ import com.apptive.backend.common.auth.JwtTokenProvider;
 import com.apptive.backend.common.auth.RestAccessDeniedHandler;
 import com.apptive.backend.common.auth.RestAuthenticationEntryPoint;
 import com.apptive.backend.common.web.TraceIdFilter;
+import com.apptive.backend.domain.user.repository.UserRepository;
 
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
@@ -23,10 +24,10 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http,
 	    RestAuthenticationEntryPoint authenticationEntryPoint, RestAccessDeniedHandler accessDeniedHandler,
-	    JwtTokenProvider jwtTokenProvider) throws Exception {
+	    JwtTokenProvider jwtTokenProvider, UserRepository userRepository) throws Exception {
 		TraceIdFilter traceIdFilter = new TraceIdFilter();
 		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtTokenProvider,
-		    authenticationEntryPoint);
+		    authenticationEntryPoint, userRepository);
 		http.addFilterBefore(traceIdFilter, SecurityContextHolderFilter.class)
 		    .addFilterAfter(jwtAuthenticationFilter, SecurityContextHolderFilter.class).csrf(csrf -> csrf.disable())
 		    .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable())
@@ -34,8 +35,9 @@ public class SecurityConfig {
 		    .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
 		        .accessDeniedHandler(accessDeniedHandler))
 		    .authorizeHttpRequests(authorize -> authorize.requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
-		        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
-		        .requestMatchers(HttpMethod.POST, "/api/v1/pairs/invitations").hasRole("CHILD")
+		        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/auth/kakao", "/api/v1/auth/refresh",
+		            "/api/v1/auth/logout")
+		        .permitAll().requestMatchers(HttpMethod.POST, "/api/v1/pairs/invitations").hasRole("CHILD")
 		        .requestMatchers(HttpMethod.POST, "/api/v1/pairs/join").hasRole("PARENT")
 		        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/child-answer").hasRole("CHILD")
 		        .requestMatchers(HttpMethod.PUT, "/api/v1/assignments/*/parent-recording").hasRole("PARENT")

@@ -18,7 +18,7 @@ import 'package:life_record/features/stories/presentation/stories_page.dart';
 import 'child_answer/fake_child_answer_repository.dart';
 import 'stories/fake_stories_repository.dart';
 
-/// 지난 이야기·자녀 답변 화면도 401이면 로그인 정보를 지우고 가입 화면으로 보낸다.
+/// 지난 이야기·자녀 답변 화면도 401이면 로그인 정보를 지우고 카카오 로그인으로 보낸다.
 void main() {
   final expired = ApiException(statusCode: 401, errorCode: 'TOKEN_EXPIRED');
 
@@ -56,8 +56,8 @@ void main() {
   }
 
   Future<void> expectSignedOut(WidgetTester tester) async {
-    expect(find.text('누구로 시작할까요?'), findsOneWidget);
-    expect(find.textContaining('같은 역할을 고르면 이야기가 그대로 이어져요.'), findsOneWidget);
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.textContaining('다시 로그인해 주세요.'), findsOneWidget);
     const storage = FlutterSecureStorage();
     expect(await storage.read(key: 'access_token'), isNull);
     expect(await storage.read(key: 'current_user'), isNull);

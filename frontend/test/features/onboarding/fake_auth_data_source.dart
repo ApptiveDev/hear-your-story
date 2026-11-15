@@ -26,6 +26,8 @@ class FakeAuthDataSource implements AuthDataSource {
   Map<String, dynamic>? kakao;
   Object? kakaoError;
   final kakaoRequests = <Map<String, String>>[];
+  final logoutRequests = <String>[];
+  Object? logoutError;
 
   /// 넣으면 `POST /auth/kakao`가 이것이 끝날 때까지 응답하지 않는다.
   Future<void>? kakaoGate;
@@ -37,9 +39,13 @@ class FakeAuthDataSource implements AuthDataSource {
   Future<Map<String, dynamic>> signUp({
     required String name,
     required String role,
-    required String deviceId,
+    required String registrationToken,
   }) async {
-    requests.add({'name': name, 'role': role, 'deviceId': deviceId});
+    requests.add({
+      'name': name,
+      'role': role,
+      'registrationToken': registrationToken,
+    });
     final e = error;
     if (e != null) throw e;
     return {
@@ -49,7 +55,9 @@ class FakeAuthDataSource implements AuthDataSource {
         'role': role,
         'pairingStatus': pairingStatus,
       },
+      'authStatus': 'AUTHENTICATED',
       'accessToken': 'token_for_$name',
+      'refreshToken': 'refresh_for_$name',
       'tokenType': 'Bearer',
       'expiresAt': '2026-10-24T09:00:00+09:00',
     };
@@ -65,39 +73,47 @@ class FakeAuthDataSource implements AuthDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> loginWithKakao({
-    required String idToken,
-    required String deviceId,
-  }) async {
-    kakaoRequests.add({'idToken': idToken, 'deviceId': deviceId});
+  Future<Map<String, dynamic>> loginWithKakao({required String idToken}) async {
+    kakaoRequests.add({'idToken': idToken});
     await kakaoGate;
     final e = kakaoError;
     if (e != null) throw e;
     if (kakaoQueue.isNotEmpty) return kakaoQueue.removeAt(0);
     return kakao ?? (throw StateError('kakao 응답을 정하지 않았다'));
   }
+
+  @override
+  Future<void> logout({required String refreshToken}) async {
+    logoutRequests.add(refreshToken);
+    final e = logoutError;
+    if (e != null) throw e;
+  }
 }
 
-/// 카카오 로그인 응답. 계약 5.14 뼈대 모양.
+/// 카카오 로그인 응답. 계약 5.14 모양.
 Map<String, dynamic> kakaoLoginJson({
-  String status = 'RESTORED',
+  String status = 'AUTHENTICATED',
   String role = 'PARENT',
   String pairingStatus = 'PAIRED',
-}) => {
-  // 계약 5.14 뼈대: 기존 계정을 찾았을 때(RESTORED)만 사용자가 있다
-  'user': status != 'RESTORED'
-      ? null
-      : {
+}) => status == 'REGISTRATION_REQUIRED'
+    ? {
+        'authStatus': status,
+        'registrationToken': 'registration-token',
+        'registrationTokenExpiresAt': '2026-11-14T09:10:00+09:00',
+      }
+    : {
+        'authStatus': status,
+        'user': {
           'id': 'usr_kakao',
           'name': '김영희',
           'role': role,
           'pairingStatus': pairingStatus,
         },
-  'accessToken': 'kakao-access',
-  'refreshToken': 'kakao-refresh',
-  'expiresAt': '2026-11-04T16:00:00+09:00',
-  'recoveryStatus': status,
-};
+        'accessToken': 'kakao-access',
+        'refreshToken': 'kakao-refresh',
+        'tokenType': 'Bearer',
+        'expiresAt': '2026-11-14T09:30:00+09:00',
+      };
 
 /// 카카오 SDK 대신 정해 둔 결과를 돌려준다.
 class FakeKakao implements KakaoSignIn {

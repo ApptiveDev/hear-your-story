@@ -29,10 +29,6 @@ class KakaoLoginState {
   final Object? error;
 
   bool get busy => phase != LoginPhase.idle;
-
-  /// 본인 확인은 됐지만 이전 기록을 찾지 못해 사용자의 선택을 기다린다
-  bool get recoveryFailed =>
-      result?.recoveryStatus == RecoveryStatus.recoveryFailed;
 }
 
 /// 카카오 로그인 요청 상태.
@@ -65,25 +61,6 @@ class KakaoLoginController extends Notifier<KakaoLoginState> {
     } on Object catch (e) {
       if (ref.mounted) state = KakaoLoginState(error: e);
     }
-  }
-
-  /// 이전 기록을 찾지 못했지만 이 카카오 계정으로 새로 시작한다(역할·이름 입력).
-  void startFresh() {
-    if (!state.recoveryFailed) return;
-    state = const KakaoLoginState(
-      result: LoginResult(user: null, recoveryStatus: RecoveryStatus.newUser),
-    );
-  }
-
-  /// 이전 기록을 찾지 못했을 때 다른 카카오 계정으로 다시 로그인한다.
-  /// 지금 계정의 토큰을 지우고 카카오 계정 선택부터 다시 한다.
-  Future<void> useOtherAccount() async {
-    if (state.busy) return;
-    state = const KakaoLoginState(phase: LoginPhase.verifying);
-    await ref.read(authRepositoryProvider).logout();
-    if (!ref.mounted) return;
-    state = const KakaoLoginState();
-    await login(chooseAccount: true);
   }
 }
 

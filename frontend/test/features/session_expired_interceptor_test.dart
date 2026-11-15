@@ -53,7 +53,7 @@ class _UnauthorizedAdapter implements HttpClientAdapter {
 }
 
 /// 화면이 따로 처리하지 않는 곳의 401도 Dio interceptor → 앱 최상단(App)이
-/// 로그인 정보를 지우고 가입 화면으로 보낸다.
+/// 로그인 정보를 지우고 카카오 로그인 화면으로 보낸다.
 void main() {
   late _UnauthorizedAdapter server;
 
@@ -98,8 +98,8 @@ void main() {
   }
 
   Future<void> expectSignedOut(WidgetTester tester) async {
-    expect(find.text('누구로 시작할까요?'), findsOneWidget);
-    expect(find.textContaining('같은 역할을 고르면 이야기가 그대로 이어져요.'), findsOneWidget);
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.textContaining('다시 로그인해 주세요.'), findsOneWidget);
     const storage = FlutterSecureStorage();
     expect(await storage.read(key: 'access_token'), isNull);
     expect(await storage.read(key: 'current_user'), isNull);
