@@ -168,6 +168,8 @@ OpenID Connect 활성화가 필요합니다. 키 해시는 개발 PC의 debug �
 
 ## PR 전 확인
 
+배포 담당자는 [Android 출시 빌드](RELEASE.md)와 [통합 QA](../docs/release-qa.md)를 따른다.
+
 ```bash
 dart format .
 flutter analyze
