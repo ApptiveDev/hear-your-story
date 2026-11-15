@@ -24,14 +24,16 @@ if (-not [Uri]::TryCreate([string]$config.API_BASE_URL, [UriKind]::Absolute, [re
     $apiUri.AbsolutePath.TrimEnd('/') -ne '/api/v1') {
     throw 'Set a real HTTPS API_BASE_URL ending in /api/v1, without credentials or query.'
 }
-foreach ($flag in @('STORIES_MONTH_API', 'KAKAO_AUTH', 'ACCOUNT_DELETION_API')) {
+if ($config.PSObject.Properties.Name -contains 'KAKAO_AUTH') {
+    throw 'Remove obsolete KAKAO_AUTH. Real builds always use Kakao authentication.'
+}
+foreach ($flag in @('STORIES_MONTH_API', 'ACCOUNT_DELETION_API')) {
     if ([string]$config.$flag -cnotin @('true', 'false')) {
         throw "Set $flag explicitly to true or false."
     }
 }
-if ([string]$config.KAKAO_AUTH -ceq 'true' -and
-    [string]::IsNullOrWhiteSpace([string]$config.KAKAO_NATIVE_APP_KEY)) {
-    throw 'KAKAO_AUTH=true requires KAKAO_NATIVE_APP_KEY.'
+if ([string]::IsNullOrWhiteSpace([string]$config.KAKAO_NATIVE_APP_KEY)) {
+    throw 'Release requires KAKAO_NATIVE_APP_KEY.'
 }
 if ($ValidateOnly) {
     Write-Output 'Build config valid. Signing, server connectivity and feature readiness are not verified.'
@@ -66,7 +68,6 @@ try {
         sha256 = (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash
         createdUtc = [DateTime]::UtcNow.ToString('o')
         storiesMonthApi = $config.STORIES_MONTH_API
-        kakaoAuth = $config.KAKAO_AUTH
         accountDeletionApi = $config.ACCOUNT_DELETION_API
         deviceQA = 'NOT_RUN'
     }

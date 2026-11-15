@@ -44,9 +44,16 @@ val validateReleaseConfiguration = tasks.register("validateReleaseConfiguration"
             apiUri.path.trimEnd('/') == "/api/v1" && !apiUri.host.endsWith(".invalid")) {
             "Release requires an HTTPS API_BASE_URL ending in /api/v1, without credentials or query."
         }
-        check(dartDefines["KAKAO_AUTH"] != "true" ||
-            !dartDefines["KAKAO_NATIVE_APP_KEY"].isNullOrBlank()) {
-            "KAKAO_AUTH=true requires KAKAO_NATIVE_APP_KEY."
+        check("KAKAO_AUTH" !in dartDefines) {
+            "Remove obsolete KAKAO_AUTH. Real builds always use Kakao authentication."
+        }
+        check(!dartDefines["KAKAO_NATIVE_APP_KEY"].isNullOrBlank()) {
+            "Release requires KAKAO_NATIVE_APP_KEY."
+        }
+        for (flag in listOf("STORIES_MONTH_API", "ACCOUNT_DELETION_API")) {
+            check(dartDefines[flag] in listOf("true", "false")) {
+                "Release requires an explicit true/false value for $flag."
+            }
         }
     }
 }

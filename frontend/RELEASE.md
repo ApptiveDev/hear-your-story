@@ -28,7 +28,7 @@ keyPassword=REPLACE_LOCALLY
 
 release는 이 설정을 사용하며, 누락되어도 debug 키로 대체하지 않는다.
 debug 실행은 계속 가능하다. 서명 파일과 비밀번호는 저장소에 추가하지 않는다.
-카카오 로그인 활성화 전에는 실제 설치 앱의 서명에 맞는 키 해시를 담당자와 확인한다.
+실제 설치 앱의 서명에 맞는 카카오 키 해시를 담당자와 확인한다.
 
 ## 환경 설정
 
@@ -44,9 +44,12 @@ Copy-Item config/staging.example.json config/staging.local.json
 
 - `USE_MOCK=false`, `KAKAO_FAKE_LOGIN=false`는 반드시 명시한다.
 - `STORIES_MONTH_API=true`: 대상 서버의 월별 조회 배포를 확인한 뒤 사용한다.
-- `KAKAO_AUTH=false`, `ACCOUNT_DELETION_API=false`: 계약과 서버가 준비되기 전 유지한다.
-  프론트 화면이 병합됐다는 이유만으로 실제 API 기능을 켜지 않는다.
-- 카카오 인증 활성화 시 `KAKAO_NATIVE_APP_KEY`와 콘솔 설정도 필요하다.
+- 실제 빌드는 카카오 인증을 사용하므로 `KAKAO_NATIVE_APP_KEY`를 반드시 채운다.
+  제거된 `KAKAO_AUTH`는 설정에 넣지 않는다. 남아 있으면 빌드를 거부한다.
+  콘솔의 Android 패키지명·서명 키 해시·OpenID Connect 설정과 서버 배포도 확인한다.
+- 회원 탈퇴 계약과 백엔드는 구현되었지만 실서버 프론트 연동은 별도 확인이 필요하다.
+  `ACCOUNT_DELETION_API=false`로 시작하고 담당자의 연동 확인 후 테스트 빌드에서 켠다.
+  이 값이 false인 빌드는 최종 출시 후보로 간주하지 않는다.
 - `PRIVACY_POLICY_URL`, `SUPPORT_CONTACT`는 공개 가능한 확정 값을 사용한다.
 
 ## 검사와 빌드

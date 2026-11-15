@@ -3,7 +3,7 @@
   "API_BASE_URL": "https://replace-me.invalid/api/v1",
   "USE_MOCK": "false",
   "STORIES_MONTH_API": "true",
-  "KAKAO_AUTH": "false",
+  "KAKAO_NATIVE_APP_KEY": "",
   "KAKAO_FAKE_LOGIN": "false",
   "ACCOUNT_DELETION_API": "false",
   "PRIVACY_POLICY_URL": "",

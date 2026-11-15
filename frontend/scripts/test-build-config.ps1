@@ -13,13 +13,17 @@ $cases = @(
     @{ Name = 'wrong path'; Changes = @{ API_BASE_URL = 'https://example.com' }; Accept = $false },
     @{ Name = 'unknown environment'; Changes = @{ APP_ENV = 'dev' }; Accept = $false },
     @{ Name = 'missing feature flag'; Changes = @{ ACCOUNT_DELETION_API = $null }; Accept = $false },
-    @{ Name = 'missing Kakao key'; Changes = @{ KAKAO_AUTH = 'true' }; Accept = $false }
+    @{ Name = 'missing Kakao key'; Changes = @{ KAKAO_NATIVE_APP_KEY = $null }; Accept = $false },
+    @{ Name = 'blank Kakao key'; Changes = @{ KAKAO_NATIVE_APP_KEY = '  ' }; Accept = $false },
+    @{ Name = 'obsolete disabled auth flag'; Changes = @{ KAKAO_AUTH = 'false' }; Accept = $false },
+    @{ Name = 'obsolete enabled auth flag'; Changes = @{ KAKAO_AUTH = 'true' }; Accept = $false }
 )
 try {
     foreach ($case in $cases) {
         $config = @{
             APP_ENV = 'staging'; API_BASE_URL = 'https://example.com/api/v1'
-            USE_MOCK = 'false'; KAKAO_FAKE_LOGIN = 'false'; KAKAO_AUTH = 'false'
+            USE_MOCK = 'false'; KAKAO_FAKE_LOGIN = 'false'
+            KAKAO_NATIVE_APP_KEY = 'test-only-not-a-real-key'
             STORIES_MONTH_API = 'true'; ACCOUNT_DELETION_API = 'false'
         }
         foreach ($key in $case.Changes.Keys) { $config[$key] = $case.Changes[$key] }
