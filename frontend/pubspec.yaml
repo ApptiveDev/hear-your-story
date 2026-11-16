@@ -81,6 +81,13 @@ flutter:
           weight: 600
         - asset: assets/fonts/Pretendard-Bold.otf
           weight: 700
+    # Flaticon UIcons 3.3.1 (Figma 아이콘). README의 라이선스 안내를 지킨다.
+    - family: UIconsSolidRounded
+      fonts:
+        - asset: assets/fonts/uicons-solid-rounded.ttf
+    - family: UIconsRegularRounded
+      fonts:
+        - asset: assets/fonts/uicons-regular-rounded.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

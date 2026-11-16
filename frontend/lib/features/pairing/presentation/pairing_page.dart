@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
 import '../../onboarding/presentation/widgets/logout_button.dart';
-import '../../onboarding/presentation/widgets/step_header.dart';
 import '../data/pairing_providers.dart';
 import '../domain/pairing_repository.dart';
 import 'expiry_format.dart';
@@ -198,7 +198,7 @@ class _InviteContent extends ConsumerWidget {
     return ListView(
       padding: _sidePadding,
       children: [
-        const StepHeader(step: 3),
+        const AppHeader(),
         const SizedBox(height: 64),
         Text(
           '부모님을\n초대해 주세요',
@@ -326,7 +326,7 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
     return ListView(
       padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
       children: [
-        const StepHeader(step: 3),
+        const AppHeader(),
         const SizedBox(height: 64),
         Text(
           '자녀와 연결해요',

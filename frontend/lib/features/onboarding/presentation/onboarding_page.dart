@@ -5,13 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_header.dart';
+import '../../../core/widgets/page_title.dart';
 import '../domain/app_user.dart';
 import '../data/kakao_sign_in.dart';
 import 'kakao_login_controller.dart';
 import 'session.dart';
 import 'sign_up_controller.dart';
-import 'widgets/step_header.dart';
 
 /// 역할 선택 → 이름 입력 → 가입. 한 화면에 주요 행동 하나만 둔다.
 ///
@@ -20,15 +22,20 @@ import 'widgets/step_header.dart';
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
+  /// Figma WF-002 기준 10자. 서버(CreateUserRequest)는 50자까지 받는다.
+  static const nameMaxLength = 10;
+  static const nameRule = '이름은 1자 이상 $nameMaxLength자 이하로 입력해 주세요';
+
   @override
   ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
-  static const nameMaxLength = 50; // 서버 CreateUserRequest와 동일
-
   final _nameController = TextEditingController();
   UserRole? _role;
+
+  /// 이름 입력에서 `이전`으로 돌아왔을 때 다시 골라 둘 역할
+  UserRole? _lastRole;
   bool _recoveringRegistrationConflict = false;
 
   @override
@@ -52,6 +59,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
     setState(() {
       _role = null;
+      _lastRole = null;
       _nameController.clear();
       _recoveringRegistrationConflict = false;
     });
@@ -118,11 +126,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     return Scaffold(
       body: SafeArea(
         child: role == null
-            ? _RoleStep(onSelected: (r) => setState(() => _role = r))
+            ? _RoleStep(
+                initial: _lastRole,
+                onNext: (r) => setState(() => _role = _lastRole = r),
+              )
             : _NameStep(
                 role: role,
                 controller: _nameController,
-                maxLength: nameMaxLength,
+                maxLength: OnboardingPage.nameMaxLength,
                 onSubmit: _submit,
                 onBack: loading ? null : () => setState(() => _role = null),
               ),
@@ -131,8 +142,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 }
 
-/// 좌우 여백. 버튼(331)이 393 화면 가운데 오도록 한다.
-const _sidePadding = EdgeInsets.symmetric(horizontal: 31);
+/// 좌우 여백. Figma 393 프레임의 좌우 24.
+const _sidePadding = EdgeInsets.symmetric(horizontal: AppSizes.screenPadding);
 
 /// 카카오 로그인. 디자인이 붙기 전의 기능 확인용 화면이다.
 class _KakaoLoginStep extends ConsumerWidget {
@@ -220,128 +231,163 @@ class _PhaseText extends StatelessWidget {
   }
 }
 
-class _RoleStep extends StatelessWidget {
-  const _RoleStep({required this.onSelected});
-  final ValueChanged<UserRole> onSelected;
+/// 단계 화면의 틀: 위 헤더, 가운데 스크롤되는 내용, 아래 고정 버튼.
+///
+/// Figma 393 프레임의 좌우 여백 24, 헤더와 내용 사이 24를 따른다. 글씨를 키워도
+/// 내용만 스크롤되고 버튼은 항상 화면 아래에 보인다.
+class _StepLayout extends StatelessWidget {
+  const _StepLayout({
+    required this.onBack,
+    required this.children,
+    required this.action,
+  });
+
+  final VoidCallback? onBack;
+  final List<Widget> children;
+  final Widget action;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return ListView(
-      // 제목(Figma 341px)이 한 줄에 들어가도록 좌우 16. 카드는 329로 가운데.
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      children: [
-        const StepHeader(step: 1),
-        const SizedBox(height: 56),
-        const ExcludeSemantics(
-          child: Text('🕊️', textAlign: TextAlign.center, style: _emoji),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          '누구로 시작할까요?',
-          textAlign: TextAlign.center,
-          style: textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '질문에 답해주실 분을\n선택해주세요',
-          textAlign: TextAlign.center,
-          style: textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 56),
-        _RoleCard(
-          emoji: '👵',
-          label: '부모님이에요',
-          description: '질문에 목소리로 답해요',
-          onTap: () => onSelected(UserRole.parent),
-        ),
-        const SizedBox(height: 16),
-        _RoleCard(
-          emoji: '🙋',
-          label: '자녀예요',
-          description: '부모님을 초대하고 글로 답해요',
-          onTap: () => onSelected(UserRole.child),
-        ),
-        const SizedBox(height: 32),
-        // 목소리를 남기기 전에 누가 듣는지 먼저 알린다 (경쟁 서비스 분석 인사이트 10)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: MergeSemantics(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.lock_outline, size: 24),
-                const SizedBox(width: 8),
-                Expanded(child: Text(privacyNote, style: textTheme.bodyMedium)),
-              ],
-            ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.screenPadding,
+        16,
+        AppSizes.screenPadding,
+        AppSizes.screenPadding,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppHeader(onBack: onBack),
+          const SizedBox(height: 24),
+          Expanded(
+            child: ListView(padding: EdgeInsets.zero, children: children),
           ),
+          const SizedBox(height: 24),
+          action,
+        ],
+      ),
+    );
+  }
+}
+
+/// Figma WF-001 역할 선택. 카드를 고른 뒤 `다음`을 눌러 넘어간다.
+class _RoleStep extends StatefulWidget {
+  const _RoleStep({required this.initial, required this.onNext});
+
+  /// 이름 입력에서 돌아왔을 때 전에 고른 역할
+  final UserRole? initial;
+  final ValueChanged<UserRole> onNext;
+
+  @override
+  State<_RoleStep> createState() => _RoleStepState();
+}
+
+class _RoleStepState extends State<_RoleStep> {
+  late UserRole? _selected = widget.initial;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = _selected;
+    return _StepLayout(
+      onBack: null,
+      action: FilledButton(
+        onPressed: selected == null ? null : () => widget.onNext(selected),
+        child: const Text('다음'),
+      ),
+      children: [
+        const PageTitle(title: '누구로 시작할까요?', subtitle: '내 역할을 골라 주세요'),
+        const SizedBox(height: 16),
+        _RoleCard(
+          icon: AppIcons.heart,
+          label: '부모',
+          description: '목소리로 질문에 답해요',
+          selected: selected == UserRole.parent,
+          onTap: () => setState(() => _selected = UserRole.parent),
         ),
+        const SizedBox(height: 16),
+        _RoleCard(
+          icon: AppIcons.childHead,
+          label: '자녀',
+          description: '글로 질문에 답해요',
+          selected: selected == UserRole.child,
+          onTap: () => setState(() => _selected = UserRole.child),
+        ),
+        const SizedBox(height: 16),
+        // 목소리를 남기기 전에 누가 듣는지 먼저 알린다 (경쟁 서비스 분석 인사이트 10)
+        const Text(privacyNote, style: AppText.bodyS),
       ],
     );
   }
 }
 
-const _emoji = TextStyle(fontSize: 48, height: 1.2);
-
 /// 가족끼리만 공유된다는 안내. 서버는 연결된 두 사람에게만 답과 음성 링크를 준다.
-const privacyNote = '주고받은 목소리와 글은\n연결된 두 분만 듣고 볼 수 있어요.';
+const privacyNote = '이름과 녹음은 연결된 가족에게만 보여요.';
 
-/// Figma 역할 카드: 329 너비, 안쪽 여백 40/70, 간격 12, 모서리 15.
+/// Figma `Card/Role`: 아이콘, 역할 이름과 설명, 오른쪽 선택 표시.
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.description,
+    required this.selected,
     required this.onTap,
   });
 
-  final String emoji;
+  final IconData icon;
   final String label;
-
-  /// 화면에는 없고 화면 읽기 프로그램에만 알려준다.
   final String description;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 329),
-        // 좁은 화면에서는 화면 폭, 넓은 화면에서는 329
-        child: SizedBox(width: double.infinity, child: _card(context)),
-      ),
-    );
-  }
-
-  Widget _card(BuildContext context) {
     return Semantics(
       button: true,
+      selected: selected,
       label: '$label, $description',
       excludeSemantics: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          boxShadow: AppShadows.card,
+      child: Material(
+        color: selected ? AppColors.surfaceCard : AppColors.surfaceWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.cardSmall),
+          side: BorderSide(
+            color: selected ? AppColors.borderPrimary : AppColors.borderSoft,
+            width: selected ? 3 : 2,
+          ),
         ),
-        child: Material(
-          color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 110),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              padding: const EdgeInsets.all(20),
+              child: Row(
                 children: [
-                  Text(emoji, style: _emoji),
-                  const SizedBox(height: 12),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge,
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: const BoxDecoration(
+                      color: AppColors.bgUnder,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 40, color: AppColors.textBrand),
                   ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(label, style: AppText.headingM),
+                        const SizedBox(height: 4),
+                        Text(description, style: AppText.bodyS),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  _CheckMark(selected: selected),
                 ],
               ),
             ),
@@ -352,7 +398,32 @@ class _RoleCard extends StatelessWidget {
   }
 }
 
-class _NameStep extends ConsumerWidget {
+/// 역할 카드 오른쪽 동그라미. 고르면 주황 바탕에 체크가 들어간다.
+class _CheckMark extends StatelessWidget {
+  const _CheckMark({required this.selected});
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: selected ? AppColors.actionPrimary : AppColors.surfaceWhite,
+        border: selected
+            ? null
+            : Border.all(color: AppColors.borderSoft, width: 2),
+      ),
+      child: selected
+          ? const Icon(AppIcons.check, size: 14, color: AppColors.textOnPrimary)
+          : null,
+    );
+  }
+}
+
+/// Figma WF-002 이름 입력.
+class _NameStep extends ConsumerStatefulWidget {
   const _NameStep({
     required this.role,
     required this.controller,
@@ -370,64 +441,132 @@ class _NameStep extends ConsumerWidget {
   final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(signUpControllerProvider);
-    final textTheme = Theme.of(context).textTheme;
-    final isParent = role == UserRole.parent;
+  ConsumerState<_NameStep> createState() => _NameStepState();
+}
 
-    return ListView(
-      padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
-      children: [
-        StepHeader(step: 2, onBack: onBack ?? () {}),
-        const SizedBox(height: 72),
-        Text(
-          isParent ? '성함을 알려주세요' : '이름을 알려주세요',
-          style: textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          isParent ? '자녀에게 보여질 이름이에요' : '부모님께 보여질 이름이에요',
-          style: AppText.bodyL,
-        ),
-        const SizedBox(height: 48),
-        TextField(
-          controller: controller,
-          enabled: !state.isLoading,
-          autofocus: true,
-          maxLength: maxLength,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => onSubmit(),
-          style: AppText.bodyL,
-          decoration: InputDecoration(
-            hintText: isParent ? '예: 김영희' : '예: 김민지',
-            counterText: '',
+class _NameStepState extends ConsumerState<_NameStep> {
+  /// 한 번이라도 글자를 넣었는지. 처음 열었을 때는 빈 칸이어도 오류로 보이지 않는다.
+  late bool _edited = widget.controller.text.isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(signUpControllerProvider);
+    final controller = widget.controller;
+    final isParent = widget.role == UserRole.parent;
+
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final text = controller.text;
+        if (text.isNotEmpty) _edited = true;
+        final empty = text.trim().isEmpty;
+        final canSubmit = !empty && !state.isLoading;
+        final serverError = state.error;
+
+        return _StepLayout(
+          onBack: widget.onBack,
+          action: FilledButton(
+            onPressed: canSubmit ? widget.onSubmit : null,
+            child: state.isLoading
+                ? const _ButtonSpinner()
+                : const Text('시작하기'),
           ),
+          children: [
+            const PageTitle(title: '이름을 알려 주세요', subtitle: '가족에게 보여질 이름이에요'),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _RoleChip(
+                icon: isParent ? AppIcons.heart : AppIcons.childHead,
+                label: isParent ? '부모로 시작해요' : '자녀로 시작해요',
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('이름', style: AppText.labelM),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              enabled: !state.isLoading,
+              autofocus: true,
+              maxLength: widget.maxLength,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) {
+                if (canSubmit) widget.onSubmit();
+              },
+              style: AppText.bodyL.copyWith(color: AppColors.textStrong),
+              decoration: InputDecoration(
+                hintText: '이름을 입력해 주세요',
+                counterText: '',
+                suffix: Text(
+                  '${text.characters.length} / ${widget.maxLength}',
+                  style: AppText.bodyS,
+                ),
+                error: _edited && empty
+                    ? const _FieldMessage(OnboardingPage.nameRule)
+                    : null,
+              ),
+            ),
+            if (serverError != null) ...[
+              const SizedBox(height: 16),
+              _ErrorMessage(error: serverError),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Figma `Chip/Role`: 이름 입력에서 고른 역할을 보여준다.
+class _RoleChip extends StatelessWidget {
+  const _RoleChip({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 16, 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: AppColors.textBrand),
+            const SizedBox(width: 8),
+            Flexible(child: Text(label, style: AppText.labelM)),
+          ],
         ),
-        if (state.hasError) ...[
-          const SizedBox(height: 16),
-          _ErrorMessage(error: state.error!),
+      ),
+    );
+  }
+}
+
+/// Figma `Field/Text` 오류 안내: 빨간 느낌표와 굵은 글.
+class _FieldMessage extends StatelessWidget {
+  const _FieldMessage(this.message);
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(AppIcons.exclamation, color: AppColors.error, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: AppText.labelM.copyWith(color: AppColors.error),
+            ),
+          ),
         ],
-        const SizedBox(height: 12),
-        ListenableBuilder(
-          listenable: controller,
-          builder: (context, _) {
-            final canSubmit =
-                controller.text.trim().isNotEmpty && !state.isLoading;
-            return FilledButton(
-              onPressed: canSubmit ? onSubmit : null,
-              child: state.isLoading
-                  ? const SizedBox.square(
-                      dimension: 28,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        color: AppColors.textOnPrimary,
-                      ),
-                    )
-                  : const Text('시작하기'),
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 }
@@ -455,24 +594,5 @@ class _ErrorMessage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.error;
-    return Semantics(
-      liveRegion: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.error_outline, color: color, size: 28),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _message,
-              style: Theme.of(context).textTheme.bodyLarge
-                  ?.copyWith(color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _FieldMessage(_message);
 }

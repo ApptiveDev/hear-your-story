@@ -41,6 +41,14 @@ Future<void> _pumpApp(
   await tester.pumpAndSettle();
 }
 
+/// 역할 카드를 고르고 `다음`을 눌러 이름 입력으로 간다.
+Future<void> _chooseRole(WidgetTester tester, String role) async {
+  await tester.tap(find.text(role));
+  await tester.pump();
+  await tester.tap(find.text('다음'));
+  await tester.pumpAndSettle();
+}
+
 FilledButton _startButton(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton));
 
@@ -50,11 +58,16 @@ void main() {
   testWidgets('역할을 고르면 이름 입력으로 넘어가고, 뒤로 가면 다시 고를 수 있다', (tester) async {
     await _pumpApp(tester, FakeAuthDataSource());
 
-    await tester.tap(find.text('부모님이에요'));
+    // 카드를 골라도 바로 넘어가지 않고 `다음`을 눌러야 넘어간다
+    await tester.tap(find.text('부모'));
     await tester.pumpAndSettle();
-    expect(find.text('성함을 알려주세요'), findsOneWidget);
+    expect(find.text('누구로 시작할까요?'), findsOneWidget);
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+    expect(find.text('이름을 알려 주세요'), findsOneWidget);
+    expect(find.text('부모로 시작해요'), findsOneWidget);
 
-    await tester.tap(find.byType(BackButton));
+    await tester.tap(find.text('이전'));
     await tester.pumpAndSettle();
     expect(find.text('누구로 시작할까요?'), findsOneWidget);
   });
@@ -63,19 +76,28 @@ void main() {
     await _pumpApp(tester, FakeAuthDataSource());
 
     expect(find.text(privacyNote), findsOneWidget);
-    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+  });
+
+  testWidgets('역할을 고르기 전에는 다음을 누를 수 없다', (tester) async {
+    await _pumpApp(tester, FakeAuthDataSource());
+
+    expect(_startButton(tester).onPressed, isNull);
+    await tester.tap(find.text('자녀'));
+    await tester.pump();
+    expect(_startButton(tester).onPressed, isNotNull);
   });
 
   testWidgets('이름이 비어 있거나 공백뿐이면 시작하기를 누를 수 없다', (tester) async {
     await _pumpApp(tester, FakeAuthDataSource());
-    await tester.tap(find.text('자녀예요'));
-    await tester.pumpAndSettle();
+    await _chooseRole(tester, '자녀');
 
     expect(_startButton(tester).onPressed, isNull);
 
     await tester.enterText(find.byType(TextField), '   ');
     await tester.pump();
     expect(_startButton(tester).onPressed, isNull);
+    // 글자를 넣었다가 비우면 이름 규칙을 알려준다
+    expect(find.text(OnboardingPage.nameRule), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), '김민지');
     await tester.pump();
@@ -86,8 +108,7 @@ void main() {
     final dataSource = FakeAuthDataSource();
     await _pumpApp(tester, dataSource);
 
-    await tester.tap(find.text('자녀예요'));
-    await tester.pumpAndSettle();
+    await _chooseRole(tester, '자녀');
     await tester.enterText(find.byType(TextField), '김민지');
     await tester.pump();
     await tester.tap(find.text('시작하기'));
@@ -103,8 +124,7 @@ void main() {
   testWidgets('이미 연결된 사용자는 오늘 질문으로 이동한다', (tester) async {
     await _pumpApp(tester, FakeAuthDataSource(pairingStatus: 'PAIRED'));
 
-    await tester.tap(find.text('부모님이에요'));
-    await tester.pumpAndSettle();
+    await _chooseRole(tester, '부모');
     await tester.enterText(find.byType(TextField), '김영희');
     await tester.pump();
     await tester.tap(find.text('시작하기'));
@@ -119,8 +139,7 @@ void main() {
       FakeAuthDataSource(error: ApiException(statusCode: 400)),
     );
 
-    await tester.tap(find.text('자녀예요'));
-    await tester.pumpAndSettle();
+    await _chooseRole(tester, '자녀');
     await tester.enterText(find.byType(TextField), '김민지');
     await tester.pump();
     await tester.tap(find.text('시작하기'));
@@ -142,8 +161,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('자녀예요'));
-    await tester.pumpAndSettle();
+    await _chooseRole(tester, '자녀');
     await tester.enterText(find.byType(TextField), '김민지');
     await tester.pump();
     await tester.tap(find.text('시작하기'));
@@ -156,8 +174,7 @@ void main() {
   testWidgets('네트워크가 끊기면 연결 확인 안내를 보여준다', (tester) async {
     await _pumpApp(tester, FakeAuthDataSource(error: ApiException()));
 
-    await tester.tap(find.text('부모님이에요'));
-    await tester.pumpAndSettle();
+    await _chooseRole(tester, '부모');
     await tester.enterText(find.byType(TextField), '김영희');
     await tester.pump();
     await tester.tap(find.text('시작하기'));

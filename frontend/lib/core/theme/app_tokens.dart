@@ -165,6 +165,7 @@ abstract final class AppRadius {
   static const buttonL = 24.0; // Button Size=L
   static const buttonM = 20.0; // Button Size=M
   static const card = 32.0; // Card/Question 등 카드
+  static const cardSmall = 24.0; // Card/Role, Chip/Role 같은 작은 카드
   static const field = 24.0; // Field/Text 입력칸, 초대 숫자 칸
   static const pill = 999.0; // 진행 막대처럼 양끝이 둥근 모양
 }
@@ -177,10 +178,6 @@ abstract final class AppSizes {
   static const iconL = 30.0; // 큰 버튼 아이콘, 마이크
   static const iconM = 24.0; // 작은 버튼 아이콘
   static const screenPadding = 24.0; // 393 프레임에서 좌우 여백
-
-  // v2에 아직 대응하는 부품이 없어 1차 와이어프레임 값을 유지한다.
-  static const stepBarWidth = 43.0;
-  static const stepBarHeight = 6.0;
 }
 
 /// Figma 효과(Effect) 중 바깥 그림자.

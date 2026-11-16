@@ -106,6 +106,8 @@ void main() {
     expect(find.text('김민지'), findsOneWidget);
     expect(find.text('부모님'), findsOneWidget);
     expect(find.text('1.0.0'), findsOneWidget);
+    // Flaticon 라이선스상 아이콘 출처를 앱 안에 표기해야 한다
+    expect(find.text(uiconsAttribution), findsOneWidget);
   });
 
   testWidgets('자녀는 자녀로 보인다', (tester) async {
