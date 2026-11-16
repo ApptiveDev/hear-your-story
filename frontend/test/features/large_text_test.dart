@@ -119,10 +119,10 @@ void main() {
         expect(find.text('이름을 알려 주세요'), findsOneWidget);
       });
 
-      testWidgets('자녀 초대 숫자', (tester) async {
+      testWidgets('자녀 초대 코드', (tester) async {
         _phoneWithTextScale(tester, scale);
         await _pumpPairing(tester, UserRole.child);
-        expect(find.text('482 913'), findsOneWidget);
+        expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
       });
 
       testWidgets('연결 완료', (tester) async {
@@ -130,16 +130,16 @@ void main() {
         await _pumpPairing(tester, UserRole.child, pairedAfterChecks: 1);
         await tester.pump(const Duration(seconds: 3));
         await tester.pump();
-        expect(find.text('연결 되었어요!'), findsOneWidget);
-        await tester.ensureVisible(find.text('시작하기'));
+        expect(find.text('부모님과 연결됐어요'), findsOneWidget);
+        await tester.ensureVisible(find.text('홈으로 가기'));
       });
 
-      testWidgets('부모 숫자 입력', (tester) async {
+      testWidgets('부모 코드 입력', (tester) async {
         _phoneWithTextScale(tester, scale);
         await _pumpPairing(tester, UserRole.parent);
         await tester.enterText(find.byType(TextField), '482913');
         await tester.pump();
-        expect(find.text('자녀와 연결해요'), findsOneWidget);
+        expect(find.text('초대 코드를 입력해 주세요'), findsOneWidget);
       });
 
       testWidgets('이야기 달력', (tester) async {

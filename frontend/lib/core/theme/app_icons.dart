@@ -21,6 +21,9 @@ abstract final class AppIcons {
   /// fi-sr-check: 선택됨 표시
   static const check = IconData(0xf3c0, fontFamily: _solid);
 
+  /// fi-sr-smile-wink: 연결 완료
+  static const smileWink = IconData(0xfc21, fontFamily: _solid);
+
   /// fi-sr-exclamation: 입력 오류
   static const exclamation = IconData(0xf5df, fontFamily: _solid);
 }

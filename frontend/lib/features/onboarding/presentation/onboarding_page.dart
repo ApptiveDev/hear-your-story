@@ -7,8 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/app_header.dart';
+import '../../../core/widgets/error_text.dart';
 import '../../../core/widgets/page_title.dart';
+import '../../../core/widgets/step_layout.dart';
 import '../domain/app_user.dart';
 import '../data/kakao_sign_in.dart';
 import 'kakao_login_controller.dart';
@@ -231,46 +232,6 @@ class _PhaseText extends StatelessWidget {
   }
 }
 
-/// 단계 화면의 틀: 위 헤더, 가운데 스크롤되는 내용, 아래 고정 버튼.
-///
-/// Figma 393 프레임의 좌우 여백 24, 헤더와 내용 사이 24를 따른다. 글씨를 키워도
-/// 내용만 스크롤되고 버튼은 항상 화면 아래에 보인다.
-class _StepLayout extends StatelessWidget {
-  const _StepLayout({
-    required this.onBack,
-    required this.children,
-    required this.action,
-  });
-
-  final VoidCallback? onBack;
-  final List<Widget> children;
-  final Widget action;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.screenPadding,
-        16,
-        AppSizes.screenPadding,
-        AppSizes.screenPadding,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppHeader(onBack: onBack),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ListView(padding: EdgeInsets.zero, children: children),
-          ),
-          const SizedBox(height: 24),
-          action,
-        ],
-      ),
-    );
-  }
-}
-
 /// Figma WF-001 역할 선택. 카드를 고른 뒤 `다음`을 눌러 넘어간다.
 class _RoleStep extends StatefulWidget {
   const _RoleStep({required this.initial, required this.onNext});
@@ -289,12 +250,13 @@ class _RoleStepState extends State<_RoleStep> {
   @override
   Widget build(BuildContext context) {
     final selected = _selected;
-    return _StepLayout(
-      onBack: null,
-      action: FilledButton(
-        onPressed: selected == null ? null : () => widget.onNext(selected),
-        child: const Text('다음'),
-      ),
+    return StepLayout(
+      actions: [
+        FilledButton(
+          onPressed: selected == null ? null : () => widget.onNext(selected),
+          child: const Text('다음'),
+        ),
+      ],
       children: [
         const PageTitle(title: '누구로 시작할까요?', subtitle: '내 역할을 골라 주세요'),
         const SizedBox(height: 16),
@@ -463,14 +425,16 @@ class _NameStepState extends ConsumerState<_NameStep> {
         final canSubmit = !empty && !state.isLoading;
         final serverError = state.error;
 
-        return _StepLayout(
+        return StepLayout(
           onBack: widget.onBack,
-          action: FilledButton(
-            onPressed: canSubmit ? widget.onSubmit : null,
-            child: state.isLoading
-                ? const _ButtonSpinner()
-                : const Text('시작하기'),
-          ),
+          actions: [
+            FilledButton(
+              onPressed: canSubmit ? widget.onSubmit : null,
+              child: state.isLoading
+                  ? const _ButtonSpinner()
+                  : const Text('시작하기'),
+            ),
+          ],
           children: [
             const PageTitle(title: '이름을 알려 주세요', subtitle: '가족에게 보여질 이름이에요'),
             const SizedBox(height: 16),
@@ -502,7 +466,7 @@ class _NameStepState extends ConsumerState<_NameStep> {
                   style: AppText.bodyS,
                 ),
                 error: _edited && empty
-                    ? const _FieldMessage(OnboardingPage.nameRule)
+                    ? const ErrorText(OnboardingPage.nameRule)
                     : null,
               ),
             ),
@@ -545,32 +509,6 @@ class _RoleChip extends StatelessWidget {
   }
 }
 
-/// Figma `Field/Text` 오류 안내: 빨간 느낌표와 굵은 글.
-class _FieldMessage extends StatelessWidget {
-  const _FieldMessage(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(AppIcons.exclamation, color: AppColors.error, size: 22),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: AppText.labelM.copyWith(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ErrorMessage extends StatelessWidget {
   const _ErrorMessage({required this.error, this.login = false});
   final Object error;
@@ -594,5 +532,5 @@ class _ErrorMessage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => _FieldMessage(_message);
+  Widget build(BuildContext context) => ErrorText(_message);
 }

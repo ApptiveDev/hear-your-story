@@ -60,13 +60,13 @@ String pairingErrorMessage(Object error) {
   switch (error.errorCode) {
     case 'INVITE_CODE_NOT_FOUND':
     case 'VALIDATION_ERROR':
-      return '숫자를 다시 확인해 주세요.';
+      return '코드가 맞지 않아요. 다시 확인해 주세요';
     case 'INVITE_CODE_USED':
-      return '이미 사용된 숫자예요. 자녀에게 새 숫자를 받아 주세요.';
+      return '이미 사용된 코드예요. 자녀에게 새 코드를 받아 주세요.';
     case 'INVITE_CODE_EXPIRED':
-      return '시간이 지난 숫자예요. 자녀에게 새 숫자를 받아 주세요.';
-    case 'ALREADY_PAIRED': // 숫자를 만든 자녀가 이미 다른 분과 연결됨
-      return '이미 다른 분과 연결된 숫자예요. 자녀에게 확인해 주세요.';
+      return '코드가 만료됐어요. 자녀에게 새 코드를 받아 주세요.';
+    case 'ALREADY_PAIRED': // 코드를 만든 자녀가 이미 다른 분과 연결됨
+      return '이미 다른 분과 연결된 코드예요. 자녀에게 확인해 주세요.';
     default:
       return error.userMessage;
   }

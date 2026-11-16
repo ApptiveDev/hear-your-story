@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsFlag;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -65,18 +67,21 @@ void main() {
   });
 
   group('자녀', () {
-    testWidgets('초대 숫자를 세 자리씩 띄워 보여준다', (tester) async {
+    testWidgets('초대 코드를 한 칸에 한 자리씩 보여준다', (tester) async {
       await _pump(
         tester,
         user: _user(UserRole.child),
         dataSource: FakePairingDataSource(pairedAfterChecks: 99),
       );
 
-      expect(find.text('482 913'), findsOneWidget);
-      expect(find.text('연결되면 자동으로 넘어가요.'), findsOneWidget);
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
+      for (final digit in '482913'.split('')) {
+        expect(find.text(digit), findsOneWidget);
+      }
+      expect(find.text('부모님이 코드를 입력하면 자동으로 연결돼요'), findsOneWidget);
     });
 
-    testWidgets('부모님께 보내기를 누르면 숫자와 방법을 담아 공유 창을 연다', (tester) async {
+    testWidgets('공유하기를 누르면 코드와 방법을 담아 공유 창을 연다', (tester) async {
       final shared = <String>[];
       await _pump(
         tester,
@@ -85,7 +90,7 @@ void main() {
         share: (text) async => shared.add(text),
       );
 
-      await tester.tap(find.text('부모님께 보내기'));
+      await tester.tap(find.text('공유하기'));
       await tester.pump();
 
       expect(shared, hasLength(1));
@@ -101,10 +106,10 @@ void main() {
         share: (_) async => throw Exception('no share sheet'),
       );
 
-      await tester.tap(find.text('부모님께 보내기'));
+      await tester.tap(find.text('공유하기'));
       await tester.pump();
 
-      expect(find.text('보내기를 열지 못했어요. 숫자를 복사해서 보내 주세요.'), findsOneWidget);
+      expect(find.text('공유 창을 열지 못했어요. 코드를 복사해서 보내 주세요.'), findsOneWidget);
     });
 
     testWidgets('부모님이 연결하면 연결 완료 화면을 거쳐 오늘 화면으로 넘어간다', (tester) async {
@@ -112,20 +117,19 @@ void main() {
       await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
 
       await tester.pump(const Duration(seconds: 3)); // 첫 확인: 아직
-      expect(find.text('연결 되었어요!'), findsNothing);
+      expect(find.text('부모님과 연결됐어요'), findsNothing);
 
       await tester.pump(const Duration(seconds: 3)); // 두 번째 확인: 연결됨
       await tester.pumpAndSettle();
-      expect(find.text('연결 되었어요!'), findsOneWidget);
-      expect(find.textContaining('이제 부모님과'), findsOneWidget);
+      expect(find.text('부모님과 연결됐어요'), findsOneWidget);
       expect(find.text('오늘 화면'), findsNothing);
 
-      await tester.tap(find.text('시작하기'));
+      await tester.tap(find.text('홈으로 가기'));
       await tester.pumpAndSettle();
       expect(find.text('오늘 화면'), findsOneWidget);
     });
 
-    testWidgets('숫자의 유효 시간이 지나면 새 숫자를 받아 보여준다', (tester) async {
+    testWidgets('코드의 유효 시간이 지나면 만료를 알리고 새 코드를 받는다', (tester) async {
       final dataSource = FakePairingDataSource(
         inviteCode: '111111',
         expiresAt: '2020-01-01T00:00:00+09:00',
@@ -133,30 +137,55 @@ void main() {
         pairedAfterChecks: 99,
       );
       await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
-      expect(find.text('111 111'), findsOneWidget);
+      // 제목과 오류 안내 두 곳
+      expect(find.text('코드가 만료됐어요'), findsNWidgets(2));
+      expect(find.text('1'), findsNWidgets(6));
 
-      await tester.pump(const Duration(seconds: 3));
+      await tester.tap(find.text('새 코드 받기'));
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('222 222'), findsOneWidget);
-      expect(find.textContaining('새 숫자로 바뀌었어요'), findsOneWidget);
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
+      expect(find.text('2'), findsNWidgets(6));
     });
 
-    testWidgets('기기 시각이 틀려 새 숫자도 지나 보이면 계속 다시 받지 않는다', (tester) async {
+    testWidgets('기기 시각이 틀려 새 코드도 지나 보이면 코드를 그대로 보여준다', (tester) async {
       final dataSource = FakePairingDataSource(
         inviteCode: '111111',
         expiresAt: '2020-01-01T00:00:00+09:00',
         pairedAfterChecks: 99,
-      ); // 서버가 같은 숫자를 돌려줌
+      ); // 서버가 같은 코드를 돌려줌
       await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
 
-      for (var i = 0; i < 5; i++) {
+      await tester.tap(find.text('새 코드 받기'));
+      await tester.pump();
+      await tester.pump();
+      for (var i = 0; i < 3; i++) {
         await tester.pump(const Duration(seconds: 3));
       }
 
-      expect(dataSource.invitationCalls, 2); // 처음 1번 + 만료로 1번
-      expect(find.text('111 111'), findsOneWidget);
+      expect(dataSource.invitationCalls, 2); // 처음 1번 + 새 코드 받기 1번
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
+      expect(find.text('새 코드 받기'), findsNothing);
+    });
+
+    testWidgets('새로 받은 다른 코드도 지나 보이면 한 번에 코드를 보여준다', (tester) async {
+      final dataSource = FakePairingDataSource(
+        inviteCode: '111111',
+        expiresAt: '2020-01-01T00:00:00+09:00',
+        nextInvitations: [('222222', '2020-01-01T00:00:00+09:00')],
+        pairedAfterChecks: 99,
+      );
+      await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
+
+      await tester.tap(find.text('새 코드 받기'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(dataSource.invitationCalls, 2);
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
+      expect(find.text('2'), findsNWidgets(6));
+      expect(find.text('새 코드 받기'), findsNothing);
     });
 
     testWidgets('앱으로 돌아오면 바로 연결됐는지 확인한다', (tester) async {
@@ -167,7 +196,7 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
 
-      expect(find.text('연결 되었어요!'), findsOneWidget);
+      expect(find.text('부모님과 연결됐어요'), findsOneWidget);
     });
 
     testWidgets('이미 연결된 자녀는 바로 오늘 화면으로 넘어간다', (tester) async {
@@ -206,6 +235,29 @@ void main() {
       expect(_button(tester).onPressed, isNotNull);
     });
 
+    testWidgets('화면 읽기 프로그램이 코드 입력칸을 찾을 수 있다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pump(
+        tester,
+        user: _user(UserRole.parent),
+        dataSource: FakePairingDataSource(),
+      );
+
+      expect(find.semantics.byFlag(SemanticsFlag.isTextField), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('공유받은 코드를 길게 눌러 붙여넣을 수 있다', (tester) async {
+      await _pump(
+        tester,
+        user: _user(UserRole.parent),
+        dataSource: FakePairingDataSource(),
+      );
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.enableInteractiveSelection, isTrue);
+    });
+
     testWidgets('연결에 성공하면 연결 완료 화면을 거쳐 오늘 화면으로 넘어간다', (tester) async {
       final dataSource = FakePairingDataSource();
       await _pump(tester, user: _user(UserRole.parent), dataSource: dataSource);
@@ -216,10 +268,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dataSource.joinedCodes, ['482913']);
-      expect(find.text('연결 되었어요!'), findsOneWidget);
-      expect(find.textContaining('이제 자녀와'), findsOneWidget);
+      expect(find.text('자녀와 연결됐어요'), findsOneWidget);
 
-      await tester.tap(find.text('시작하기'));
+      await tester.tap(find.text('홈으로 가기'));
       await tester.pumpAndSettle();
       expect(find.text('오늘 화면'), findsOneWidget);
     });
@@ -238,7 +289,7 @@ void main() {
       await tester.tap(find.text('연결하기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('연결 되었어요!'), findsOneWidget);
+      expect(find.text('자녀와 연결됐어요'), findsOneWidget);
     });
 
     testWidgets('자녀가 이미 다른 분과 연결된 숫자면 머물며 안내한다', (tester) async {
@@ -257,10 +308,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오늘 화면'), findsNothing);
-      expect(find.text('이미 다른 분과 연결된 숫자예요. 자녀에게 확인해 주세요.'), findsOneWidget);
+      expect(find.text('이미 다른 분과 연결된 코드예요. 자녀에게 확인해 주세요.'), findsOneWidget);
     });
 
-    testWidgets('이미 사용된 숫자면 새 숫자를 받으라고 안내한다', (tester) async {
+    testWidgets('이미 사용된 코드면 새 코드를 받으라고 안내한다', (tester) async {
       await _pump(
         tester,
         user: _user(UserRole.parent),
@@ -277,7 +328,7 @@ void main() {
       await tester.tap(find.text('연결하기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('이미 사용된 숫자예요. 자녀에게 새 숫자를 받아 주세요.'), findsOneWidget);
+      expect(find.text('이미 사용된 코드예요. 자녀에게 새 코드를 받아 주세요.'), findsOneWidget);
       expect(find.text('오늘 화면'), findsNothing);
 
       // 다시 입력하면 안내가 사라진다
@@ -286,7 +337,7 @@ void main() {
       expect(find.textContaining('이미 사용된'), findsNothing);
     });
 
-    testWidgets('없는 숫자면 다시 확인하라고 안내한다', (tester) async {
+    testWidgets('없는 코드면 다시 확인하라고 안내한다', (tester) async {
       await _pump(
         tester,
         user: _user(UserRole.parent),
@@ -303,8 +354,25 @@ void main() {
       await tester.tap(find.text('연결하기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('숫자를 다시 확인해 주세요.'), findsOneWidget);
+      expect(find.text('코드가 맞지 않아요. 다시 확인해 주세요'), findsOneWidget);
+      expect(find.text('숫자만 입력할 수 있어요'), findsNothing);
     });
+  });
+
+  test('남은 시간을 분·초, 시간·분, 날짜로 알려준다', () {
+    final expiresAt = DateTime(2026, 9, 26, 21, 10);
+    expect(
+      remainingText(const Duration(minutes: 9, seconds: 42), expiresAt),
+      '9분 42초 뒤에 코드가 만료돼요',
+    );
+    expect(
+      remainingText(const Duration(hours: 2, minutes: 5), expiresAt),
+      '2시간 5분 뒤에 코드가 만료돼요',
+    );
+    expect(
+      remainingText(const Duration(days: 2), expiresAt),
+      '9월 26일 오후 9:10까지 쓸 수 있어요',
+    );
   });
 
   test('만료 시각을 오전·오후로 보여준다', () {
