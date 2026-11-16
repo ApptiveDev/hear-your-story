@@ -36,8 +36,15 @@ class StepLayout extends StatelessWidget {
         children: [
           AppHeader(onBack: onBack),
           const SizedBox(height: 24),
+          // 한 화면 분량이라 ListView 대신 모두 그려 둔다. 화면 밖으로 밀린 안내도
+          // 화면 읽기 프로그램과 테스트가 찾을 수 있다.
           Expanded(
-            child: ListView(padding: EdgeInsets.zero, children: children),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children,
+              ),
+            ),
           ),
           for (final (i, action) in actions.indexed) ...[
             SizedBox(height: i == 0 ? 24 : 12),
