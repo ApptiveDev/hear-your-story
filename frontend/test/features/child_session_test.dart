@@ -98,7 +98,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '숨바꼭질이요');
     await tester.pump();
-    await tester.tap(find.text('답변 보내기'));
+    await tester.tap(find.text('보내기'));
     await tester.pumpAndSettle();
 
     await expectSignedOut(tester);

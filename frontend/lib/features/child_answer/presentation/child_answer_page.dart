@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/choice_dialog.dart';
+import '../../../core/widgets/note_paper.dart';
+import '../../../core/widgets/step_layout.dart';
 import '../../onboarding/presentation/session.dart';
 import '../domain/answer_validator.dart';
 import 'child_answer_args.dart';
@@ -71,26 +75,34 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
     }
   }
 
+  /// Figma WF-019 이탈 확인: 저장하지 않은 글이 있으면 한 번 더 묻는다.
   Future<void> _confirmLeave() async {
-    final leave = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('작성을 그만둘까요?'),
-        content: const Text('지금 나가면 작성 중인 답변이 저장되지 않아요.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('계속 쓰기'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('나가기'),
-          ),
-        ],
-      ),
+    final editing = _isEditing(ref.read(childAnswerControllerProvider));
+    final leave = await showChoiceDialog(
+      context,
+      title: editing ? '고친 내용이 저장되지 않았어요' : '쓴 내용이 저장되지 않았어요',
+      message: editing
+          ? '고친 내용을 잃고 싶지 않다면\n계속 고치기를 눌러주세요'
+          : '쓴 내용을 잃고 싶지 않다면\n계속 쓰기를 눌러주세요',
+      stayLabel: editing ? '계속 고치기' : '계속 쓰기',
+      leaveLabel: '나가기',
     );
-    if (leave == true && mounted) _leave();
+    if (leave && mounted) _leave();
   }
+
+  /// 헤더 `이전`과 수정 화면의 `취소`
+  void _onBack() {
+    final s = ref.read(childAnswerControllerProvider);
+    if (s.isSubmitting) return;
+    if (_isDirty(s)) {
+      _confirmLeave();
+    } else {
+      _leave();
+    }
+  }
+
+  bool _isEditing(ChildAnswerSubmitState s) =>
+      widget.args.isEditing || s.result != null;
 
   /// 실패로 바뀌는 순간 한 번만 스낵바를 띄운다.
   void _onStateChanged(
@@ -127,10 +139,9 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
     ref.listen(childAnswerControllerProvider, _onStateChanged);
     final s = ref.watch(childAnswerControllerProvider);
 
-    // 제출 완료
+    // 제출 완료 (Figma WF-018 전송 완료)
     if (s.status == SubmitStatus.success && s.result != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('오늘의 답변')),
         body: SafeArea(
           child: AnswerSubmittedView(
             answerText: s.result!.text,
@@ -144,8 +155,7 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
       );
     }
 
-    // 작성 / 수정
-    final isEditing = widget.args.isEditing || s.result != null;
+    final isEditing = _isEditing(s);
     final isValid =
         AnswerValidator.validate(_text.text) == AnswerValidation.valid;
     final dirty = _isDirty(s);
@@ -158,40 +168,79 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
         if (!didPop) _confirmLeave();
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(isEditing ? '답변 수정' : '오늘의 답변')),
         body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                  children: [
-                    QuestionCard(questionText: widget.args.questionText),
-                    const SizedBox(height: 24),
-                    AnswerInput(
-                      controller: _text,
-                      enabled: !s.isSubmitting,
-                      serverErrorText: s.fieldErrorMessage,
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: FilledButton(
-                  onPressed: canSubmit ? _submit : null,
-                  child: s.isSubmitting
-                      ? const SizedBox.square(
-                          dimension: 28,
-                          child: CircularProgressIndicator(strokeWidth: 3),
-                        )
-                      : Text(isEditing ? '수정 완료' : '답변 보내기'),
-                ),
-              ),
-            ],
-          ),
+          child: s.isSubmitting
+              ? _sending(isEditing)
+              : isEditing
+              ? _editing(s, canSubmit)
+              : _writing(s, canSubmit),
         ),
       ),
+    );
+  }
+
+  /// Figma WF-017 새 답변 작성
+  Widget _writing(ChildAnswerSubmitState s, bool canSubmit) {
+    return StepLayout(
+      onBack: _onBack,
+      actions: [
+        FilledButton(
+          onPressed: canSubmit ? _submit : null,
+          child: const Text('보내기'),
+        ),
+      ],
+      children: [
+        QuestionCard(questionText: widget.args.questionText),
+        const SizedBox(height: 24),
+        AnswerInput(controller: _text, serverErrorText: s.fieldErrorMessage),
+      ],
+    );
+  }
+
+  /// Figma WF-019 제출 후 수정
+  Widget _editing(ChildAnswerSubmitState s, bool canSubmit) {
+    return StepLayout(
+      onBack: _onBack,
+      actions: [
+        FilledButton(
+          onPressed: canSubmit ? _submit : null,
+          child: const Text('저장하기'),
+        ),
+        OutlinedButton(onPressed: _onBack, child: const Text('취소')),
+      ],
+      children: [
+        Text(
+          '답변을 고치고 있어요',
+          style: AppText.headingL.copyWith(color: AppColors.textBrand),
+        ),
+        const SizedBox(height: 24),
+        AnswerInput(controller: _text, serverErrorText: s.fieldErrorMessage),
+        const SizedBox(height: 24),
+        const Text('고친 내용은 저장해야 반영돼요', style: AppText.bodyS),
+      ],
+    );
+  }
+
+  /// Figma WF-018 전송 중
+  Widget _sending(bool isEditing) {
+    return StepLayout(
+      actions: const [FilledButton(onPressed: null, child: Text('보내는 중이에요'))],
+      children: [
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            isEditing ? '고친 답변을 저장하고 있어요' : '답변을 보내고 있어요',
+            style: AppText.headingL.copyWith(color: AppColors.textBrand),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          '잠시만 기다려 주세요',
+          style: AppText.bodyL.copyWith(color: AppColors.textSub),
+        ),
+        const SizedBox(height: 24),
+        NotePaper(label: '내 답변', text: _text.text),
+      ],
     );
   }
 }

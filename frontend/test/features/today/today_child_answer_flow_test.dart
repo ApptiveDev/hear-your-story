@@ -46,10 +46,10 @@ void main() {
     await tester.pump();
     // 서버는 제출 응답을 줄 때 이미 저장을 마친 상태다
     today.json = todayFixture('waiting_for_parent');
-    await tester.tap(find.text('답변 보내기'));
+    await tester.tap(find.text('보내기'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('홈으로'));
+    await tester.tap(find.text('홈으로 가기'));
     await tester.pumpAndSettle();
 
     expect(find.text('글로 답하기'), findsNothing);
