@@ -118,7 +118,7 @@ void main() {
     }
 
     expect(dataSource.requests.single['role'], 'CHILD');
-    expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
+    expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
   });
 
   testWidgets('이미 연결된 사용자는 오늘 질문으로 이동한다', (tester) async {

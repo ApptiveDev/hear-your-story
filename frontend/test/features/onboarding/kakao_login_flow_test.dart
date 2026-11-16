@@ -97,7 +97,7 @@ void main() {
     await _pumpApp(tester, auth: auth);
     await _tapLogin(tester);
 
-    expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
+    expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
   });
 
   testWidgets('처음이면 역할·이름을 받아 가입을 마친다', (tester) async {
@@ -119,7 +119,7 @@ void main() {
 
     expect(auth.requests.single['role'], 'CHILD');
     expect(auth.requests.single['registrationToken'], 'registration-token');
-    expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
+    expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
     expect(await _storage.read(key: 'refresh_token'), 'refresh_for_김민지');
   });
 

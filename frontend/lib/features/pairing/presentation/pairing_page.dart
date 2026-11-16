@@ -5,9 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/app_header.dart';
+import '../../../core/widgets/code_cells.dart';
 import '../../../core/widgets/error_retry_view.dart';
+import '../../../core/widgets/error_text.dart';
+import '../../../core/widgets/page_title.dart';
+import '../../../core/widgets/step_layout.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
@@ -58,6 +62,7 @@ class PairingPage extends ConsumerWidget {
   }
 }
 
+/// Figma WF-003 초대 코드 생성·대기 / 코드 만료 (자녀)
 class _ChildInviteView extends ConsumerStatefulWidget {
   const _ChildInviteView();
 
@@ -71,14 +76,18 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
   Timer? _poll;
   bool _checking = false;
 
-  /// 만료돼서 새로 받은 숫자. 기기 시각이 틀려도 같은 숫자로 계속 다시 받지 않는다.
-  String? _expiredCode;
+  /// `새 코드 받기`로 다시 받는 중인지
+  bool _renewing = false;
+
+  /// 새로 받았는데도 기기 시각으로는 지나 보이는 코드. 기기 시각이 틀렸을 수 있어
+  /// 이 코드는 만료로 보지 않는다(계속 `새 코드 받기`만 보이지 않게).
+  String? _trustedCode;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _poll = Timer.periodic(pollInterval, (_) => _onTick());
+    _poll = Timer.periodic(pollInterval, (_) => _checkPaired());
   }
 
   @override
@@ -91,25 +100,7 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // 초대 화면을 켜 둔 채 다음 날 돌아와도 바로 확인한다
-    if (state == AppLifecycleState.resumed) _onTick();
-  }
-
-  void _onTick() {
-    _refreshIfExpired();
-    _checkPaired();
-  }
-
-  /// 유효 시간이 지난 숫자를 보여주고 있으면 새 숫자를 받는다.
-  /// 서버는 만료된 초대 대신 새 초대를 만들어 준다.
-  void _refreshIfExpired() {
-    final invitation = ref.read(invitationProvider).value;
-    if (invitation == null ||
-        invitation.inviteCode == _expiredCode ||
-        DateTime.now().isBefore(invitation.expiresAt)) {
-      return;
-    }
-    _expiredCode = invitation.inviteCode;
-    ref.invalidate(invitationProvider);
+    if (state == AppLifecycleState.resumed) _checkPaired();
   }
 
   Future<void> _checkPaired() async {
@@ -131,20 +122,25 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
     }
   }
 
+  /// 서버는 만료된 초대 대신 새 초대를 만들어 준다.
+  void _renew() {
+    setState(() => _renewing = true);
+    ref.invalidate(invitationProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(invitationProvider, (_, next) {
-      final code = next.value?.inviteCode;
-      if (_expiredCode != null && code != null && code != _expiredCode) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('시간이 지나 새 숫자로 바뀌었어요.\n부모님께 새 숫자를 알려 주세요.'),
-          ),
-        );
-        _expiredCode = null;
+      final invitation = next.value;
+      if (_renewing && invitation != null) {
+        _renewing = false;
+        if (!DateTime.now().isBefore(invitation.expiresAt)) {
+          _trustedCode = invitation.inviteCode;
+        }
       }
       final e = next.error;
       if (e == null) return;
+      _renewing = false;
       if (isAlreadyPaired(e)) {
         context.go('/today');
       } else {
@@ -156,123 +152,136 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
     return invitation.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => ErrorRetryView(
-        message: '초대 숫자를 만들지 못했어요.',
+        message: '초대 코드를 만들지 못했어요.',
         onRetry: () => ref.invalidate(invitationProvider),
       ),
-      data: (invitation) => _InviteContent(invitation: invitation),
+      data: (invitation) => _InviteContent(
+        invitation: invitation,
+        trusted: invitation.inviteCode == _trustedCode,
+        onRenew: _renew,
+      ),
     );
   }
 }
 
-class _InviteContent extends ConsumerWidget {
-  const _InviteContent({required this.invitation});
+class _InviteContent extends ConsumerStatefulWidget {
+  const _InviteContent({
+    required this.invitation,
+    required this.trusted,
+    required this.onRenew,
+  });
+
   final Invitation invitation;
 
-  Future<void> _share(BuildContext context, WidgetRef ref) async {
+  /// true면 기기 시각과 상관없이 쓸 수 있는 코드로 본다.
+  final bool trusted;
+  final VoidCallback onRenew;
+
+  @override
+  ConsumerState<_InviteContent> createState() => _InviteContentState();
+}
+
+class _InviteContentState extends ConsumerState<_InviteContent> {
+  /// 남은 시간을 1초마다 다시 그린다.
+  late final Timer _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    super.dispose();
+  }
+
+  Future<void> _share() async {
     try {
-      await ref.read(shareTextProvider)(inviteShareMessage(invitation));
+      await ref.read(shareTextProvider)(inviteShareMessage(widget.invitation));
     } catch (_) {
       // 공유 창을 못 열면 복사로 안내한다
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('보내기를 열지 못했어요. 숫자를 복사해서 보내 주세요.')),
+        const SnackBar(content: Text('공유 창을 열지 못했어요. 코드를 복사해서 보내 주세요.')),
       );
     }
   }
 
-  Future<void> _copy(BuildContext context) async {
-    await Clipboard.setData(ClipboardData(text: invitation.inviteCode));
-    if (!context.mounted) return;
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: widget.invitation.inviteCode));
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('숫자를 복사했어요.')));
+        .showSnackBar(const SnackBar(content: Text('코드를 복사했어요.')));
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context) {
+    final invitation = widget.invitation;
     final code = invitation.inviteCode;
-    final spaced = code.length == 6
-        ? '${code.substring(0, 3)} ${code.substring(3)}'
-        : code;
+    final remaining = invitation.expiresAt.difference(DateTime.now());
+    final expired = !widget.trusted && remaining <= Duration.zero;
 
-    return ListView(
-      padding: _sidePadding,
+    final cells = Semantics(
+      label: '초대 코드 ${code.split('').join(' ')}',
+      excludeSemantics: true,
+      child: CodeCells(code: code, length: code.length, dimmed: expired),
+    );
+
+    if (expired) {
+      return StepLayout(
+        actions: [
+          FilledButton(onPressed: widget.onRenew, child: const Text('새 코드 받기')),
+        ],
+        children: [
+          const PageTitle(title: '코드가 만료됐어요', subtitle: '새 코드를 만들어 다시 알려 주세요'),
+          const SizedBox(height: 16),
+          cells,
+          const SizedBox(height: 16),
+          const ErrorText('코드가 만료됐어요'),
+        ],
+      );
+    }
+
+    return StepLayout(
+      actions: [
+        FilledButton(onPressed: _copy, child: const Text('코드 복사하기')),
+        OutlinedButton(onPressed: _share, child: const Text('공유하기')),
+      ],
       children: [
-        const AppHeader(),
-        const SizedBox(height: 64),
-        Text(
-          '부모님을\n초대해 주세요',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '아래 숫자를\n부모님께 전달해 주세요',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 40),
-        Center(
-          child: Semantics(
-            label: '초대 숫자 ${code.split('').join(' ')}',
-            excludeSemantics: true,
-            child: Container(
-              width: 240,
-              height: 100,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(AppRadius.field),
-                boxShadow: AppShadows.card,
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(spaced, style: AppText.numberXL),
-              ),
-            ),
-          ),
-        ),
+        const PageTitle(title: '초대 코드가 만들어졌어요', subtitle: '부모님께 이 코드를 알려 주세요'),
+        const SizedBox(height: 16),
+        cells,
         const SizedBox(height: 16),
         Text(
-          '${formatExpiry(invitation.expiresAt)}까지 쓸 수 있어요.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 40),
-        FilledButton.icon(
-          onPressed: () => _share(context, ref),
-          icon: const Icon(Icons.send),
-          label: const Text('부모님께 보내기'),
+          widget.trusted
+              ? '${formatExpiry(invitation.expiresAt)}까지 쓸 수 있어요'
+              : remainingText(remaining, invitation.expiresAt),
+          style: AppText.bodyS,
         ),
         const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: () => _copy(context),
-          icon: const Icon(Icons.copy),
-          label: const Text('숫자 복사하기'),
-        ),
-        const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(strokeWidth: 2.5),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text('연결되면 자동으로 넘어가요.', style: theme.textTheme.bodyMedium),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
+        const Text('부모님이 코드를 입력하면 자동으로 연결돼요', style: AppText.bodyS),
       ],
     );
   }
 }
 
-/// 좌우 여백. 버튼(331)이 393 화면 가운데 오도록 한다.
-const _sidePadding = EdgeInsets.symmetric(horizontal: 31);
+/// 초대 코드가 만료되기까지 남은 시간 안내.
+///
+/// 1시간 안이면 분·초, 하루 안이면 시간·분, 그보다 길면 만료 시각을 보여준다.
+String remainingText(Duration remaining, DateTime expiresAt) {
+  if (remaining >= const Duration(days: 1)) {
+    return '${formatExpiry(expiresAt)}까지 쓸 수 있어요';
+  }
+  final hours = remaining.inHours;
+  final minutes = remaining.inMinutes % 60;
+  if (hours > 0) return '$hours시간 $minutes분 뒤에 코드가 만료돼요';
+  final seconds = remaining.inSeconds % 60;
+  return '$minutes분 $seconds초 뒤에 코드가 만료돼요';
+}
 
+/// Figma WF-004 초대 코드 입력 / 잘못된 코드 (부모)
 class _ParentJoinView extends ConsumerStatefulWidget {
   const _ParentJoinView();
 
@@ -283,24 +292,30 @@ class _ParentJoinView extends ConsumerStatefulWidget {
 class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
   static const codeLength = 6;
   final _code = TextEditingController();
+  final _focus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _code.addListener(_onChanged);
+    _focus.addListener(_onFocusChanged);
   }
 
   @override
   void dispose() {
     _code.removeListener(_onChanged);
+    _focus.removeListener(_onFocusChanged);
     _code.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
   void _onChanged() {
     ref.read(joinControllerProvider.notifier).clearError();
-    setState(() {}); // 버튼 활성 상태 갱신
+    setState(() {}); // 칸과 버튼 상태 갱신
   }
+
+  void _onFocusChanged() => setState(() {});
 
   void _submit() {
     if (_code.text.length != codeLength) return;
@@ -320,75 +335,12 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
     });
 
     final state = ref.watch(joinControllerProvider);
-    final theme = Theme.of(context);
-    final canSubmit = _code.text.length == codeLength && !state.isLoading;
+    final code = _code.text;
+    final canSubmit = code.length == codeLength && !state.isLoading;
+    final error = state.error;
 
-    return ListView(
-      padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
-      children: [
-        const AppHeader(),
-        const SizedBox(height: 64),
-        Text(
-          '자녀와 연결해요',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '자녀에게 받은\n숫자 6자리를 입력해 주세요',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 40),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.field),
-            boxShadow: AppShadows.card,
-          ),
-          child: TextField(
-            controller: _code,
-            enabled: !state.isLoading,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            maxLength: codeLength,
-            textAlign: TextAlign.center,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _submit(),
-            style: AppText.numberXL.copyWith(fontSize: 44, letterSpacing: 8),
-            decoration: InputDecoration(
-              hintText: '000000',
-              hintStyle: AppText.numberXL.copyWith(
-                fontSize: 44,
-                letterSpacing: 8,
-                color: AppColors.borderDisabled,
-              ),
-              counterText: '',
-            ),
-          ),
-        ),
-        if (state.hasError) ...[
-          const SizedBox(height: 16),
-          Semantics(
-            liveRegion: true,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.error_outline, color: theme.colorScheme.error),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    pairingErrorMessage(state.error!),
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 24),
+    return StepLayout(
+      actions: [
         FilledButton(
           onPressed: canSubmit ? _submit : null,
           child: state.isLoading
@@ -402,59 +354,104 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
               : const Text('연결하기'),
         ),
       ],
+      children: [
+        const PageTitle(title: '초대 코드를 입력해 주세요', subtitle: '자녀가 알려 준 6자리 숫자예요'),
+        const SizedBox(height: 16),
+        // 칸은 보여주기만 하고, 위에 겹친 투명한 입력칸이 숫자를 받는다.
+        Stack(
+          children: [
+            CodeCells(
+              code: code,
+              length: codeLength,
+              focusedIndex: _focus.hasFocus && code.length < codeLength
+                  ? code.length
+                  : null,
+              error: error != null,
+            ),
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0,
+                child: TextField(
+                  key: const Key('inviteCodeField'),
+                  controller: _code,
+                  focusNode: _focus,
+                  enabled: !state.isLoading,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: codeLength,
+                  showCursor: false,
+                  enableInteractiveSelection: false,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _submit(),
+                  style: AppText.caption,
+                  decoration: const InputDecoration(
+                    hintText: '초대 코드 6자리',
+                    counterText: '',
+                    isCollapsed: true,
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (error != null)
+          ErrorText(pairingErrorMessage(error))
+        else
+          const Text('숫자만 입력할 수 있어요', style: AppText.bodyS),
+      ],
     );
   }
 }
 
-/// Figma "페어링 완료": 연결을 축하하고 첫 질문으로 안내한다.
+/// Figma WF-005 연결 완료: 연결을 축하하고 홈으로 안내한다.
 class _PairedView extends StatelessWidget {
   const _PairedView({required this.role});
   final UserRole role;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final partner = role == UserRole.child ? '부모님과' : '자녀와';
-    return ListView(
-      padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
-      children: [
-        const SizedBox(height: 120),
-        Center(
-          child: Container(
-            width: 120,
-            height: 120,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.borderPrimary, width: 3),
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSizes.screenPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(
+              AppIcons.smileWink,
+              size: 72,
+              color: AppColors.textBrand,
             ),
-            child: const ExcludeSemantics(
-              child: Text('💞', style: TextStyle(fontSize: 56)),
+            const SizedBox(height: 16),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                '$partner 연결됐어요',
+                textAlign: TextAlign.center,
+                style: AppText.headingM,
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+            Text(
+              '이제 하루 한 질문으로\n이야기를 나눠요',
+              textAlign: TextAlign.center,
+              style: AppText.bodyM.copyWith(color: AppColors.textSub),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => context.go('/today'),
+              child: const Text('홈으로 가기'),
+            ),
+          ],
         ),
-        const SizedBox(height: 32),
-        Semantics(
-          liveRegion: true,
-          child: Text(
-            '연결 되었어요!',
-            textAlign: TextAlign.center,
-            style: textTheme.headlineMedium,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '이제 $partner\n매일 서로의 이야기를 들어보아요',
-          textAlign: TextAlign.center,
-          style: textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 48),
-        FilledButton(
-          onPressed: () => context.go('/today'),
-          child: const Text('시작하기'),
-        ),
-      ],
+      ),
     );
   }
 }

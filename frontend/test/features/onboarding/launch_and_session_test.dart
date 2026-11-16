@@ -75,7 +75,7 @@ void main() {
     testWidgets('연결 전 자녀는 페어링으로 간다', (tester) async {
       await _launch(tester, stored: _stored(pairingStatus: 'UNPAIRED'));
 
-      expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
     });
 
     testWidgets('토큰이 없으면 사용자 정보가 있어도 카카오 로그인부터 한다', (tester) async {
@@ -117,7 +117,7 @@ void main() {
       await _launch(tester, stored: _stored(), auth: auth);
 
       expect(auth.meCalls, 1);
-      expect(find.text('부모님을\n초대해 주세요'), findsOneWidget);
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
       final saved = await const FlutterSecureStorage().read(
         key: 'current_user',
       );
