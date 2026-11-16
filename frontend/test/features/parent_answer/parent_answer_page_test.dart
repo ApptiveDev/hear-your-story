@@ -20,7 +20,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('자녀의 답변'), findsOneWidget);
     expect(find.textContaining('글로 답변을 볼 수 있어요'), findsOneWidget);
-    expect(find.text('음성 상태 다시 확인'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -41,9 +41,37 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('자녀의 이야기가 도착하면'), findsOneWidget);
+    expect(find.textContaining('도착하면 여기에 나타나요'), findsOneWidget);
     expect(find.text('자녀의 답변 듣기'), findsNothing);
     expect(repository.audioCalls, 0);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('내 이야기와 자녀의 이야기를 한 장에 함께 보여준다', (tester) async {
+    final repository = FakeParentAnswerRepository()
+      ..today = const ParentAnswer(
+        questionText: '질문',
+        revealStatus: 'REVEALED',
+        canView: true,
+        answerId: 'ans_1',
+        text: '자녀의 답변',
+        myText: '부모의 이야기',
+      )
+      ..audio = const AnswerAudio(status: AnswerTtsStatus.failed);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: ParentAnswerPage(
+            controller: ParentAnswerController(repository),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('내 이야기'), findsOneWidget);
+    expect(find.text('부모의 이야기'), findsOneWidget);
+    expect(find.text('자녀의 이야기'), findsOneWidget);
+    expect(find.text('자녀의 답변'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

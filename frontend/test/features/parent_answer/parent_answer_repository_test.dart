@@ -31,6 +31,24 @@ void main() {
     expect(result.answerId, isNull);
   });
 
+  test('내 음성 답은 정리본을, 없으면 받아쓴 글을 쓴다', () async {
+    final source = _Source()
+      // null을 넣어 볼 수 있게 값 타입을 dynamic으로 둔다
+      ..json['myAnswer'] = <String, dynamic>{
+        'type': 'VOICE',
+        'sttText': '받아쓴 글',
+        'summaryText': '정리한 글',
+      };
+    final repository = ParentAnswerRepositoryImpl(source);
+    expect((await repository.getToday()).myText, '정리한 글');
+
+    (source.json['myAnswer'] as Map<String, dynamic>)['summaryText'] = null;
+    expect((await repository.getToday()).myText, '받아쓴 글');
+
+    source.json.remove('myAnswer');
+    expect((await repository.getToday()).myText, isNull);
+  });
+
   test('자녀 관점의 응답은 부모 화면에서 거절한다', () async {
     final source = _Source()..json['viewerRole'] = 'CHILD';
     await expectLater(
