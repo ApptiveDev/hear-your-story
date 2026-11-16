@@ -186,7 +186,10 @@ class _ButtonSpinner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const SizedBox.square(
     dimension: 28,
-    child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.bg),
+    child: CircularProgressIndicator(
+      strokeWidth: 3,
+      color: AppColors.textOnPrimary,
+    ),
   );
 }
 
@@ -318,12 +321,12 @@ class _RoleCard extends StatelessWidget {
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.button),
-          boxShadow: AppShadows.roleCard,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: AppShadows.card,
         ),
         child: Material(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(AppRadius.button),
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.card),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
@@ -384,26 +387,20 @@ class _NameStep extends ConsumerWidget {
         const SizedBox(height: 8),
         Text(
           isParent ? '자녀에게 보여질 이름이에요' : '부모님께 보여질 이름이에요',
-          style: AppText.label,
+          style: AppText.bodyL,
         ),
         const SizedBox(height: 48),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.button),
-            boxShadow: AppShadows.field,
-          ),
-          child: TextField(
-            controller: controller,
-            enabled: !state.isLoading,
-            autofocus: true,
-            maxLength: maxLength,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => onSubmit(),
-            style: AppText.subTitle,
-            decoration: InputDecoration(
-              hintText: isParent ? '예: 김영희' : '예: 김민지',
-              counterText: '',
-            ),
+        TextField(
+          controller: controller,
+          enabled: !state.isLoading,
+          autofocus: true,
+          maxLength: maxLength,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => onSubmit(),
+          style: AppText.bodyL,
+          decoration: InputDecoration(
+            hintText: isParent ? '예: 김영희' : '예: 김민지',
+            counterText: '',
           ),
         ),
         if (state.hasError) ...[
@@ -423,7 +420,7 @@ class _NameStep extends ConsumerWidget {
                       dimension: 28,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        color: AppColors.bg,
+                        color: AppColors.textOnPrimary,
                       ),
                     )
                   : const Text('시작하기'),

@@ -164,13 +164,13 @@ class _TodayContent extends ConsumerWidget {
         Text(
           formatAssignedDate(today.assignedDate),
           textAlign: TextAlign.center,
-          style: AppText.label,
+          style: AppText.labelL,
         ),
         if (name != null && name.isNotEmpty) ...[
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('안녕하세요 $name님', style: AppText.greeting),
+            child: Text('안녕하세요 $name님', style: AppText.headingXL),
           ),
         ],
         const SizedBox(height: 24),
@@ -223,16 +223,16 @@ class _TodayQuestionCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 40, 20, action == null ? 40 : 32),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.questionCard),
-        boxShadow: AppShadows.questionCard,
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('#오늘의 질문', style: AppText.label),
+          const Text('#오늘의 질문', style: AppText.labelL),
           const SizedBox(height: 8),
-          Text(question, style: AppText.question),
+          Text(question, style: AppText.headingL),
           if (action != null) ...[const SizedBox(height: 24), action!],
         ],
       ),
@@ -443,19 +443,22 @@ class _AnswerCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.button),
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: highlighted
-            ? Border.all(color: AppColors.base, width: 2)
+            ? Border.all(color: AppColors.borderPrimary, width: 2)
             : null,
-        boxShadow: AppShadows.answerCard,
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppText.label),
+          Text(label, style: AppText.labelL),
           const SizedBox(height: 8),
-          Text(text, style: AppText.extraInfo.copyWith(color: AppColors.font)),
+          Text(
+            text,
+            style: AppText.bodyL.copyWith(color: AppColors.textStrong),
+          ),
         ],
       ),
     );
