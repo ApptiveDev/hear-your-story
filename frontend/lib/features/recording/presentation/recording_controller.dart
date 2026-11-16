@@ -80,6 +80,9 @@ class RecordingController extends ChangeNotifier {
   bool get isCapturing =>
       phase == RecordingPhase.recording || phase == RecordingPhase.paused;
   bool get hasDraft => _clip != null;
+
+  /// 아직 보내지 않은 녹음 파일. 보내기 전에 들어볼 때 쓴다.
+  RecordedClip? get draft => _clip;
   bool get canStart => args.canRecord && !locked && !busy;
   bool get canRetryUpload =>
       hasDraft && !busy && !locked && errorStatus != 413 && errorStatus != 422;

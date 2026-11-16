@@ -30,11 +30,12 @@ void main() {
       ),
     );
     expect(find.text(args.questionText), findsOneWidget);
-    await tester.ensureVisible(find.text('말하기 시작'));
-    await tester.tap(find.text('말하기 시작'));
+    expect(find.text('눌러서 녹음을 시작해요'), findsOneWidget);
+    await tester.ensureVisible(find.byTooltip('녹음 시작'));
+    await tester.tap(find.byTooltip('녹음 시작'));
     await tester.pumpAndSettle();
     expect(find.textContaining('마이크 권한이 필요해요'), findsOneWidget);
-    expect(find.text('말하기 시작'), findsOneWidget);
+    expect(find.byTooltip('녹음 시작'), findsOneWidget); // 다시 누를 수 있다
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -53,8 +54,9 @@ void main() {
     );
     await controller.start();
     await tester.pump();
-    expect(find.textContaining('녹음 중'), findsOneWidget);
-    expect(find.text('그만 말하고 보내기'), findsOneWidget);
+    expect(find.text('녹음하고 있어요'), findsOneWidget);
+    expect(find.text('00:00'), findsOneWidget);
+    expect(find.byTooltip('녹음 끝내기'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
@@ -89,7 +91,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('이어서 말하기'));
     await tester.pump();
-    expect(find.textContaining('녹음 중'), findsOneWidget);
+    expect(find.text('녹음하고 있어요'), findsOneWidget);
     expect(recorder.resumes, 1);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -176,11 +178,18 @@ void main() {
     await tester.tap(find.text('다시 말하기'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.textContaining('녹음 중 · 0초'), findsOneWidget);
+    expect(find.text('녹음하고 있어요'), findsOneWidget);
+    expect(find.text('00:00'), findsOneWidget);
     expect(recorder.starts, 2);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+  });
+
+  test('녹음 시간을 분:초로 보여준다', () {
+    expect(formatClock(0), '00:00');
+    expect(formatClock(23), '00:23');
+    expect(formatClock(60), '01:00');
   });
 
   testWidgets('멈춘 상태에서 뒤로 가면 저장되지 않는다고 묻는다', (tester) async {
@@ -200,7 +209,7 @@ void main() {
     await controller.pause();
     await tester.pump();
 
-    await tester.tap(find.byTooltip('뒤로'));
+    await tester.tap(find.text('이전'));
     await tester.pumpAndSettle();
     expect(find.text('녹음을 그만둘까요?'), findsOneWidget);
 
