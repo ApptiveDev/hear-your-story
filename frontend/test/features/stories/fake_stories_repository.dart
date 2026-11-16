@@ -7,6 +7,7 @@ import 'package:life_record/features/stories/domain/story.dart';
 Story testStory(
   String id, {
   DateTime? assignedDate,
+  String? questionText,
   String? summaryText = '정리된 부모님 답',
   String processingStatus = 'READY',
   String? processingNotice,
@@ -19,7 +20,7 @@ Story testStory(
     storyId: 'story_$id',
     assignmentId: 'asg_$id',
     assignedDate: assignedDate ?? DateTime(2026, 9, 24),
-    questionText: '질문 $id',
+    questionText: questionText ?? '질문 $id',
     questionCategory: 'CHILDHOOD',
     parentAnswer: parentDeleted
         ? StoryParentAnswer(

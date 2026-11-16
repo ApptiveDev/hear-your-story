@@ -9,7 +9,9 @@ import 'package:life_record/features/onboarding/domain/app_user.dart';
 import 'package:life_record/features/parent_answer/data/parent_answer_providers.dart';
 import 'package:life_record/features/stories/data/stories_providers.dart';
 import 'package:life_record/features/stories/domain/story.dart';
+import 'package:go_router/go_router.dart';
 import 'package:life_record/features/stories/presentation/stories_page.dart';
+import 'package:life_record/features/stories/presentation/story_detail_page.dart';
 import 'package:life_record/features/stories/presentation/widgets/story_card_frame.dart';
 
 import '../parent_answer/fake_parent_answer_repository.dart';
@@ -22,7 +24,26 @@ void main() {
     FakeStoriesRepository repo, {
     UserRole? role,
     FakeParentAnswerRepository? audioRepo,
+    String? open,
   }) async {
+    final router = GoRouter(
+      initialLocation: '/stories',
+      routes: [
+        GoRoute(
+          path: '/stories',
+          builder: (_, _) => const StoriesPage(),
+          routes: [
+            GoRoute(
+              path: ':storyId',
+              builder: (_, state) =>
+                  StoryDetailPage(storyId: state.pathParameters['storyId']!),
+            ),
+          ],
+        ),
+        GoRoute(path: '/today', builder: (_, _) => const Text('오늘 화면')),
+      ],
+    );
+    addTearDown(router.dispose);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -39,10 +60,15 @@ void main() {
           if (audioRepo != null)
             parentAnswerRepositoryProvider.overrideWithValue(audioRepo),
         ],
-        child: const MaterialApp(home: StoriesPage()),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
+    // 목록 카드에는 질문만 있어서, 답·듣기·지우기는 이야기 상세에서 본다
+    if (open != null) {
+      await tester.tap(find.text(open));
+      await tester.pumpAndSettle();
+    }
   }
 
   /// 이야기 하나짜리 첫 페이지
@@ -64,7 +90,7 @@ void main() {
     await pumpPage(tester, repo);
 
     expect(find.text('질문 1'), findsOneWidget);
-    expect(find.text('자녀 답 1'), findsOneWidget);
+    expect(find.text('자녀 답 1'), findsNothing); // 답은 상세에서 본다
 
     await tester.tap(find.text('이전 이야기 더 보기'));
     await tester.pumpAndSettle();
@@ -79,7 +105,7 @@ void main() {
     });
     await pumpPage(tester, repo);
 
-    expect(find.text('아직 모인 이야기가 없어요.'), findsOneWidget);
+    expect(find.text('아직 공개된 이야기가 없어요'), findsOneWidget);
   });
 
   testWidgets('첫 로딩 실패 → 안내와 다시 시도 → 성공', (tester) async {
@@ -91,11 +117,16 @@ void main() {
       ),
     })..error = ApiException();
     await pumpPage(tester, repo);
+    // 연결 오류는 몇 번 다시 시도한다. 로딩 화면이 움직이지 않아 pumpAndSettle이
+    // 기다려 주지 않으므로 다시 시도가 끝날 만큼 시간을 넘긴다.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
 
-    expect(find.text('인터넷 연결을 확인해 주세요.'), findsOneWidget);
+    expect(find.text('이야기를 불러오지 못했어요'), findsOneWidget);
+    expect(find.textContaining('인터넷 연결을 확인해 주세요.'), findsOneWidget);
 
     repo.error = null; // 연결이 돌아왔다고 가정
-    await tester.tap(find.text('다시 시도'));
+    await tester.tap(find.text('다시 불러오기'));
     await tester.pumpAndSettle();
 
     expect(find.text('질문 1'), findsOneWidget);
@@ -117,7 +148,7 @@ void main() {
         hasNext: false,
       ),
     });
-    await pumpPage(tester, repo);
+    await pumpPage(tester, repo, open: '질문 1');
 
     expect(find.text(notice), findsOneWidget);
   });
@@ -135,6 +166,7 @@ void main() {
       oneStory(testStory('1', originalAudioUrl: 'https://example.test/p.m4a')),
       role: UserRole.parent,
       audioRepo: audioRepo,
+      open: '질문 1',
     );
 
     expect(find.text('자녀 답 들어보기'), findsOneWidget);
@@ -154,6 +186,7 @@ void main() {
       oneStory(testStory('1', originalAudioUrl: 'https://example.test/p.m4a')),
       role: UserRole.child,
       audioRepo: audioRepo,
+      open: '질문 1',
     );
 
     expect(find.text('부모님 목소리 듣기'), findsOneWidget);
@@ -179,6 +212,7 @@ void main() {
         ),
       ),
       role: UserRole.child,
+      open: '질문 1',
     );
 
     expect(find.text('부모님 목소리 듣기'), findsNothing);
@@ -192,6 +226,7 @@ void main() {
       tester,
       oneStory(testStory('1', parentDeleted: true)),
       role: UserRole.child,
+      open: '질문 1',
     );
 
     expect(find.text(deletedParentAnswerText), findsOneWidget);
@@ -204,6 +239,7 @@ void main() {
       oneStory(testStory('1', childDeleted: true)),
       role: UserRole.parent,
       audioRepo: audioRepo,
+      open: '질문 1',
     );
 
     expect(find.text('자녀 답 들어보기'), findsNothing);
@@ -221,6 +257,7 @@ void main() {
       repo,
       role: UserRole.parent,
       audioRepo: FakeParentAnswerRepository(),
+      open: '질문 1',
     );
 
     await tester.tap(find.text('녹음 지우기'));
@@ -246,6 +283,7 @@ void main() {
       repo,
       role: UserRole.parent,
       audioRepo: FakeParentAnswerRepository(),
+      open: '질문 1',
     );
 
     await tester.tap(find.text('녹음 지우기'));
@@ -260,7 +298,7 @@ void main() {
 
   testWidgets('자녀: 확인 후 내 답만 지우고 부모님 답은 남는다', (tester) async {
     final repo = oneStory(testStory('1'));
-    await pumpPage(tester, repo, role: UserRole.child);
+    await pumpPage(tester, repo, role: UserRole.child, open: '질문 1');
 
     expect(find.text('녹음 지우기'), findsNothing); // 부모 녹음은 지울 수 없음
     await tester.tap(find.text('내 답 지우기'));
@@ -282,6 +320,7 @@ void main() {
       tester,
       oneStory(testStory('1', childDeleted: true)),
       role: UserRole.child,
+      open: '질문 1',
     );
 
     expect(find.text('내 답 지우기'), findsNothing);
@@ -290,7 +329,7 @@ void main() {
   testWidgets('지우기에 실패하면 안내하고 답은 그대로 둔다', (tester) async {
     final repo = oneStory(testStory('1'))
       ..deleteError = ApiException(statusCode: 500);
-    await pumpPage(tester, repo, role: UserRole.child);
+    await pumpPage(tester, repo, role: UserRole.child, open: '질문 1');
 
     await tester.tap(find.text('내 답 지우기'));
     await tester.pumpAndSettle();
@@ -316,6 +355,8 @@ void main() {
     await tester.tap(find.text('이전 이야기 더 보기'));
     await tester.pump(); // 다음 페이지 응답 대기 중
     // 불러오는 표시가 계속 돌아 pumpAndSettle을 쓸 수 없다
+    await tester.tap(find.text('질문 1'));
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('내 답 지우기'));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('지우기'));
@@ -326,15 +367,19 @@ void main() {
     repo.cursorGates['c2']!.complete();
     await tester.pumpAndSettle();
 
-    expect(find.text('질문 2'), findsOneWidget);
+    // 상세에서 본 이야기는 지운 상태 그대로다
     expect(find.text('자녀 답 1'), findsNothing);
     expect(find.text('삭제된 답이에요.'), findsOneWidget);
+
+    await tester.tap(find.text('이전'));
+    await tester.pumpAndSettle();
+    expect(find.text('질문 2'), findsOneWidget);
   });
 
   testWidgets('이미 지워진 기록이면(404) 안내하고 목록을 다시 불러온다', (tester) async {
     final repo = oneStory(testStory('1'))
       ..deleteError = ApiException(statusCode: 404);
-    await pumpPage(tester, repo, role: UserRole.child);
+    await pumpPage(tester, repo, role: UserRole.child, open: '질문 1');
 
     await tester.tap(find.text('내 답 지우기'));
     await tester.pumpAndSettle();
@@ -352,6 +397,7 @@ void main() {
       oneStory(testStory('1', ttsStatus: 'PROCESSING')),
       role: UserRole.parent,
       audioRepo: audioRepo,
+      open: '질문 1',
     );
 
     expect(find.text('자녀의 답을 목소리로 바꾸고 있어요.'), findsOneWidget);
@@ -367,6 +413,7 @@ void main() {
       oneStory(testStory('1')),
       role: UserRole.parent,
       audioRepo: audioRepo,
+      open: '질문 1',
     );
 
     expect(find.text('자녀 답 들어보기'), findsNothing);

@@ -12,7 +12,9 @@ import 'package:life_record/features/onboarding/domain/app_user.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/pairing/presentation/pairing_page.dart';
 import 'package:life_record/features/stories/data/stories_providers.dart';
+import 'package:life_record/features/stories/domain/story.dart';
 import 'package:life_record/features/stories/presentation/stories_calendar_page.dart';
+import 'package:life_record/features/stories/presentation/stories_page.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
 import 'package:life_record/features/today/presentation/today_page.dart';
 
@@ -170,6 +172,42 @@ void main() {
         expect(find.text('2026년 11월'), findsOneWidget);
         await tester.scrollUntilVisible(find.text('질문 1'), 200);
         expect(find.text('질문 1'), findsOneWidget);
+      });
+
+      testWidgets('질문 책장: 겹친 카드가 질문을 가리지 않는다', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        const first = '어릴 때 가장 좋아했던 놀이는 무엇이었고 누구와 함께 했나요?';
+        const second = '처음 일을 시작했던 날은 어땠나요?';
+        final repo = FakeStoriesRepository({
+          null: StoryPage(
+            items: [
+              testStory(
+                '1',
+                assignedDate: DateTime(2026, 11, 28),
+                questionText: first,
+              ),
+              testStory(
+                '2',
+                assignedDate: DateTime(2026, 11, 27),
+                questionText: second,
+              ),
+            ],
+            nextCursor: null,
+            hasNext: false,
+          ),
+        });
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
+            child: const MaterialApp(home: StoriesPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 다음 카드 위쪽 여백(16)까지 포함해 질문 아래 끝이 덮이지 않아야 한다
+        final firstBottom = tester.getRect(find.text(first)).bottom;
+        final nextCardTop = tester.getRect(find.text(second)).top - 16;
+        expect(firstBottom, lessThanOrEqualTo(nextCardTop));
       });
 
       testWidgets('마이페이지', (tester) async {

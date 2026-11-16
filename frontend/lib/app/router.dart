@@ -14,6 +14,7 @@ import '../features/child_answer/presentation/child_answer_args.dart';
 import '../features/child_answer/presentation/child_answer_page.dart';
 import '../features/stories/presentation/stories_calendar_page.dart';
 import '../features/stories/presentation/stories_page.dart';
+import '../features/stories/presentation/story_detail_page.dart';
 import '../features/account/presentation/account_deleted_page.dart';
 import '../features/account/presentation/my_page.dart';
 import '../core/widgets/app_tab_shell.dart';
@@ -83,6 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 redirect: (context, state) =>
                     AppConfig.storiesMonthApi ? null : '/stories',
                 builder: (context, state) => const StoriesCalendarPage(),
+              ),
+              // calendar보다 뒤에 둬야 /stories/calendar가 이야기 id로 읽히지 않는다
+              GoRoute(
+                path: ':storyId',
+                builder: (context, state) =>
+                    StoryDetailPage(storyId: state.pathParameters['storyId']!),
               ),
             ],
           ), // C
