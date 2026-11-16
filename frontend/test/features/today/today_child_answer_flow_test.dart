@@ -40,7 +40,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('답하기'));
+    await tester.tap(find.text('글로 답하기'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '저는 놀이터에서 숨바꼭질하던 시간이 기억나요.');
     await tester.pump();
@@ -52,7 +52,7 @@ void main() {
     await tester.tap(find.text('홈으로'));
     await tester.pumpAndSettle();
 
-    expect(find.text('답하기'), findsNothing);
+    expect(find.text('글로 답하기'), findsNothing);
     expect(find.text('답 고치기'), findsOneWidget);
   });
 }

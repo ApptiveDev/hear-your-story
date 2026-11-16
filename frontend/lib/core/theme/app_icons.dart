@@ -12,6 +12,24 @@ abstract final class AppIcons {
   /// icon/arrow-left (fi-rr-arrow-left): 헤더 `이전`
   static const arrowLeft = IconData(0xf197, fontFamily: _regular);
 
+  /// icon/home (fi-rr-home): 탭 홈
+  static const home = IconData(0xf7b8, fontFamily: _regular);
+
+  /// icon/books (fi-rr-books): 탭 책장
+  static const books = IconData(0xf28d, fontFamily: _regular);
+
+  /// icon/calendar (fi-rr-calendar): 탭 달력
+  static const calendar = IconData(0xf339, fontFamily: _regular);
+
+  /// icon/person (fi-rr-user): 탭 마이
+  static const user = IconData(0xfea0, fontFamily: _regular);
+
+  /// icon/mic (fi-sr-microphone): 목소리로 답하기
+  static const microphone = IconData(0xf934, fontFamily: _solid);
+
+  /// fi-sr-pencil: 글로 답하기
+  static const pencil = IconData(0xfa17, fontFamily: _solid);
+
   /// fi-sr-heart: 부모
   static const heart = IconData(0xf794, fontFamily: _solid);
 

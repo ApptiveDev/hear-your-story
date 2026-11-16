@@ -183,6 +183,9 @@ void main() {
     );
     expect(find.text(_question), findsOneWidget);
 
+    // 로그아웃은 마이 탭에 있다
+    await tester.tap(find.text('마이'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
     expect(find.text('로그아웃할까요?'), findsOneWidget);

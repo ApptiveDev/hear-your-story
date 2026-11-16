@@ -43,13 +43,13 @@ void main() {
         json: todayFixture('waiting_for_parent'),
       );
       await _pump(tester, source);
-      expect(find.textContaining('부모님이 답하시면'), findsOneWidget);
+      expect(find.text(waitingNote), findsOneWidget);
 
       source.json = todayFixture('revealed');
       await tester.pump(_interval);
       await tester.pumpAndSettle();
 
-      expect(find.text('부모님의 답'), findsOneWidget);
+      expect(find.text('부모님의 답변'), findsOneWidget);
     });
 
     testWidgets('바뀐 게 없으면 화면을 다시 불러오지 않는다', (tester) async {
@@ -75,7 +75,7 @@ void main() {
       await tester.pump(_interval);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('부모님이 답하시면'), findsOneWidget);
+      expect(find.text(waitingNote), findsOneWidget);
       expect(find.text('다시 시도'), findsNothing);
     });
 
@@ -164,7 +164,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
 
-    expect(find.text('답하기'), findsOneWidget);
+    expect(find.text('글로 답하기'), findsOneWidget);
   });
 
   group('부모 녹음 처리 안내', () {

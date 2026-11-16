@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
+import 'package:life_record/core/widgets/app_tab_shell.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
@@ -69,7 +70,14 @@ Future<void> _pumpPairing(
 Future<void> _pumpToday(WidgetTester tester, Map<String, dynamic> json) async {
   final router = GoRouter(
     initialLocation: '/today',
-    routes: [GoRoute(path: '/today', builder: (_, _) => const TodayPage())],
+    routes: [
+      // 아래 탭 막대까지 함께 그려서 글씨가 커도 넘치지 않는지 본다
+      ShellRoute(
+        builder: (context, state, child) =>
+            AppTabShell(location: state.uri.path, child: child),
+        routes: [GoRoute(path: '/today', builder: (_, _) => const TodayPage())],
+      ),
+    ],
   );
   await tester.pumpWidget(
     ProviderScope(
@@ -195,9 +203,11 @@ void main() {
         testWidgets('오늘 홈: $name', (tester) async {
           _phoneWithTextScale(tester, scale);
           await _pumpToday(tester, json());
-          // 글씨가 크면 화면 아래로 밀리지만 스크롤로 닿아야 한다
-          await tester.scrollUntilVisible(find.text('지난 이야기 보기'), 200);
-          expect(find.text('지난 이야기 보기'), findsOneWidget);
+          // 글씨가 크면 화면 아래로 밀리지만 끝까지 스크롤할 수 있어야 한다
+          await tester.drag(find.byType(ListView), const Offset(0, -3000));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.byType(AppTabBar), findsOneWidget);
         });
       }
     });
