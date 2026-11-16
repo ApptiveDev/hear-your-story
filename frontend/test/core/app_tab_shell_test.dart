@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/core/widgets/app_tab_shell.dart';
@@ -45,6 +46,34 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(screen), findsOneWidget);
       expect(find.byType(AppTabBar), findsOneWidget);
+    }
+  });
+
+  testWidgets('홈이 아닌 탭에서 뒤로가기를 누르면 앱을 닫지 않고 홈으로 간다', (tester) async {
+    final calls = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        calls.add(call.method);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await _pump(tester, calendar: true);
+
+    for (final tab in ['책장', '마이']) {
+      await tester.tap(find.text(tab));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('홈 화면'), findsOneWidget);
+      expect(calls, isNot(contains('SystemNavigator.pop')));
     }
   });
 

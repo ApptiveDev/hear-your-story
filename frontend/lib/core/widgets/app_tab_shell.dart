@@ -55,14 +55,22 @@ class AppTabShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = this.tabs ?? appTabs();
     final current = tabIndexFor(location, tabs);
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: AppTabBar(
-        tabs: tabs,
-        currentIndex: current,
-        onTap: (i) {
-          if (i != current) context.go(tabs[i].location);
-        },
+    // 탭은 go로 바꾸므로 되돌아갈 화면이 없다. 홈이 아닌 탭에서 뒤로가기는
+    // 앱을 닫지 않고 홈으로 보낸다.
+    return PopScope(
+      canPop: current == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(tabs.first.location);
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: AppTabBar(
+          tabs: tabs,
+          currentIndex: current,
+          onTap: (i) {
+            if (i != current) context.go(tabs[i].location);
+          },
+        ),
       ),
     );
   }
