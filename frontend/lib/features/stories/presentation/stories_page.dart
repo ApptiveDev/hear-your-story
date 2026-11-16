@@ -165,9 +165,11 @@ class _CardStack extends StatelessWidget {
   const _CardStack({required this.stories});
   final List<Story> stories;
 
-  /// 다음 카드에 덮이지 않고 보이는 높이 (150 - 52)
+  /// 글씨 크기 1배에서 다음 카드에 덮이지 않고 보이는 높이 (150 - 52)
   static const visible = 98.0;
-  static const height = 150.0;
+
+  /// 다음 카드가 덮는 높이. 글씨를 키워도 겹친 모양은 같게 둔다.
+  static const overlap = 52.0;
   static const colors = [
     AppColors.surfaceCard,
     AppColors.cardStack,
@@ -176,13 +178,18 @@ class _CardStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 글씨를 키우면 질문 두 줄과 날짜 상자도 커지므로 보이는 부분을 같이 늘린다.
+    // 그렇지 않으면 다음 카드가 질문 아래쪽을 덮는다.
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 4.0);
+    final shown = visible * scale;
+    final height = shown + overlap;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final (i, story) in stories.indexed)
           if (i < stories.length - 1)
             SizedBox(
-              height: visible,
+              height: shown,
               child: OverflowBox(
                 alignment: Alignment.topCenter,
                 minHeight: height,
