@@ -29,9 +29,9 @@ class StepHeader extends StatelessWidget {
                 alignment: Alignment.topLeft,
                 child: BackButton(
                   onPressed: onBack,
-                  color: AppColors.dark,
+                  color: AppColors.textBrand,
                   style: IconButton.styleFrom(
-                    iconSize: AppSizes.iconButton,
+                    iconSize: AppSizes.iconL,
                     minimumSize: const Size.square(48),
                   ),
                 ),
@@ -49,9 +49,9 @@ class StepHeader extends StatelessWidget {
                         height: AppSizes.stepBarHeight,
                         decoration: BoxDecoration(
                           color: i <= step
-                              ? AppColors.dark
-                              : AppColors.disabled,
-                          borderRadius: BorderRadius.circular(AppRadius.bar),
+                              ? AppColors.actionPrimaryDark
+                              : AppColors.borderDisabled,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                       ),
                     ],

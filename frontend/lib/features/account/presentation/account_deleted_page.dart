@@ -21,13 +21,13 @@ class AccountDeletedPage extends StatelessWidget {
                 const Icon(
                   Icons.check_circle_outline,
                   size: 72,
-                  color: AppColors.base,
+                  color: AppColors.actionPrimary,
                 ),
                 const SizedBox(height: 24),
                 Text(
                   '탈퇴를 시작했어요',
                   textAlign: TextAlign.center,
-                  style: AppText.subTitle,
+                  style: AppText.headingL,
                 ),
                 const SizedBox(height: 16),
                 Text(

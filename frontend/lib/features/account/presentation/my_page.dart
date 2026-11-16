@@ -214,18 +214,22 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.button),
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_circle, size: 48, color: AppColors.dark),
+          const Icon(
+            Icons.account_circle,
+            size: 48,
+            color: AppColors.textBrand,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user.name, style: AppText.greeting),
+                Text(user.name, style: AppText.headingXL),
                 const SizedBox(height: 4),
                 Text(role, style: Theme.of(context).textTheme.bodyLarge),
               ],

@@ -221,13 +221,13 @@ class _InviteContent extends ConsumerWidget {
               height: 100,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(AppRadius.button),
-                boxShadow: AppShadows.numberBox,
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.field),
+                boxShadow: AppShadows.card,
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(spaced, style: AppText.number),
+                child: Text(spaced, style: AppText.numberXL),
               ),
             ),
           ),
@@ -342,8 +342,8 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
         const SizedBox(height: 40),
         DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.button),
-            boxShadow: AppShadows.numberBox,
+            borderRadius: BorderRadius.circular(AppRadius.field),
+            boxShadow: AppShadows.card,
           ),
           child: TextField(
             controller: _code,
@@ -355,13 +355,13 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
             textAlign: TextAlign.center,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submit(),
-            style: AppText.number.copyWith(fontSize: 44, letterSpacing: 8),
+            style: AppText.numberXL.copyWith(fontSize: 44, letterSpacing: 8),
             decoration: InputDecoration(
               hintText: '000000',
-              hintStyle: AppText.number.copyWith(
+              hintStyle: AppText.numberXL.copyWith(
                 fontSize: 44,
                 letterSpacing: 8,
-                color: AppColors.disabled,
+                color: AppColors.borderDisabled,
               ),
               counterText: '',
             ),
@@ -396,7 +396,7 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
                   dimension: 28,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    color: AppColors.bg,
+                    color: AppColors.textOnPrimary,
                   ),
                 )
               : const Text('연결하기'),
@@ -425,9 +425,9 @@ class _PairedView extends StatelessWidget {
             height: 120,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: AppColors.surfaceCard,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.base, width: 3),
+              border: Border.all(color: AppColors.borderPrimary, width: 3),
             ),
             child: const ExcludeSemantics(
               child: Text('💞', style: TextStyle(fontSize: 56)),

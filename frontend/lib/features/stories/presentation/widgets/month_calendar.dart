@@ -85,7 +85,7 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.bg : AppColors.font;
+    final color = selected ? AppColors.textOnPrimary : AppColors.textStrong;
     return Semantics(
       button: hasStory,
       selected: selected,
@@ -96,9 +96,9 @@ class _DayCell extends StatelessWidget {
         padding: const EdgeInsets.all(2),
         child: Material(
           color: selected
-              ? AppColors.font
+              ? AppColors.textStrong
               : hasStory
-              ? AppColors.card
+              ? AppColors.surfaceCard
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
@@ -114,7 +114,7 @@ class _DayCell extends StatelessWidget {
                     child: Text(
                       '$day',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: hasStory ? color : AppColors.dark,
+                        color: hasStory ? color : AppColors.textSub,
                         fontWeight: hasStory ? FontWeight.w700 : null,
                       ),
                     ),
