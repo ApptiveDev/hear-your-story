@@ -15,6 +15,7 @@ const deleteConfirmMessage =
     '내가 남긴 목소리·글·사진을 모두 지우고 연결도 끊어요.\n'
     '상대방이 남긴 답은 그대로 남아요.\n'
     '탈퇴는 되돌릴 수 없어요.';
+const uiconsAttribution = 'Uicons by Flaticon';
 
 /// 내 정보와 로그아웃·탈퇴·안내 항목을 모아 둔 화면
 class MyPage extends ConsumerStatefulWidget {
@@ -180,6 +181,12 @@ class _MyPageState extends ConsumerState<MyPage> {
                   leading: Icon(Icons.info_outline),
                   title: Text('앱 버전'),
                   trailing: Text(AppConfig.appVersion),
+                ),
+                // Flaticon 무료 라이선스 조건: 앱 안에 출처 표기 (assets/fonts/README.md)
+                const ListTile(
+                  leading: Icon(Icons.palette_outlined),
+                  title: Text('아이콘 출처'),
+                  subtitle: Text(uiconsAttribution),
                 ),
                 if (AppConfig.accountDeletionApi) ...[
                   const Divider(height: 32),

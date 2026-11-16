@@ -178,10 +178,6 @@ abstract final class AppSizes {
   static const iconL = 30.0; // 큰 버튼 아이콘, 마이크
   static const iconM = 24.0; // 작은 버튼 아이콘
   static const screenPadding = 24.0; // 393 프레임에서 좌우 여백
-
-  // v2에 아직 대응하는 부품이 없어 1차 와이어프레임 값을 유지한다.
-  static const stepBarWidth = 43.0;
-  static const stepBarHeight = 6.0;
 }
 
 /// Figma 효과(Effect) 중 바깥 그림자.
