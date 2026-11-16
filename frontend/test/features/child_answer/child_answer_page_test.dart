@@ -5,6 +5,7 @@ import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/child_answer/data/child_answer_providers.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_args.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_page.dart';
+import 'package:life_record/features/child_answer/presentation/widgets/answer_submitted_view.dart';
 
 import 'fake_child_answer_repository.dart';
 
@@ -46,6 +47,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('답변을 보냈어요'), findsOneWidget);
+    // 제출 응답만으로는 공개 여부를 모르므로 공개 전이라고 단정하지 않는다
+    expect(find.text(submittedNote), findsOneWidget);
+    expect(find.textContaining('함께 열려요'), findsNothing);
     expect(find.text('숨바꼭질이요'), findsOneWidget);
   });
 

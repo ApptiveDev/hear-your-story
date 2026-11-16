@@ -5,6 +5,9 @@ import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/widgets/note_paper.dart';
 import '../../../../core/widgets/step_layout.dart';
 
+/// 전송 완료 안내. 공개됐든 아니든 맞는 말이어야 한다.
+const submittedNote = '홈에서 오늘의 이야기를 확인할 수 있어요';
+
 /// Figma WF-018 전송 완료. 공개 여부는 여기서 판단하지 않고 홈(GET /today)에 맡긴다.
 /// 상대를 재촉하는 문구는 쓰지 않는다.
 class AnswerSubmittedView extends StatelessWidget {
@@ -56,8 +59,10 @@ class AnswerSubmittedView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        // 제출 응답에는 공개 여부(revealStatus)가 없다. 부모님이 먼저 답했으면 이미
+        // 공개됐을 수 있으므로 공개 상태를 단정하지 않는 문구만 쓴다.
         Text(
-          '부모님이 답변하면 함께 열려요',
+          submittedNote,
           textAlign: TextAlign.center,
           style: AppText.bodyL.copyWith(color: AppColors.textSub),
         ),
