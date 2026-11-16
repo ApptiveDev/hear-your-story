@@ -95,8 +95,14 @@ class _ParentAnswerPageState extends ConsumerState<ParentAnswerPage>
     return StepLayout(
       // 홈에서 push로 들어왔으면 pop해서 홈이 새로고침되게 한다
       onBack: _back,
+      // 자녀 답이 아직 없으면 이 화면은 스스로 다시 불러오지 않으므로 직접 확인하게 한다
       actions: childText == null || answer.answerId == null
-          ? const []
+          ? [
+              OutlinedButton(
+                onPressed: c.loading ? null : c.load,
+                child: const Text('다시 확인'),
+              ),
+            ]
           : _audioActions(c),
       children: [
         Text(
@@ -129,7 +135,9 @@ class _ParentAnswerPageState extends ConsumerState<ParentAnswerPage>
         ),
       ];
     }
-    if (c.audioLoading || audio?.status == AnswerTtsStatus.processing) {
+    // 자동 확인 중일 때만 기다리게 한다. 60초가 지나 확인을 멈추면 상태는 아직
+    // processing이라도 아래로 내려가 `다시 시도`를 보여준다.
+    if (c.audioLoading || c.audioPolling) {
       return [
         if (c.audioMessage != null)
           Text(
