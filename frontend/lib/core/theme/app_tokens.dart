@@ -31,6 +31,9 @@ abstract final class AppColors {
 
   /// 오류 테두리·안내 (`Field/Text` State=Error). Figma 변수로는 아직 없다.
   static const error = Color(0xFFB83A26);
+
+  /// 질문 책장 `Card/Stack` 가운데 카드. Figma 변수로는 아직 없다.
+  static const cardStack = Color(0xFFF7DDB0);
 }
 
 abstract final class AppFonts {
@@ -203,6 +206,11 @@ abstract final class AppShadows {
   /// Button/Pressed: 눌렀을 때 바깥 그림자
   static const buttonPressed = [
     BoxShadow(offset: Offset(0, 1), color: Color(0x80B05F20)),
+  ];
+
+  /// Card/Stack: 겹친 카드가 아래 카드 위로 드리우는 그림자
+  static const stack = [
+    BoxShadow(offset: Offset(0, -4), blurRadius: 6, color: Color(0x2E593814)),
   ];
 
   /// Tab/Bar: 아래 탭 막대

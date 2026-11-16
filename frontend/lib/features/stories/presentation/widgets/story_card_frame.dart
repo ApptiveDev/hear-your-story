@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_tokens.dart';
+
 import '../../domain/story.dart';
 
 /// 부모·자녀 카드가 같이 쓰는 틀: 날짜 + 질문 + 역할별 내용
@@ -20,30 +22,22 @@ class StoryCardFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+    // Figma `Note/Page`: 날짜·질문 아래 두 사람의 이야기를 적은 공책 한 장
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.note),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              formatDate(story.assignedDate),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(story.questionText, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 20),
-            ...children,
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(formatDate(story.assignedDate), style: AppText.labelL),
+          const SizedBox(height: 8),
+          Text(story.questionText, style: AppText.headingM),
+          const SizedBox(height: 20),
+          ...children,
+        ],
       ),
     );
   }
@@ -56,19 +50,12 @@ class AnswerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.primary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(text, style: theme.textTheme.bodyLarge),
+        Text(label, style: AppText.labelM.copyWith(color: AppColors.textBrand)),
+        const SizedBox(height: 8),
+        Text(text, style: AppText.bodyL.copyWith(color: AppColors.textStrong)),
       ],
     );
   }

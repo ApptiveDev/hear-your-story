@@ -10,9 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/onboarding/presentation/onboarding_page.dart';
 import 'package:life_record/features/stories/data/stories_providers.dart';
-import 'package:life_record/features/stories/domain/story.dart';
 import 'package:life_record/features/stories/presentation/stories_calendar_page.dart';
-import 'package:life_record/features/stories/presentation/stories_page.dart';
 
 import '../../helpers/phone_size.dart';
 import 'fake_stories_repository.dart';
@@ -210,43 +208,5 @@ void main() {
 
     expect(find.text('카카오로 시작하기'), findsOneWidget);
   });
-
-  testWidgets('지난 이야기 화면의 달력 버튼으로 들어가고 뒤로 돌아온다', (tester) async {
-    usePhoneSize(tester);
-    final repo = FakeStoriesRepository({
-      null: const StoryPage(items: [], nextCursor: null, hasNext: false),
-    });
-    final router = GoRouter(
-      initialLocation: '/stories',
-      routes: [
-        GoRoute(
-          path: '/stories',
-          builder: (_, _) => const StoriesPage(),
-          routes: [
-            GoRoute(
-              path: 'calendar',
-              builder: (_, _) => const StoriesCalendarPage(),
-            ),
-          ],
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
-        child: MaterialApp.router(routerConfig: router),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('달력'));
-    await tester.pumpAndSettle();
-    expect(find.text('달력으로 보기'), findsOneWidget);
-    expect(repo.requestedMonths, hasLength(1));
-
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
-    expect(find.text('지난 이야기'), findsOneWidget);
-  });
+  // 질문 책장 → 달력 이동은 아래 탭 막대가 맡는다 (test/core/app_tab_shell_test.dart)
 }
