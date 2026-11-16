@@ -53,6 +53,10 @@ class RecordingController extends ChangeNotifier {
   int elapsedSeconds = 0;
   double uploadProgress = 0;
   bool locked = false;
+
+  /// 지금 오류가 보낸 녹음의 처리 상태를 확인하다 난 것인지.
+  /// 다시 녹음하다 난 오류(권한·너무 짧은 녹음)와 구분한다.
+  bool statusCheckFailed = false;
   bool _disposed = false;
   bool _foreground = true;
   RecordedClip? _clip;
@@ -107,6 +111,7 @@ class RecordingController extends ChangeNotifier {
   Future<void> _start() async {
     _captureGeneration++;
     _stopPolling();
+    statusCheckFailed = false;
     phase = RecordingPhase.requestingPermission;
     message = null;
     errorStatus = null;
@@ -337,6 +342,7 @@ class RecordingController extends ChangeNotifier {
     } catch (error) {
       if (_disposed || generation != _pollGeneration) return;
       _stopPolling();
+      statusCheckFailed = true;
       _fail(error, fallback: '녹음은 저장됐지만 처리 상태를 확인하지 못했어요. 다시 확인해 주세요.');
     }
   }

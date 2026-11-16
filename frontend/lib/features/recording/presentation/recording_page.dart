@@ -201,7 +201,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         return _waiting(
           title: '이야기를 정리하고 있어요',
           body: '녹음은 안전하게 저장했어요.\n정리가 끝나면 알려드릴게요.',
-          actions: [_homeButton()],
+          actions: [..._rerecord(c), _homeButton()],
         );
       case RecordingPhase.ready:
         return _ready(c);
@@ -221,8 +221,9 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         return _draft(c);
       case RecordingPhase.error:
         if (c.hasDraft) return _draft(c);
-        // 보낸 뒤 처리 상태를 확인하지 못했으면 다시 확인하게 한다
-        if (c.recordingId != null && !c.locked) {
+        // 보낸 뒤 처리 상태를 확인하지 못했으면 다시 확인하게 한다.
+        // 다시 녹음하다 난 오류(권한·짧은 녹음)는 녹음 시작 화면에서 알린다.
+        if (c.statusCheckFailed && c.recordingId != null && !c.locked) {
           return _notice(
             title: '정리 상태를 확인하지 못했어요',
             body: c.message ?? '녹음은 저장됐어요. 다시 확인해 주세요.',
@@ -235,6 +236,17 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         return _startView(c);
     }
   }
+
+  /// 보낸 뒤 화면(정리 중·완료·지연·실패)에서도 답을 다시 녹음할 수 있게 한다.
+  /// 홈의 `다시 녹음하기`는 보낸 녹음의 상태부터 보여주므로 이 버튼이 없으면 막힌다.
+  List<Widget> _rerecord(RecordingController c) => [
+    if (c.canStart)
+      OutlinedButton.icon(
+        onPressed: _start,
+        icon: const Icon(AppIcons.microphone),
+        label: const Text('다시 녹음하기'),
+      ),
+  ];
 
   /// 보낸 뒤 화면에서 오늘 화면으로 돌아간다.
   Widget _homeButton({bool primary = false}) {
@@ -356,7 +368,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         ),
         const SizedBox(height: 12),
         Text(
-          paused ? '이어서 말하거나 지금까지 말한 것을 보내요' : '다 말씀하셨다면 눌러서 끝내요',
+          paused ? '이어서 말하거나 지금까지 말한 것을 보내요' : '다 말씀하셨다면 눌러서 보내요',
           textAlign: TextAlign.center,
           style: AppText.bodyS,
         ),
@@ -466,7 +478,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     final story = c.result?.summaryText ?? c.result?.sttText;
     return StepLayout(
       onBack: _leave,
-      actions: [_homeButton(primary: true)],
+      actions: [_homeButton(primary: true), ..._rerecord(c)],
       children: [
         const SizedBox(height: 72),
         const _Badge(
@@ -512,6 +524,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
             child: const Text('다시 시도'),
           ),
         _homeButton(primary: !retry),
+        ..._rerecord(c),
       ],
       children: [
         const SizedBox(height: 72),
@@ -581,7 +594,8 @@ class _RecordButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
-    final label = recording ? '녹음 끝내기' : '녹음 시작';
+    // 끝내면 바로 보내므로(RecordingController.stop) 이름에 보낸다는 걸 드러낸다
+    final label = recording ? '녹음 끝내고 보내기' : '녹음 시작';
     final Widget face = recording
         ? Container(
             width: size,

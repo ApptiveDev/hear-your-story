@@ -56,7 +56,7 @@ void main() {
     await tester.pump();
     expect(find.text('녹음하고 있어요'), findsOneWidget);
     expect(find.text('00:00'), findsOneWidget);
-    expect(find.byTooltip('녹음 끝내기'), findsOneWidget);
+    expect(find.byTooltip('녹음 끝내고 보내기'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
@@ -215,5 +215,76 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
+  });
+
+  group('보낸 녹음이 있을 때(홈의 다시 녹음하기)', () {
+    const sentArgs = RecordingArgs(
+      assignmentId: 'asg_1',
+      questionText: '좋아했던 놀이는 무엇인가요?',
+      recordingId: 'rec_1',
+    );
+
+    Future<RecordingController> pumpSent(
+      WidgetTester tester, {
+      FakeRecorder? recorder,
+      FakeRecordingRepository? repository,
+    }) async {
+      final controller = RecordingController(
+        args: sentArgs,
+        repository: repository ?? FakeRecordingRepository(),
+        recorder: recorder ?? FakeRecorder(),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: RecordingPage(args: sentArgs, controller: controller),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      return controller;
+    }
+
+    testWidgets('정리가 끝난 화면에서 다시 녹음할 수 있다', (tester) async {
+      await pumpSent(tester);
+      expect(find.text('이야기가 저장됐어요'), findsOneWidget);
+
+      await tester.tap(find.text('다시 녹음하기'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('녹음하고 있어요'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('다시 녹음하다 마이크 권한이 없으면 권한 안내를 녹음 화면에서 보여준다', (tester) async {
+      await pumpSent(tester, recorder: FakeRecorder()..permission = false);
+
+      await tester.tap(find.text('다시 녹음하기'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('마이크 권한이 필요해요'), findsOneWidget);
+      expect(find.text('정리 상태를 확인하지 못했어요'), findsNothing);
+      expect(find.byTooltip('녹음 시작'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('처리 상태를 확인하지 못하면 다시 확인하게 한다', (tester) async {
+      await pumpSent(
+        tester,
+        repository: FakeRecordingRepository()..pollError = Exception('offline'),
+      );
+
+      expect(find.text('정리 상태를 확인하지 못했어요'), findsOneWidget);
+      expect(find.text('다시 시도'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
   });
 }
