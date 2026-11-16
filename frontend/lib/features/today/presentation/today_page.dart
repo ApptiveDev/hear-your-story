@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/audio_playback_card.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../child_answer/presentation/child_answer_args.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/presentation/session.dart';
-import '../../onboarding/presentation/widgets/logout_button.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../recording/presentation/recording_args.dart';
 import '../data/today_providers.dart';
@@ -100,7 +100,6 @@ class _TodayPageState extends ConsumerState<TodayPage>
 
     final today = ref.watch(todayProvider);
     return Scaffold(
-      persistentFooterButtons: logoutFooter(ref),
       body: SafeArea(
         child: today.when(
           skipLoadingOnRefresh: true,
@@ -150,27 +149,22 @@ class _TodayContent extends ConsumerWidget {
     final isChild = today.viewerRole == UserRole.child;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(), // 당겨서 새로고침
-      // Figma 홈: 내용 너비 361 (393 화면 좌우 16)
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.screenPadding,
+        16,
+        AppSizes.screenPadding,
+        AppSizes.screenPadding,
+      ),
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            onPressed: () => context.push('/my'),
-            icon: const Icon(Icons.account_circle_outlined),
-            tooltip: '마이페이지',
-          ),
-        ),
-        Text(
-          formatAssignedDate(today.assignedDate),
-          textAlign: TextAlign.center,
-          style: AppText.labelL,
-        ),
+        Text(formatAssignedDate(today.assignedDate), style: AppText.labelL),
         if (name != null && name.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('안녕하세요 $name님', style: AppText.headingXL),
+          const SizedBox(height: 6),
+          Semantics(
+            header: true,
+            child: Text(
+              '안녕하세요 $name님',
+              style: AppText.headingXL.copyWith(color: AppColors.textBrand),
+            ),
           ),
         ],
         const SizedBox(height: 24),
@@ -182,34 +176,30 @@ class _TodayContent extends ConsumerWidget {
               : isChild
               ? FilledButton.icon(
                   onPressed: () => _openChildAnswer(context, ref, today, null),
-                  icon: const Icon(Icons.edit),
-                  label: const Text('답하기'),
+                  icon: const Icon(AppIcons.pencil),
+                  iconAlignment: IconAlignment.end,
+                  label: const Text('글로 답하기'),
                 )
               : FilledButton.icon(
                   onPressed: () => _openParentRecording(context, ref, today),
-                  icon: const Icon(Icons.mic),
-                  label: const Text('목소리로 답하기'),
+                  icon: const Icon(AppIcons.microphone),
+                  iconAlignment: IconAlignment.end,
+                  label: const Text('답변하기'),
                 ),
         ),
-        const SizedBox(height: 32),
-        if (isChild)
-          _ChildSection(today: today)
-        else
-          _ParentSection(today: today),
-        const SizedBox(height: 32),
-        Center(
-          child: TextButton.icon(
-            onPressed: () => context.push('/stories'),
-            icon: const Icon(Icons.menu_book),
-            label: const Text('지난 이야기 보기'),
-          ),
-        ),
+        if (today.iAnswered) ...[
+          const SizedBox(height: 32),
+          if (isChild)
+            _ChildSection(today: today)
+          else
+            _ParentSection(today: today),
+        ],
       ],
     );
   }
 }
 
-/// Figma 오늘의 질문 카드(바깥 창): 모서리 20, 위아래 여백 50, 내용 너비 320.
+/// Figma `Card/Question`: 오늘의 질문과 답하기 버튼.
 class _TodayQuestionCard extends StatelessWidget {
   const _TodayQuestionCard({required this.question, this.action});
 
@@ -220,8 +210,9 @@ class _TodayQuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final action = this.action;
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 40, 20, action == null ? 40 : 32),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -231,9 +222,9 @@ class _TodayQuestionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text('#오늘의 질문', style: AppText.labelL),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Text(question, style: AppText.headingL),
-          if (action != null) ...[const SizedBox(height: 24), action!],
+          if (action != null) ...[const SizedBox(height: 14), action],
         ],
       ),
     );
@@ -285,6 +276,9 @@ void _openParentRecording(BuildContext context, WidgetRef ref, Today today) {
   );
 }
 
+/// 상대가 답하기 전 안내 (Figma WF-008)
+const waitingNote = '상대방이 답변하면 함께 열려요';
+
 class _ChildSection extends ConsumerWidget {
   const _ChildSection({required this.today});
   final Today today;
@@ -296,17 +290,11 @@ class _ChildSection extends ConsumerWidget {
       _ => null,
     };
 
-    if (!today.iAnswered) {
-      return const _Message('부모님과 같은 질문에 답해요.\n둘 다 답하면\n서로의 답을 볼 수 있어요.');
-    }
-
     if (!today.isRevealed) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (myText != null) _AnswerCard(label: '내 답', text: myText),
-          const SizedBox(height: 16),
-          const _Message('부모님이 답하시면\n여기에서 들을 수 있어요.'),
+          _StatusCard(body: myText),
           const SizedBox(height: 20),
           OutlinedButton(
             onPressed: () => _openChildAnswer(context, ref, today, myText),
@@ -320,17 +308,20 @@ class _ChildSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AnswerCard(
-          label: '부모님의 답',
+        if (myText != null) ...[
+          _AnswerCard(label: '내 답변', text: myText),
+          const SizedBox(height: 16),
+        ],
+        _PartnerNote(
+          label: '부모님의 답변',
           text: parent is VoiceAnswer
               ? parent.displayText ??
                     parent.processingNotice ??
                     '부모님이 목소리로 답하셨어요.'
               : '부모님이 목소리로 답하셨어요.',
-          highlighted: true,
         ),
         if (parent is VoiceAnswer && parent.originalAudioUrl != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           AudioPlaybackCard(
             source: PlaybackSource(
               parent.originalAudioUrl!,
@@ -350,10 +341,6 @@ class _ChildSection extends ConsumerWidget {
             },
           ),
         ],
-        if (myText != null) ...[
-          const SizedBox(height: 16),
-          _AnswerCard(label: '내 답', text: myText),
-        ],
       ],
     );
   }
@@ -365,28 +352,24 @@ class _ParentSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!today.iAnswered) {
-      return const _Message('목소리로 편하게 답해 주세요.\n30초면 충분해요.');
-    }
+    final my = today.myAnswer;
+    final myVoice = my is VoiceAnswer ? my : null;
 
     if (!today.isRevealed) {
-      final my = today.myAnswer;
-      final status = my is VoiceAnswer ? my.processingStatus : null;
       // 글 정리에 실패해도 원본 목소리는 저장되어 자녀에게 전달된다
-      final notice = switch (status) {
-        null || 'READY' => null,
+      final body = switch (myVoice?.processingStatus) {
+        null || 'READY' => myVoice?.displayText ?? '목소리로 답했어요.',
         'FAILED' => '글로 정리하지는 못했지만\n목소리는 그대로 전해져요.',
         _ => '말씀하신 내용을\n글로 정리하고 있어요.',
       };
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Message('목소리를 보냈어요.\n자녀가 답하면\n여기에서 볼 수 있어요.'),
-          if (notice != null) ...[const SizedBox(height: 8), _Message(notice)],
+          _StatusCard(body: body),
           const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: () => _openParentRecording(context, ref, today),
-            icon: const Icon(Icons.mic),
+            icon: const Icon(AppIcons.microphone),
             label: const Text('다시 녹음하기'),
           ),
         ],
@@ -397,10 +380,11 @@ class _ParentSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AnswerCard(
-          label: '자녀의 답',
+        _AnswerCard(label: '내 답변', text: myVoice?.displayText ?? '목소리로 답했어요.'),
+        const SizedBox(height: 16),
+        _PartnerNote(
+          label: '자녀의 답변',
           text: child is TextAnswer ? child.text : '자녀가 답했어요.',
-          highlighted: true,
         ),
         if (child is TextAnswer) ...[
           const SizedBox(height: 20),
@@ -416,51 +400,132 @@ class _ParentSection extends ConsumerWidget {
   }
 }
 
-class _Message extends StatelessWidget {
-  const _Message(this.text);
-  final String text;
+/// Figma WF-008 `Status`: 내 답을 남겼고 상대를 기다린다는 카드.
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({this.body});
+
+  /// 내가 남긴 답(또는 정리 상태)
+  final String? body;
 
   @override
-  Widget build(BuildContext context) =>
-      Text(text, style: Theme.of(context).textTheme.bodyLarge);
+  Widget build(BuildContext context) {
+    final body = this.body;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '내 답변을 남겼어요',
+            style: AppText.headingM.copyWith(color: AppColors.textBrand),
+          ),
+          if (body != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              body,
+              style: AppText.bodyL.copyWith(color: AppColors.textStrong),
+            ),
+          ],
+          const SizedBox(height: 10),
+          const Text(waitingNote, style: AppText.bodyS),
+        ],
+      ),
+    );
+  }
 }
 
-/// Figma 답 카드: 모서리 15, 카드색, 그림자 (1, 2) 흐림 7.
-/// 상대의 답(highlighted)은 주색 테두리로 구분한다.
+/// Figma WF-009 `Answer 내 답변`: 흰 카드에 이름표와 답.
 class _AnswerCard extends StatelessWidget {
-  const _AnswerCard({
-    required this.label,
-    required this.text,
-    this.highlighted = false,
-  });
+  const _AnswerCard({required this.label, required this.text});
 
   final String label;
   final String text;
-  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: highlighted
-            ? Border.all(color: AppColors.borderPrimary, width: 2)
-            : null,
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
         boxShadow: AppShadows.card,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(label, style: AppText.labelL),
-          const SizedBox(height: 8),
+          Text(
+            label,
+            style: AppText.labelM.copyWith(color: AppColors.textBrand),
+          ),
+          const SizedBox(height: 10),
           Text(
             text,
             style: AppText.bodyL.copyWith(color: AppColors.textStrong),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Figma `Overlapped Note Card`: 비스듬히 놓인 종이 위에 상대의 답을 적은 쪽지.
+///
+/// 디자인의 종이 구멍·줄 장식은 빼고, 뒤 종이의 기울기와 겹친 모양만 옮겼다.
+class _PartnerNote extends StatelessWidget {
+  const _PartnerNote({required this.label, required this.text});
+
+  final String label;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: Transform.rotate(
+            angle: -0.07, // 약 -4도
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.note),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 12, top: 16),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 111),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            decoration: BoxDecoration(
+              color: AppColors.bgUnder,
+              borderRadius: BorderRadius.circular(AppRadius.note),
+              boxShadow: AppShadows.card,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  text,
+                  style: AppText.bodyL.copyWith(color: AppColors.textStrong),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  textAlign: TextAlign.right,
+                  style: AppText.labelM.copyWith(color: AppColors.textBrand),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -494,8 +559,5 @@ bool shouldWatchToday(Today today) {
 String? _processing(TodayAnswer? a) =>
     a is VoiceAnswer ? a.processingStatus : null;
 
-/// 예: 9월 24일 수요일
-String formatAssignedDate(DateTime date) {
-  const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-  return '${date.month}월 ${date.day}일 ${weekdays[date.weekday - 1]}요일';
-}
+/// 예: 9월 24일
+String formatAssignedDate(DateTime date) => '${date.month}월 ${date.day}일';

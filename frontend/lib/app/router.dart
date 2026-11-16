@@ -16,6 +16,7 @@ import '../features/stories/presentation/stories_calendar_page.dart';
 import '../features/stories/presentation/stories_page.dart';
 import '../features/account/presentation/account_deleted_page.dart';
 import '../features/account/presentation/my_page.dart';
+import '../core/widgets/app_tab_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   const demo = String.fromEnvironment('PART_B_DEMO');
@@ -34,10 +35,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pairing',
         builder: (context, state) => const PairingPage(),
-      ), // A
-      GoRoute(
-        path: '/today',
-        builder: (context, state) => const TodayPage(),
       ), // A
       GoRoute(
         path: '/recording',
@@ -67,20 +64,31 @@ final routerProvider = Provider<GoRouter>((ref) {
           args: state.extra as ChildAnswerArgs? ?? ChildAnswerArgs.demo,
         ),
       ), // C
-      GoRoute(
-        path: '/stories',
-        builder: (context, state) => const StoriesPage(),
+      // 아래 탭 막대가 붙는 화면들 (Figma Tab/Bar: 홈·책장·달력·마이)
+      ShellRoute(
+        builder: (context, state, child) =>
+            AppTabShell(location: state.uri.path, child: child),
         routes: [
           GoRoute(
-            path: 'calendar',
-            // 월별 조회가 확정되기 전 실제 서버에서는 열지 않는다.
-            redirect: (context, state) =>
-                AppConfig.storiesMonthApi ? null : '/stories',
-            builder: (context, state) => const StoriesCalendarPage(),
-          ),
+            path: '/today',
+            builder: (context, state) => const TodayPage(),
+          ), // A
+          GoRoute(
+            path: '/stories',
+            builder: (context, state) => const StoriesPage(),
+            routes: [
+              GoRoute(
+                path: 'calendar',
+                // 월별 조회가 확정되기 전 실제 서버에서는 열지 않는다.
+                redirect: (context, state) =>
+                    AppConfig.storiesMonthApi ? null : '/stories',
+                builder: (context, state) => const StoriesCalendarPage(),
+              ),
+            ],
+          ), // C
+          GoRoute(path: '/my', builder: (context, state) => const MyPage()),
         ],
-      ), // C
-      GoRoute(path: '/my', builder: (context, state) => const MyPage()),
+      ),
       GoRoute(
         path: '/account-deleted',
         builder: (context, state) => const AccountDeletedPage(),

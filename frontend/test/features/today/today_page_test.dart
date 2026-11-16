@@ -67,14 +67,14 @@ void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
   group('자녀', () {
-    testWidgets('아직 답하지 않았으면 답하기로 자녀 답변 화면을 연다', (tester) async {
+    testWidgets('아직 답하지 않았으면 글로 답하기로 자녀 답변 화면을 연다', (tester) async {
       final harness = await _pump(
         tester,
         FakeTodayDataSource(json: todayFixture('waiting_for_both')),
       );
 
       expect(find.text('어릴 때 가장 좋아했던 놀이는 무엇이었나요?'), findsOneWidget);
-      await tester.tap(find.text('답하기'));
+      await tester.tap(find.text('글로 답하기'));
       await tester.pumpAndSettle();
 
       expect(find.text('자녀 답변 화면'), findsOneWidget);
@@ -109,9 +109,9 @@ void main() {
     testWidgets('공개되면 부모님의 정리된 답과 내 답을 보여준다', (tester) async {
       await _pump(tester, FakeTodayDataSource(json: todayFixture('revealed')));
 
-      expect(find.text('부모님의 답'), findsOneWidget);
+      expect(find.text('부모님의 답변'), findsOneWidget);
       expect(find.text('어린 시절 동네 친구들과 고무줄 놀이를 즐겼어요.'), findsOneWidget);
-      expect(find.text('내 답'), findsOneWidget);
+      expect(find.text('내 답변'), findsOneWidget);
       expect(find.text('답 고치기'), findsNothing); // 공개 후에는 수정 불가
     });
   });
@@ -127,18 +127,18 @@ void main() {
     (json['partnerAnswer'] as Map<String, dynamic>)['originalAudioUrl'] = null;
     await _pump(tester, FakeTodayDataSource(json: json));
 
-    expect(find.text('부모님의 답'), findsOneWidget); // 답 카드는 그대로 보이고
+    expect(find.text('부모님의 답변'), findsOneWidget); // 답 카드는 그대로 보이고
     expect(find.text('부모님 목소리 듣기'), findsNothing);
   });
 
   group('부모님', () {
-    testWidgets('아직 답하지 않았으면 목소리로 답하기로 녹음 화면을 연다', (tester) async {
+    testWidgets('아직 답하지 않았으면 답변하기로 녹음 화면을 연다', (tester) async {
       final json = todayFixture('waiting_for_both')..['viewerRole'] = 'PARENT';
       await _pump(tester, FakeTodayDataSource(json: json));
 
       final harness = await _pump(tester, FakeTodayDataSource(json: json));
 
-      await tester.tap(find.text('목소리로 답하기'));
+      await tester.tap(find.text('답변하기'));
       await tester.pumpAndSettle();
 
       expect(find.text('녹음 화면'), findsOneWidget);
@@ -156,7 +156,8 @@ void main() {
         FakeTodayDataSource(json: todayFixture('waiting_for_child')),
       );
 
-      expect(find.textContaining('목소리를 보냈어요.'), findsOneWidget);
+      expect(find.text('내 답변을 남겼어요'), findsOneWidget);
+      expect(find.text(waitingNote), findsOneWidget);
       expect(find.text('말씀하신 내용을\n글로 정리하고 있어요.'), findsOneWidget);
 
       await tester.ensureVisible(find.text('다시 녹음하기'));
@@ -175,7 +176,7 @@ void main() {
     testWidgets('공개되면 자녀의 답을 보여주고 목소리로 들으러 갈 수 있다', (tester) async {
       await _pump(tester, FakeTodayDataSource(json: parentRevealedFixture()));
 
-      expect(find.text('자녀의 답'), findsOneWidget);
+      expect(find.text('자녀의 답변'), findsOneWidget);
       expect(find.text('저는 놀이터에서 숨바꼭질하던 시간이 기억나요.'), findsOneWidget);
 
       await tester.tap(find.text('목소리로 듣기'));
@@ -230,33 +231,6 @@ void main() {
     );
 
     expect(find.textContaining('안녕하세요'), findsNothing);
-    expect(find.text('답하기'), findsOneWidget);
-  });
-
-  testWidgets('지난 이야기로 갈 수 있다', (tester) async {
-    await _pump(
-      tester,
-      FakeTodayDataSource(json: todayFixture('waiting_for_both')),
-    );
-
-    await tester.ensureVisible(find.text('지난 이야기 보기'));
-    await tester.drag(find.byType(ListView), const Offset(0, -100));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('지난 이야기 보기'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('지난 이야기 화면'), findsOneWidget);
-  });
-
-  testWidgets('마이페이지로 갈 수 있다', (tester) async {
-    await _pump(
-      tester,
-      FakeTodayDataSource(json: todayFixture('waiting_for_both')),
-    );
-
-    await tester.tap(find.byTooltip('마이페이지'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('마이페이지 화면'), findsOneWidget);
+    expect(find.text('글로 답하기'), findsOneWidget);
   });
 }

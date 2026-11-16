@@ -52,8 +52,8 @@ void main() {
     );
   });
 
-  test('날짜를 요일과 함께 보여준다', () {
-    expect(formatAssignedDate(DateTime(2026, 9, 24)), '9월 24일 목요일');
-    expect(formatAssignedDate(DateTime(2026, 9, 27)), '9월 27일 일요일');
+  test('날짜를 월·일로 보여준다', () {
+    expect(formatAssignedDate(DateTime(2026, 9, 24)), '9월 24일');
+    expect(formatAssignedDate(DateTime(2026, 10, 10)), '10월 10일');
   });
 }

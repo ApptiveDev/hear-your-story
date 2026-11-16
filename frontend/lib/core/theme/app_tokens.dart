@@ -167,6 +167,7 @@ abstract final class AppRadius {
   static const card = 32.0; // Card/Question 등 카드
   static const cardSmall = 24.0; // Card/Role, Chip/Role 같은 작은 카드
   static const codeCell = 16.0; // Input/Code 숫자 칸
+  static const note = 12.0; // Note/Paper 쪽지
   static const field = 24.0; // Field/Text 입력칸, 초대 숫자 칸
   static const pill = 999.0; // 진행 막대처럼 양끝이 둥근 모양
 }
