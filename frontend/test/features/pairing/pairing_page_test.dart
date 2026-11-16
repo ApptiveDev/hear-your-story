@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsFlag;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -167,6 +169,25 @@ void main() {
       expect(find.text('새 코드 받기'), findsNothing);
     });
 
+    testWidgets('새로 받은 다른 코드도 지나 보이면 한 번에 코드를 보여준다', (tester) async {
+      final dataSource = FakePairingDataSource(
+        inviteCode: '111111',
+        expiresAt: '2020-01-01T00:00:00+09:00',
+        nextInvitations: [('222222', '2020-01-01T00:00:00+09:00')],
+        pairedAfterChecks: 99,
+      );
+      await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
+
+      await tester.tap(find.text('새 코드 받기'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(dataSource.invitationCalls, 2);
+      expect(find.text('초대 코드가 만들어졌어요'), findsOneWidget);
+      expect(find.text('2'), findsNWidgets(6));
+      expect(find.text('새 코드 받기'), findsNothing);
+    });
+
     testWidgets('앱으로 돌아오면 바로 연결됐는지 확인한다', (tester) async {
       final dataSource = FakePairingDataSource(pairedAfterChecks: 1);
       await _pump(tester, user: _user(UserRole.child), dataSource: dataSource);
@@ -212,6 +233,29 @@ void main() {
       await tester.enterText(find.byType(TextField), '482913');
       await tester.pump();
       expect(_button(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('화면 읽기 프로그램이 코드 입력칸을 찾을 수 있다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pump(
+        tester,
+        user: _user(UserRole.parent),
+        dataSource: FakePairingDataSource(),
+      );
+
+      expect(find.semantics.byFlag(SemanticsFlag.isTextField), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('공유받은 코드를 길게 눌러 붙여넣을 수 있다', (tester) async {
+      await _pump(
+        tester,
+        user: _user(UserRole.parent),
+        dataSource: FakePairingDataSource(),
+      );
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.enableInteractiveSelection, isTrue);
     });
 
     testWidgets('연결에 성공하면 연결 완료 화면을 거쳐 오늘 화면으로 넘어간다', (tester) async {

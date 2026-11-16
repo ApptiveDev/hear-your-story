@@ -132,7 +132,8 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
   Widget build(BuildContext context) {
     ref.listen(invitationProvider, (_, next) {
       final invitation = next.value;
-      if (_renewing && invitation != null) {
+      // 다시 받는 동안(로딩)에도 value에는 옛 코드가 남아 있어 새 코드가 올 때까지 기다린다
+      if (_renewing && !next.isLoading && invitation != null) {
         _renewing = false;
         if (!DateTime.now().isBefore(invitation.expiresAt)) {
           _trustedCode = invitation.inviteCode;
@@ -371,6 +372,8 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
             Positioned.fill(
               child: Opacity(
                 opacity: 0,
+                // 투명해도 화면 읽기 프로그램은 입력칸을 찾을 수 있어야 한다
+                alwaysIncludeSemantics: true,
                 child: TextField(
                   key: const Key('inviteCodeField'),
                   controller: _code,
@@ -380,8 +383,7 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   maxLength: codeLength,
-                  showCursor: false,
-                  enableInteractiveSelection: false,
+                  showCursor: false, // 길게 눌러 붙여넣기는 그대로 둔다(공유받은 코드)
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
                   style: AppText.caption,
