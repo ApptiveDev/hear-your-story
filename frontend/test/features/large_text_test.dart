@@ -109,11 +109,14 @@ void main() {
         expect(find.text('누구로 시작할까요?'), findsOneWidget);
 
         // 글씨가 크면 카드가 화면 아래로 밀리지만 스크롤로 닿아야 한다
-        await tester.ensureVisible(find.text('부모님이에요'));
+        await tester.ensureVisible(find.text('부모'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('부모님이에요'));
+        await tester.tap(find.text('부모'));
+        await tester.pump();
+        // `다음`은 화면 아래에 고정되어 스크롤 없이 보인다
+        await tester.tap(find.text('다음'));
         await tester.pumpAndSettle();
-        expect(find.text('성함을 알려주세요'), findsOneWidget);
+        expect(find.text('이름을 알려 주세요'), findsOneWidget);
       });
 
       testWidgets('자녀 초대 숫자', (tester) async {

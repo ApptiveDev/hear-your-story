@@ -108,7 +108,9 @@ void main() {
     await _tapLogin(tester);
     expect(find.text('누구로 시작할까요?'), findsOneWidget);
 
-    await tester.tap(find.text('자녀예요'));
+    await tester.tap(find.text('자녀'));
+    await tester.pump();
+    await tester.tap(find.text('다음'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '김민지');
     await tester.pump(); // 이름이 들어가야 시작하기가 켜진다
