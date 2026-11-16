@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../theme/app_tokens.dart';
+import 'error_text.dart';
+
 class PlaybackSource {
   const PlaybackSource(this.url, {this.expiresAt});
   final String url;
@@ -176,42 +179,62 @@ class AudioPlaybackCardState extends State<AudioPlaybackCard>
   Widget build(BuildContext context) {
     final playing =
         _player.playing && _player.processingState != ProcessingState.completed;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(widget.label, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
-              onPressed: widget.enabled && !_loading ? _toggle : null,
-              icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-              label: Text(
-                _loading
-                    ? '소리 불러오는 중'
-                    : playing
-                    ? '잠시 멈추기'
-                    : _error != null
-                    ? '다시 듣기'
-                    : '듣기',
-              ),
-            ),
-            StreamBuilder<Duration>(
-              stream: _player.positionStream,
-              builder: (context, snapshot) => Text(
-                '${_time(snapshot.data ?? Duration.zero)} / ${_time(_player.duration ?? Duration.zero)}',
-                textAlign: TextAlign.center,
-              ),
-            ),
-            if (_error != null)
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-          ],
+    final error = _error;
+    // Figma WF-022: 진행 막대와 시간, 아래 큰 재생 버튼
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.label.isNotEmpty) ...[
+          Text(
+            widget.label,
+            style: AppText.labelM.copyWith(color: AppColors.textBrand),
+          ),
+          const SizedBox(height: 12),
+        ],
+        StreamBuilder<Duration>(
+          stream: _player.positionStream,
+          builder: (context, snapshot) {
+            final position = snapshot.data ?? Duration.zero;
+            final duration = _player.duration ?? Duration.zero;
+            final value = duration.inMilliseconds > 0
+                ? position.inMilliseconds / duration.inMilliseconds
+                : 0.0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                LinearProgressIndicator(
+                  value: value.clamp(0.0, 1.0),
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(_time(position), style: AppText.bodyS),
+                    Text(_time(duration), style: AppText.bodyS),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
-      ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: widget.enabled && !_loading ? _toggle : null,
+          icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+          label: Text(
+            _loading
+                ? '소리 불러오는 중'
+                : playing
+                ? '멈추기'
+                : error != null
+                ? '다시 듣기'
+                : '듣기',
+          ),
+        ),
+        if (error != null) ...[const SizedBox(height: 12), ErrorText(error)],
+      ],
     );
   }
 }

@@ -20,6 +20,7 @@ class ParentAnswerRepositoryImpl implements ParentAnswerRepository {
     final partner = canView
         ? json['partnerAnswer'] as Map<String, dynamic>?
         : null;
+    final my = json['myAnswer'] as Map<String, dynamic>?;
     return ParentAnswer(
       questionText: question['text'] as String,
       revealStatus: json['revealStatus'] as String,
@@ -28,6 +29,9 @@ class ParentAnswerRepositoryImpl implements ParentAnswerRepository {
           ? partner!['answerId'] as String
           : null,
       text: partner?['type'] == 'TEXT' ? partner!['text'] as String : null,
+      myText: my != null && my['type'] == 'VOICE'
+          ? (my['summaryText'] ?? my['sttText']) as String?
+          : null,
     );
   }
 

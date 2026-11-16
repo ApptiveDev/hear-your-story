@@ -172,6 +172,9 @@ class ParentAnswerController extends ChangeNotifier {
     }
   }
 
+  /// 음성이 준비 중이라 다음 확인을 기다리는 중인지. 60초가 지나 확인을 멈추면 false.
+  bool get audioPolling => _timer?.isActive ?? false;
+
   void _cancel() {
     _generation++;
     _timer?.cancel();

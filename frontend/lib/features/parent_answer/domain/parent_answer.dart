@@ -19,12 +19,16 @@ class ParentAnswer {
     required this.canView,
     this.answerId,
     this.text,
+    this.myText,
   });
   final String questionText;
   final String revealStatus;
   final bool canView;
   final String? answerId;
   final String? text;
+
+  /// 부모 자신의 답(음성을 글로 정리한 것). 정리 전이면 null.
+  final String? myText;
 }
 
 class AnswerAudio {
