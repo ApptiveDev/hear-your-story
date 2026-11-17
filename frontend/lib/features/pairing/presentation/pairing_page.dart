@@ -232,6 +232,7 @@ class _InviteContentState extends ConsumerState<_InviteContent> {
 
     if (expired) {
       return StepLayout(
+        showTextScale: false,
         actions: [
           FilledButton(onPressed: widget.onRenew, child: const Text('새 코드 받기')),
         ],
@@ -246,6 +247,7 @@ class _InviteContentState extends ConsumerState<_InviteContent> {
     }
 
     return StepLayout(
+      showTextScale: false,
       actions: [
         FilledButton(onPressed: _copy, child: const Text('코드 복사하기')),
         OutlinedButton(onPressed: _share, child: const Text('공유하기')),
@@ -341,6 +343,7 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
     final error = state.error;
 
     return StepLayout(
+      showTextScale: false,
       actions: [
         FilledButton(
           onPressed: canSubmit ? _submit : null,

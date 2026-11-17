@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/text_scale/text_scale_button.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/audio_playback_card.dart';
 import '../../../core/widgets/error_retry_view.dart';
@@ -156,7 +157,19 @@ class _TodayContent extends ConsumerWidget {
         AppSizes.screenPadding,
       ),
       children: [
-        Text(formatAssignedDate(today.assignedDate), style: AppText.labelL),
+        // 맨 위 한 줄: 날짜와 `글자 크기`. 부모님이 홈에서 바로 글씨를 키울 수 있게 한다
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                formatAssignedDate(today.assignedDate),
+                style: AppText.labelL,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Flexible(child: TextScaleButton()),
+          ],
+        ),
         if (name != null && name.isNotEmpty) ...[
           const SizedBox(height: 6),
           Semantics(

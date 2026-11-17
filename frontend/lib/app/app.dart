@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/session_expired_signal.dart';
+import '../core/text_scale/text_scale.dart';
 import '../core/theme/app_theme.dart';
 import '../features/onboarding/presentation/session.dart';
 import 'router.dart';
@@ -33,11 +34,22 @@ class _AppState extends ConsumerState<App> {
   @override
   Widget build(BuildContext context) {
     ref.listen(sessionExpiredSignalProvider, (_, _) => _onSessionExpired());
+    final textSize = ref.watch(textSizeProvider);
     return MaterialApp.router(
       title: '들려줘요',
       theme: AppTheme.light(),
       scaffoldMessengerKey: _messengerKey,
       routerConfig: ref.watch(routerProvider),
+      // 앱에서 고른 글자 크기를 휴대폰 글씨 설정에 곱해 모든 화면에 적용한다
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: applyTextSize(media.textScaler, textSize),
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }

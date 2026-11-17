@@ -251,6 +251,7 @@ class _RoleStepState extends State<_RoleStep> {
   Widget build(BuildContext context) {
     final selected = _selected;
     return StepLayout(
+      showTextScale: false,
       actions: [
         FilledButton(
           onPressed: selected == null ? null : () => widget.onNext(selected),
@@ -426,6 +427,7 @@ class _NameStepState extends ConsumerState<_NameStep> {
         final serverError = state.error;
 
         return StepLayout(
+          showTextScale: false,
           onBack: widget.onBack,
           actions: [
             FilledButton(
