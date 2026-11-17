@@ -19,14 +19,14 @@ class StoryAnswerDeleter {
     await _ref
         .read(storiesRepositoryProvider)
         .deleteParentRecording(recordingId);
-    _apply(story.storyId, (s) => s.withParentAnswerDeleted());
+    _apply(story, (s) => s.withParentAnswerDeleted());
   }
 
   Future<void> deleteChildAnswer(Story story) async {
     final answerId = story.childAnswer.answerId;
     if (story.childAnswer.isDeleted || answerId == null) return;
     await _ref.read(storiesRepositoryProvider).deleteChildAnswer(answerId);
-    _apply(story.storyId, (s) => s.withChildAnswerDeleted());
+    _apply(story, (s) => s.withChildAnswerDeleted());
   }
 
   /// 서버와 화면이 어긋났을 때(이미 지워진 기록 등) 목록과 달력을 다시 불러온다.
@@ -35,14 +35,18 @@ class StoryAnswerDeleter {
     _ref.invalidate(storiesMonthProvider);
   }
 
-  /// 목록은 그 카드만 바꾸고, 달력은 그 달을 다시 불러온다.
-  void _apply(String storyId, Story Function(Story story) update) {
+  /// 목록과 그 달의 달력에서 이 카드만 바꾼다. 다시 불러오지 않으므로 연결이
+  /// 끊겨도 지운 결과가 바로 보인다.
+  void _apply(Story story, Story Function(Story story) update) {
     if (_ref.exists(storiesControllerProvider)) {
       _ref
           .read(storiesControllerProvider.notifier)
-          .replaceStory(storyId, update);
+          .replaceStory(story.storyId, update);
     }
-    _ref.invalidate(storiesMonthProvider);
+    final month = storiesMonthProvider(monthKey(story.assignedDate));
+    if (_ref.exists(month)) {
+      _ref.read(month.notifier).replaceStory(story.storyId, update);
+    }
   }
 }
 

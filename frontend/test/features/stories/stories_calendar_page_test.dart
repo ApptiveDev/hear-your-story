@@ -8,6 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/core/network/api_exception.dart';
+import 'package:life_record/features/onboarding/data/auth_providers.dart';
+import 'package:life_record/features/onboarding/domain/app_user.dart';
 import 'package:life_record/features/onboarding/presentation/onboarding_page.dart';
 import 'package:life_record/features/stories/data/stories_providers.dart';
 import 'package:life_record/features/stories/presentation/stories_calendar_page.dart';
@@ -230,9 +232,13 @@ void main() {
   });
   // 질문 책장 → 달력 이동은 아래 탭 막대가 맡는다 (test/core/app_tab_shell_test.dart)
 
-  testWidgets('이야기를 누르면 그 달 데이터로 이야기 상세를 연다', (tester) async {
+  /// 달력 → 이야기 상세로 오갈 수 있게 라우터로 띄운다
+  Future<void> pumpWithDetail(
+    WidgetTester tester,
+    FakeStoriesRepository repo, {
+    UserRole? role,
+  }) async {
     usePhoneSize(tester);
-    final repo = twoStories();
     final router = GoRouter(
       initialLocation: '/stories/calendar',
       routes: [
@@ -258,16 +264,56 @@ void main() {
     addTearDown(router.dispose);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
+        overrides: [
+          storiesRepositoryProvider.overrideWithValue(repo),
+          if (role != null)
+            currentUserProvider.overrideWith(
+              (ref) async => AppUser(
+                id: 'u1',
+                name: '테스트',
+                role: role,
+                pairingStatus: PairingStatus.paired,
+              ),
+            ),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('이야기를 누르면 그 달 데이터로 이야기 상세를 연다', (tester) async {
+    final repo = twoStories();
+    await pumpWithDetail(tester, repo);
 
     await tester.tap(find.text('질문 2'));
     await tester.pumpAndSettle();
 
     expect(find.text('자녀 답 2'), findsOneWidget);
     expect(repo.requestedMonths, ['2026-11']); // 상세는 다시 요청하지 않는다
+  });
+
+  testWidgets('달력에서 연 이야기에서 내 답을 지우면 연결이 끊겨도 바로 반영된다', (tester) async {
+    final repo = twoStories();
+    await pumpWithDetail(tester, repo, role: UserRole.child);
+    await tester.tap(find.text('질문 2'));
+    await tester.pumpAndSettle();
+
+    repo.error = ApiException(statusCode: 400); // 지운 뒤 달을 다시 받지 못한다
+    await tester.tap(find.text('내 답 지우기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('지우기'));
+    await tester.pumpAndSettle();
+
+    expect(repo.deletedAnswerIds, ['ans_2']);
+    expect(find.text('자녀 답 2'), findsNothing);
+    expect(find.text('삭제된 답이에요.'), findsOneWidget);
+    expect(find.text('내 답 지우기'), findsNothing);
+
+    // 달력도 다시 불러오지 않고 그 달을 그대로 보여준다
+    await tester.tap(find.text('이전'));
+    await tester.pumpAndSettle();
+    expect(find.text('질문 2'), findsOneWidget);
+    expect(find.text('달력을 불러오지 못했어요'), findsNothing);
   });
 }

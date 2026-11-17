@@ -126,10 +126,6 @@ class _StoriesCalendarPageState extends ConsumerState<StoriesCalendarPage> {
   }
 }
 
-/// 예: 2026-11
-String monthKey(DateTime month) =>
-    '${month.year}-${month.month.toString().padLeft(2, '0')}';
-
 /// Figma `Calendar/Nav`: 둥근 이전·다음 버튼 사이에 연·월
 class _MonthNav extends StatelessWidget {
   const _MonthNav({
