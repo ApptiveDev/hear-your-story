@@ -88,8 +88,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               // calendar보다 뒤에 둬야 /stories/calendar가 이야기 id로 읽히지 않는다
               GoRoute(
                 path: ':storyId',
-                builder: (context, state) =>
-                    StoryDetailPage(storyId: state.pathParameters['storyId']!),
+                builder: (context, state) => StoryDetailPage(
+                  storyId: state.pathParameters['storyId']!,
+                  month: state.uri.queryParameters['month'],
+                ),
               ),
             ],
           ), // C
