@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_tokens.dart';
 
-/// Paints Figma's inner shadows without changing layout or hit testing.
+/// 배치나 터치 판정에 영향을 주지 않고 Figma의 안쪽 그림자를 그린다.
 class ButtonInnerShadowPainter extends CustomPainter {
   const ButtonInnerShadowPainter({
     required this.shape,
@@ -25,8 +25,8 @@ class ButtonInnerShadowPainter extends CustomPainter {
     canvas.save();
     canvas.clipPath(outline);
     for (final shadow in shadows) {
-      // Blur the outside of a shifted shape into its original interior.
-      // Keep the outer edge far enough away that it cannot affect the blur.
+      // 이동한 모양의 바깥 영역을 흐리게 그려 원래 모양의 안쪽에 그림자를 만든다.
+      // 바깥 경계는 흐림 효과에 영향을 주지 않도록 충분히 멀리 둔다.
       final extent = shadow.blurSigma * 4 + shadow.offset.distance + 1;
       final outside = Path()
         ..fillType = PathFillType.evenOdd

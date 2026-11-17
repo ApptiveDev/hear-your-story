@@ -117,7 +117,7 @@ class AppTheme {
                 if (states.contains(WidgetState.disabled)) {
                   return child ?? const SizedBox.shrink();
                 }
-                // Respect local shape overrides (for example a smaller button).
+                // 작은 버튼 등에서 개별 지정한 모양을 유지한다.
                 final widget = context.widget;
                 final shape = widget is ButtonStyleButton
                     ? widget.style?.shape?.resolve(states)

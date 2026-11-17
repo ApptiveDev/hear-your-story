@@ -44,7 +44,7 @@ void main() {
       expect(red(pressed, 110, 76), greaterThan(red(normal, 110, 76)));
       expect(normal[(5 * 220 + 110) * 4 + 3], 0);
       expect(normal[(11 * 220 + 11) * 4 + 3], 0);
-      expect(red(normal, 110, 45), 205); // Primary center stays unchanged.
+      expect(red(normal, 110, 45), 205); // 주 버튼 중앙의 색은 바뀌지 않는다.
     },
   );
 }

@@ -227,7 +227,7 @@ void main() {
       expect(player.source.url, Uri.file(recorder.clip.path).toString());
       expect(player.enabled, isTrue);
       expect(find.text('녹음 들어보기'), findsOneWidget);
-      // Playback is optional: send without starting it, even on a double tap.
+      // 듣기는 선택이다. 재생하지 않고 보내기를 두 번 눌러도 한 번만 전송한다.
       await tester.ensureVisible(find.text('보내기'));
       await tester.tap(find.text('보내기'));
       await tester.tap(find.text('보내기'));
