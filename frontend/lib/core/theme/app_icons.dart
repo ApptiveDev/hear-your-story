@@ -30,6 +30,9 @@ abstract final class AppIcons {
   /// fi-sr-pencil: 글로 답하기
   static const pencil = IconData(0xfa17, fontFamily: _solid);
 
+  /// icon/arrow-right (fi-rr-arrow-right): 다음 달
+  static const arrowRight = IconData(0xf19b, fontFamily: _regular);
+
   /// fi-sr-heart: 부모
   static const heart = IconData(0xf794, fontFamily: _solid);
 
