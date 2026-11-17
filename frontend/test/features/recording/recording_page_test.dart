@@ -11,6 +11,7 @@ import 'package:life_record/features/recording/presentation/recording_page.dart'
 
 import 'fakes.dart';
 import '../../core/audio_playback_card_test.dart' show FakePlayer;
+import '../../helpers/phone_size.dart';
 
 void main() {
   const args = RecordingArgs(
@@ -197,6 +198,7 @@ void main() {
 
   for (final paused in [false, true]) {
     testWidgets('미리 듣기 후 명시적 전송만 업로드한다 (paused=$paused)', (tester) async {
+      usePhoneSize(tester);
       final recorder = FakeRecorder();
       final repository = FakeRecordingRepository()
         ..uploadGate = Completer<void>();
@@ -243,6 +245,7 @@ void main() {
   }
 
   testWidgets('미리 듣기는 로컬 파일을 재생하고 업로드하지 않는다', (tester) async {
+    usePhoneSize(tester);
     final recorder = FakeRecorder();
     final repository = FakeRecordingRepository();
     final controller = RecordingController(
@@ -278,6 +281,7 @@ void main() {
   });
 
   testWidgets('미리 듣기에서 다시 녹음은 확인 후에만 초안을 버린다', (tester) async {
+    usePhoneSize(tester);
     final recorder = FakeRecorder();
     final repository = FakeRecordingRepository();
     final controller = RecordingController(
