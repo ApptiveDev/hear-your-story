@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/choice_dialog.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
@@ -21,6 +23,8 @@ const uiconsAttribution = 'Uicons by Flaticon';
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
 
+  static const title = '마이';
+
   @override
   ConsumerState<MyPage> createState() => _MyPageState();
 }
@@ -28,29 +32,19 @@ class MyPage extends ConsumerStatefulWidget {
 class _MyPageState extends ConsumerState<MyPage> {
   bool _busy = false;
 
+  /// Figma `Dialog/Confirm`: 위에 실행 버튼, 아래에 취소
   Future<bool> _confirm({
     required String title,
     required String message,
     required String action,
   }) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(action),
-          ),
-        ],
-      ),
+    final ok = await showConfirmDialog(
+      context,
+      title: title,
+      message: message,
+      confirmLabel: action,
     );
-    return ok == true && mounted;
+    return ok && mounted;
   }
 
   Future<void> _signOut() async {
@@ -152,56 +146,70 @@ class _MyPageState extends ConsumerState<MyPage> {
     return PopScope(
       canPop: !_busy, // 탈퇴를 요청하는 동안은 뒤로 가지 못하게 한다
       child: Scaffold(
-        appBar: AppBar(title: const Text('마이페이지')),
         body: SafeArea(
           child: AbsorbPointer(
             absorbing: _busy, // 탈퇴를 요청하는 동안 다른 항목을 누르지 못하게 한다
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.screenPadding,
+                32,
+                AppSizes.screenPadding,
+                AppSizes.screenPadding,
+              ),
               children: [
-                if (user != null) _ProfileCard(user: user),
+                Semantics(
+                  header: true,
+                  child: const Text(MyPage.title, style: AppText.headingXL),
+                ),
                 const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('로그아웃'),
-                  onTap: _signOut,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('개인정보 처리방침'),
-                  onTap: () =>
-                      _showInfo('개인정보 처리방침', AppConfig.privacyPolicyUrl),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.mail_outline),
-                  title: const Text('문의하기'),
-                  onTap: () => _showInfo('문의하기', AppConfig.supportContact),
-                ),
-                const ListTile(
-                  leading: Icon(Icons.info_outline),
-                  title: Text('앱 버전'),
-                  trailing: Text(AppConfig.appVersion),
-                ),
-                // Flaticon 무료 라이선스 조건: 앱 안에 출처 표기 (assets/fonts/README.md)
-                const ListTile(
-                  leading: Icon(Icons.palette_outlined),
-                  title: Text('아이콘 출처'),
-                  subtitle: Text(uiconsAttribution),
-                ),
-                if (AppConfig.accountDeletionApi) ...[
-                  const Divider(height: 32),
-                  ListTile(
-                    leading: const Icon(Icons.person_remove_outlined),
-                    title: const Text('탈퇴하기'),
-                    trailing: _busy
-                        ? const SizedBox.square(
-                            dimension: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : null,
-                    onTap: _deleteAccount,
-                  ),
+                if (user != null) ...[
+                  _ProfileCard(user: user),
+                  const SizedBox(height: 16),
                 ],
+                _MenuGroup(
+                  children: [
+                    _MenuRow(
+                      icon: AppIcons.addressBook,
+                      label: '개인정보 처리방침',
+                      onTap: () =>
+                          _showInfo('개인정보 처리방침', AppConfig.privacyPolicyUrl),
+                    ),
+                    _MenuRow(
+                      icon: AppIcons.headset,
+                      label: '문의하기',
+                      onTap: () => _showInfo('문의하기', AppConfig.supportContact),
+                    ),
+                    const _MenuRow(
+                      icon: AppIcons.asterisk,
+                      label: '앱 버전',
+                      value: AppConfig.appVersion,
+                    ),
+                    // Flaticon 무료 라이선스 조건: 앱 안에 출처 표기 (assets/fonts/README.md)
+                    const _MenuRow(
+                      icon: AppIcons.palette,
+                      label: '아이콘 출처',
+                      value: uiconsAttribution,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _MenuGroup(
+                  children: [
+                    _MenuRow(
+                      icon: AppIcons.undo,
+                      label: '로그아웃',
+                      onTap: _signOut,
+                    ),
+                    if (AppConfig.accountDeletionApi)
+                      _MenuRow(
+                        icon: AppIcons.signOut,
+                        label: '탈퇴하기',
+                        bold: true,
+                        busy: _busy,
+                        onTap: _deleteAccount,
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -211,38 +219,162 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 }
 
+/// Figma `Card/Profile`: 아이콘, 이름, 역할과 연결 상태
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({required this.user});
   final AppUser user;
 
   @override
   Widget build(BuildContext context) {
-    final role = user.role == UserRole.parent ? '부모님' : '자녀';
+    final isParent = user.role == UserRole.parent;
+    final partner = isParent ? '자녀와' : '부모님과';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(
-            Icons.account_circle,
-            size: 48,
-            color: AppColors.textBrand,
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceWhite,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isParent ? AppIcons.heart : AppIcons.childHead,
+                  size: 40,
+                  color: AppColors.textBrand,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user.name, style: AppText.headingL),
+                    const SizedBox(height: 2),
+                    Text(
+                      isParent ? '부모' : '자녀',
+                      style: AppText.labelL.copyWith(color: AppColors.textSub),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(user.name, style: AppText.headingXL),
-                const SizedBox(height: 4),
-                Text(role, style: Theme.of(context).textTheme.bodyLarge),
-              ],
-            ),
+          const SizedBox(height: 16),
+          Text(
+            '연결 상태',
+            style: AppText.labelM.copyWith(color: AppColors.textBrand),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            user.isPaired ? '$partner 연결되어 있어요' : '아직 연결되지 않았어요',
+            style: AppText.bodyM.copyWith(color: AppColors.textStrong),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Figma `List`: 테두리로 묶은 메뉴 줄 모음
+class _MenuGroup extends StatelessWidget {
+  const _MenuGroup({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.cardSmall);
+    return Material(
+      color: AppColors.surfaceWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: const BorderSide(color: AppColors.borderSoft, width: 2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(children: children),
+      ),
+    );
+  }
+}
+
+/// Figma `List/Row`: 아이콘, 이름, 오른쪽 화살표 또는 값
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    this.value,
+    this.onTap,
+    this.bold = false,
+    this.busy = false,
+  });
+
+  final IconData icon;
+  final String label;
+
+  /// 오른쪽에 보여줄 값 (앱 버전 등). 있으면 화살표 대신 보인다.
+  final String? value;
+  final VoidCallback? onTap;
+  final bool bold;
+
+  /// 요청 중이면 화살표 대신 불러오는 표시를 보인다.
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = this.value;
+    final Widget trailing;
+    if (busy) {
+      trailing = const SizedBox.square(
+        dimension: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (value != null) {
+      trailing = Flexible(
+        child: Text(value, textAlign: TextAlign.right, style: AppText.bodyS),
+      );
+    } else if (onTap != null) {
+      trailing = const Icon(
+        AppIcons.arrowRight,
+        size: 24,
+        color: AppColors.borderDisabled,
+      );
+    } else {
+      trailing = const SizedBox.shrink();
+    }
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 62),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, size: 24, color: AppColors.textBrand),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppText.bodyM.copyWith(
+                    color: AppColors.textBody,
+                    fontWeight: bold ? FontWeight.w700 : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              trailing,
+            ],
+          ),
+        ),
       ),
     );
   }
