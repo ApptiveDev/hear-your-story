@@ -77,6 +77,7 @@ void main() {
         if (scenario == 'upload') {
           await recording!.start();
           await recording.stop();
+          await recording.retryUpload();
         }
         await tester.pumpAndSettle();
         const storage = FlutterSecureStorage();
