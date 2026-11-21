@@ -171,8 +171,14 @@ void main() {
 
     expect(find.text('자녀 답 들어보기'), findsOneWidget);
     expect(find.text('자녀 답 1'), findsOneWidget);
-    expect(find.text('내가 남긴 답'), findsOneWidget);
+    expect(find.text('내 이야기'), findsOneWidget);
+    expect(find.text('자녀의 이야기'), findsOneWidget);
     expect(find.text('정리된 부모님 답'), findsOneWidget);
+    // 공책 위에서 내 이야기가 상대 이야기보다 먼저 나온다
+    expect(
+      tester.getTopLeft(find.text('내 이야기')).dy,
+      lessThan(tester.getTopLeft(find.text('자녀의 이야기')).dy),
+    );
     expect(find.text('부모님 목소리 듣기'), findsNothing); // URL이 있어도 부모 화면엔 없음
     expect(audioRepo.audioCalls, 1);
 
@@ -190,9 +196,58 @@ void main() {
     );
 
     expect(find.text('부모님 목소리 듣기'), findsOneWidget);
-    expect(find.text('내가 쓴 답'), findsOneWidget);
+    expect(find.text('내 이야기'), findsOneWidget);
+    expect(find.text('부모님의 이야기'), findsOneWidget);
     expect(find.text('자녀 답 들어보기'), findsNothing);
     expect(audioRepo.audioCalls, 0); // 부모 전용 API라 자녀는 호출하면 안 됨
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('상세: 내 답 지우기는 공책 바로 아래, 듣기는 화면 아래에 고정된다', (tester) async {
+    await pumpPage(
+      tester,
+      oneStory(testStory('1', originalAudioUrl: 'https://example.test/p.m4a')),
+      role: UserRole.child,
+      audioRepo: FakeParentAnswerRepository(),
+      open: '질문 1',
+    );
+
+    final notebook = tester.getBottomLeft(find.text('부모님의 이야기')).dy;
+    final delete = tester.getTopLeft(find.text('내 답 지우기')).dy;
+    final listen = tester.getTopLeft(find.text('부모님 목소리 듣기')).dy;
+    expect(delete, greaterThan(notebook)); // 공책 아래
+    expect(listen, greaterThan(delete)); // 듣기는 그보다 아래(내용 끝)
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('상세: 글이 길면 듣기는 고정되지 않고 스크롤해서 닿는다', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpPage(
+      tester,
+      oneStory(
+        testStory(
+          '1',
+          summaryText: '아주 긴 부모님 답 ' * 30,
+          originalAudioUrl: 'https://example.test/p.m4a',
+        ),
+      ),
+      role: UserRole.child,
+      audioRepo: FakeParentAnswerRepository(),
+      open: '질문 1',
+    );
+
+    final screen =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    // 처음에는 화면 밖에 있다가 스크롤하면 보인다
+    expect(tester.getTopLeft(find.text('부모님 목소리 듣기')).dy, greaterThan(screen));
+    await tester.scrollUntilVisible(find.text('부모님 목소리 듣기'), 300);
+    expect(
+      tester.getBottomLeft(find.text('부모님 목소리 듣기')).dy,
+      lessThanOrEqualTo(screen),
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -400,7 +455,7 @@ void main() {
       open: '질문 1',
     );
 
-    expect(find.text('자녀의 답을 목소리로 바꾸고 있어요.'), findsOneWidget);
+    expect(find.text('목소리를 담고 있어요'), findsOneWidget);
     expect(find.text('자녀 답 들어보기'), findsNothing);
     expect(audioRepo.audioCalls, 0);
   });
