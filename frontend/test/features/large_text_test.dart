@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
+import 'package:life_record/core/text_scale/text_scale.dart';
+import 'package:life_record/core/text_scale/text_scale_button.dart';
 import 'package:life_record/core/widgets/app_tab_shell.dart';
+import 'package:life_record/core/widgets/step_layout.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
@@ -226,6 +230,42 @@ void main() {
         // 글씨가 크면 화면 아래로 밀리지만 스크롤로 닿아야 한다
         await tester.scrollUntilVisible(find.text('탈퇴하기'), 200);
         expect(find.text('탈퇴하기'), findsOneWidget);
+      });
+
+      testWidgets('헤더: 좁은 폰에서 이전과 글자 크기가 한 줄에 들어간다', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        // 흔한 폰보다 좁은 360dp
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1080 / 360;
+        await tester.pumpWidget(
+          ProviderScope(
+            // 앱에서 크게를 골라도 합친 배율은 2배까지라 이 검사 범위 안이다
+            overrides: [
+              initialTextSizeProvider.overrideWithValue(TextSize.large),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: StepLayout(
+                  onBack: () {},
+                  actions: const [],
+                  children: const [Text('내용')],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('이전'), findsOneWidget);
+        expect(find.byType(TextScaleButton), findsOneWidget);
+        // 버튼 글자가 버튼 밖으로 잘리지 않는다(넘치면 오류 없이 잘리기만 한다)
+        final label = tester.renderObject<RenderParagraph>(
+          find.descendant(
+            of: find.byType(TextScaleButton),
+            matching: find.byType(RichText),
+          ),
+        );
+        expect(label.didExceedMaxLines, isFalse);
       });
 
       final todayCases = <String, Map<String, dynamic> Function()>{
