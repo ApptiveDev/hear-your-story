@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../core/widgets/notebook_paper.dart';
 
 import '../../domain/story.dart';
 
@@ -23,12 +24,8 @@ class StoryCardFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Figma `Note/Page`: 날짜·질문 아래 두 사람의 이야기를 적은 공책 한 장
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.note),
-      ),
+    // 날짜·질문·두 답이 섞여 줄 높이가 달라서 가로 줄은 빼고 구멍·여백선만 둔다.
+    return NotebookPaper(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

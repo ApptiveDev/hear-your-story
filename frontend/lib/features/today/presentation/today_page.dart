@@ -17,6 +17,7 @@ import '../../onboarding/domain/app_user.dart';
 import '../../recording/presentation/recording_args.dart';
 import '../data/today_providers.dart';
 import '../domain/today.dart';
+import 'month_records.dart';
 import 'today_provider.dart';
 
 /// 오늘 질문 홈. 서버가 계산한 제출·공개 상태에 따라 다음 행동 하나를 보여준다.
@@ -207,6 +208,7 @@ class _TodayContent extends ConsumerWidget {
           else
             _ParentSection(today: today),
         ],
+        const MonthRecords(),
       ],
     );
   }

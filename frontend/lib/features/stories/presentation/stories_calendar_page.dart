@@ -235,7 +235,7 @@ class _SelectedDay extends StatelessWidget {
         ),
         for (final story in stories) ...[
           const SizedBox(height: 12),
-          _StoryRow(story: story, month: monthKey(month)),
+          StoryRecordRow(story: story, month: monthKey(month)),
         ],
       ],
     );
@@ -243,8 +243,8 @@ class _SelectedDay extends StatelessWidget {
 }
 
 /// Figma `Card/Record`: 날짜 상자와 질문. 누르면 이야기 상세로 간다.
-class _StoryRow extends StatelessWidget {
-  const _StoryRow({required this.story, required this.month});
+class StoryRecordRow extends StatelessWidget {
+  const StoryRecordRow({super.key, required this.story, required this.month});
   final Story story;
 
   /// 상세가 같은 달 데이터를 읽도록 넘긴다.

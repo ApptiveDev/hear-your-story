@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/no_month_records.dart';
+
 import 'package:life_record/app/app.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/network/session_expired_signal.dart';
@@ -33,6 +36,7 @@ Future<void> _pumpApp(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        noMonthRecords,
         authDataSourceProvider.overrideWithValue(auth),
         kakaoSignInProvider.overrideWithValue(kakao ?? FakeKakao()),
         pairingDataSourceProvider.overrideWithValue(
