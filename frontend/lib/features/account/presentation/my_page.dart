@@ -171,8 +171,12 @@ class _MyPageState extends ConsumerState<MyPage> {
                     _MenuRow(
                       icon: AppIcons.addressBook,
                       label: '개인정보 처리방침',
-                      onTap: () =>
-                          _showInfo('개인정보 처리방침', AppConfig.privacyPolicyUrl),
+                      onTap: () => context.push('/my/privacy'),
+                    ),
+                    _MenuRow(
+                      icon: AppIcons.books,
+                      label: '이용약관',
+                      onTap: () => context.push('/my/terms'),
                     ),
                     _MenuRow(
                       icon: AppIcons.headset,

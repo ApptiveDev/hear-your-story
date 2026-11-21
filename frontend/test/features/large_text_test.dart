@@ -9,6 +9,8 @@ import 'package:life_record/core/text_scale/text_scale.dart';
 import 'package:life_record/core/text_scale/text_scale_button.dart';
 import 'package:life_record/core/widgets/app_tab_shell.dart';
 import 'package:life_record/core/widgets/step_layout.dart';
+import 'package:life_record/features/account/domain/legal_documents.dart';
+import 'package:life_record/features/account/presentation/legal_page.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
@@ -230,6 +232,29 @@ void main() {
         // 글씨가 크면 화면 아래로 밀리지만 스크롤로 닿아야 한다
         await tester.scrollUntilVisible(find.text('탈퇴하기'), 200);
         expect(find.text('탈퇴하기'), findsOneWidget);
+      });
+
+      testWidgets('개인정보 처리방침·이용약관', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        for (final document in [privacyPolicy, termsOfService]) {
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MaterialApp(
+                home: LegalPage(
+                  key: ValueKey(document.title), // 스크롤 위치를 이어받지 않게
+                  document: document,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          // 글씨가 커도 제목과 첫 항목이 보이고, 끝까지 스크롤해도 넘치지 않는다
+          expect(find.text(document.title), findsOneWidget);
+          await tester.scrollUntilVisible(
+            find.text(document.sections.last.heading),
+            300,
+          );
+        }
       });
 
       testWidgets('헤더: 좁은 폰에서 이전과 글자 크기가 한 줄에 들어간다', (tester) async {
