@@ -29,6 +29,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     with WidgetsBindingObserver {
   late final RecordingController _controller;
   final _audioKey = GlobalKey<AudioPlaybackCardState>();
+  bool _sending = false;
   bool _allowLeave = false;
   bool _askingLeave = false;
   bool _redirecting = false;
@@ -94,6 +95,18 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
       if (discard != true || !mounted) return;
     }
     await _controller.start();
+  }
+
+  Future<void> _send() async {
+    if (_sending || !_controller.canRetryUpload) return;
+    _sending = true;
+    try {
+      await _audioKey.currentState?.pause();
+      if (!mounted) return;
+      await _controller.retryUpload();
+    } finally {
+      _sending = false;
+    }
   }
 
   Future<void> _restart() async {
@@ -324,10 +337,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
                 icon: const Icon(AppIcons.microphone),
                 label: const Text('이어서 말하기'),
               ),
-              OutlinedButton(
-                onPressed: c.stop,
-                child: const Text('그만 말하고 보내기'),
-              ),
+              OutlinedButton(onPressed: c.stop, child: const Text('녹음 끝내기')),
               TextButton(onPressed: _restart, child: const Text('처음부터 다시 말하기')),
             ]
           : [OutlinedButton(onPressed: c.pause, child: const Text('잠깐 멈추기'))],
@@ -368,7 +378,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         ),
         const SizedBox(height: 12),
         Text(
-          paused ? '이어서 말하거나 지금까지 말한 것을 보내요' : '다 말씀하셨다면 눌러서 보내요',
+          paused ? '이어서 말하거나 녹음을 끝내고 확인해요' : '다 말씀하셨다면 눌러서 끝내요',
           textAlign: TextAlign.center,
           style: AppText.bodyS,
         ),
@@ -376,14 +386,14 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     );
   }
 
-  /// Figma WF-012 녹음 완료·전송 전. 보내지 못했거나 녹음이 끊겼을 때 보인다.
+  /// Figma WF-012 녹음 완료·전송 전. 듣기는 선택이며 보내기를 눌러야 전송한다.
   Widget _draft(RecordingController c) {
     final clip = c.draft;
     return StepLayout(
       onBack: _leave,
       actions: [
         if (c.canRetryUpload)
-          FilledButton(onPressed: c.retryUpload, child: const Text('보내기')),
+          FilledButton(onPressed: _send, child: const Text('보내기')),
         if (c.canStart)
           OutlinedButton(onPressed: _start, child: const Text('다시 녹음')),
       ],
@@ -594,8 +604,8 @@ class _RecordButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
-    // 끝내면 바로 보내므로(RecordingController.stop) 이름에 보낸다는 걸 드러낸다
-    final label = recording ? '녹음 끝내고 보내기' : '녹음 시작';
+    // 녹음을 끝내면 전송 전 미리 듣기 화면으로 이동한다.
+    final label = recording ? '녹음 끝내기' : '녹음 시작';
     final Widget face = recording
         ? Container(
             width: size,

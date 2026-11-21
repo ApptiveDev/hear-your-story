@@ -53,6 +53,7 @@ void main() {
     repository.uploadError = ApiException();
     await controller.start();
     await controller.stop();
+    await controller.retryUpload();
     final first = repository.keys.single;
     expect(controller.hasDraft, isTrue);
     await controller.retryUpload();
@@ -60,6 +61,7 @@ void main() {
     await controller.start();
     repository.uploadError = null;
     await controller.stop();
+    await controller.retryUpload();
     await tester.pump();
     expect(repository.keys.last, isNot(first));
     expect(controller.phase, RecordingPhase.ready);
@@ -68,21 +70,24 @@ void main() {
   testWidgets('업로드 중 중복 정지·재시도를 무시한다', (tester) async {
     repository.uploadGate = Completer<void>();
     await controller.start();
-    final stopping = controller.stop();
+    await controller.stop();
+    expect(repository.keys, isEmpty);
+    final sending = controller.retryUpload();
     await tester.pump();
     await controller.stop();
     await controller.retryUpload();
     expect(repository.keys.length, 1);
     repository.uploadGate!.complete();
-    await stopping;
+    await sending;
   });
 
-  testWidgets('60초가 되면 자동 정지하고 보낸다', (tester) async {
+  testWidgets('60초가 되면 자동 정지하고 미리 듣기로 간다', (tester) async {
     await controller.start();
     now = now.add(const Duration(seconds: 60));
     await tester.pump(const Duration(milliseconds: 100));
     expect(recorder.stops, 1);
-    expect(repository.keys.length, 1);
+    expect(repository.keys, isEmpty);
+    expect(controller.phase, RecordingPhase.draft);
   });
 
   testWidgets('백그라운드에서 녹음을 멈추고 파일을 보관한다', (tester) async {
@@ -111,6 +116,7 @@ void main() {
     repository.status = ProcessingStatus.failed;
     await controller.start();
     await controller.stop();
+    await controller.retryUpload();
     await tester.pump();
     expect(controller.phase, RecordingPhase.processingFailed);
     expect(controller.recordingId, 'rec_1');
@@ -121,6 +127,7 @@ void main() {
     repository.status = ProcessingStatus.llmProcessing;
     await controller.start();
     await controller.stop();
+    await controller.retryUpload();
     await tester.pump();
     expect(repository.polls, 1);
     for (var i = 0; i < 10; i++) {
@@ -146,6 +153,7 @@ void main() {
     repository.pollGate = Completer<RecordingResult>();
     await controller.start();
     await controller.stop();
+    await controller.retryUpload();
     controller.setForeground(false);
     repository.pollGate!.complete(
       const RecordingResult(
@@ -169,13 +177,14 @@ void main() {
     );
     await controller.start();
     await controller.stop();
+    await controller.retryUpload();
     expect(controller.locked, isTrue);
     expect(controller.canStart, isFalse);
     expect(controller.canRetryUpload, isFalse);
   });
 
   group('일시정지', () {
-    testWidgets('멈춘 시간은 빼고, 실제 녹음 시간 합계가 60초면 끝나서 파일 하나를 보낸다', (tester) async {
+    testWidgets('멈춘 시간은 빼고 실제 녹음 60초에 미리 듣기로 간다', (tester) async {
       await tester.runAsync(() async {
         await controller.start();
         now = now.add(const Duration(seconds: 20));
@@ -204,15 +213,17 @@ void main() {
       expect(recorder.resumes, 2);
       expect(recorder.starts, 1);
       expect(recorder.stops, 1);
-      expect(repository.keys, hasLength(1));
+      expect(repository.keys, isEmpty);
+      expect(controller.phase, RecordingPhase.draft);
     });
 
-    testWidgets('멈춘 상태에서 보내면 바로 업로드한다', (tester) async {
+    testWidgets('멈춘 상태에서 끝내면 전송 없이 미리 듣기로 간다', (tester) async {
       await controller.start();
       await controller.pause();
       await controller.stop();
       expect(recorder.stops, 1);
-      expect(repository.keys, hasLength(1));
+      expect(repository.keys, isEmpty);
+      expect(controller.phase, RecordingPhase.draft);
     });
 
     testWidgets('멈춘 상태에서는 전화 같은 방해 알림으로 녹음이 끝나지 않는다', (tester) async {
@@ -272,7 +283,8 @@ void main() {
       now = now.add(const Duration(seconds: 70));
       await tester.pump(const Duration(milliseconds: 200));
       expect(recorder.stops, 1);
-      expect(repository.keys, hasLength(1));
+      expect(repository.keys, isEmpty);
+      expect(controller.phase, RecordingPhase.draft);
     });
 
     testWidgets('이어서 녹음을 기다리는 사이 끝낸 뒤 실패해도 보낸 녹음을 그대로 둔다', (tester) async {
@@ -282,6 +294,7 @@ void main() {
       await controller.pause();
       final resuming = controller.resume();
       await controller.stop();
+      await controller.retryUpload();
       recorder.resumeGate!.complete();
       await resuming;
       expect(recorder.stops, 1);
@@ -295,6 +308,7 @@ void main() {
       await controller.start();
       final pausing = controller.pause();
       await controller.stop();
+      await controller.retryUpload();
       recorder.pauseGate!.complete();
       await pausing;
       expect(recorder.stops, 1);

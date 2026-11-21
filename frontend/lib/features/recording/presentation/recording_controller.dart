@@ -35,7 +35,7 @@ class RecordingController extends ChangeNotifier {
     recordingId = args.recordingId;
     _interruptions = _recorder.interruptions.listen((_) {
       if (phase == RecordingPhase.recording && !_disposed) {
-        _operation = _stopAndUpload(upload: false);
+        _operation = _stopToPreview();
       }
     });
   }
@@ -140,7 +140,7 @@ class RecordingController extends ChangeNotifier {
       phase = RecordingPhase.recording;
       _emit();
       if (!_foreground) {
-        await _stopAndUpload(upload: false);
+        await _stopToPreview();
         return;
       }
       _startRecordTimer();
@@ -179,7 +179,7 @@ class RecordingController extends ChangeNotifier {
       // 기다리는 사이 이미 끝낸 녹음이면 결과를 덮어쓰지 않는다.
       if (_disposed || generation != _captureGeneration) return;
       // 멈추지 못하면 녹음이 계속되므로 지금까지의 녹음을 파일로 남긴다.
-      await _stopAndUpload(upload: false);
+      await _stopToPreview();
     }
   }
 
@@ -207,7 +207,7 @@ class RecordingController extends ChangeNotifier {
     } catch (_) {
       // 기다리는 사이 이미 끝낸 녹음이면 결과를 덮어쓰지 않는다.
       if (_disposed || generation != _captureGeneration) return;
-      await _stopAndUpload(upload: false);
+      await _stopToPreview();
     }
   }
 
@@ -221,10 +221,10 @@ class RecordingController extends ChangeNotifier {
 
   Future<void> stop() {
     if (!isCapturing || _disposed) return Future.value();
-    return _operation = _stopAndUpload(upload: _foreground);
+    return _operation = _stopToPreview();
   }
 
-  Future<void> _stopAndUpload({required bool upload}) async {
+  Future<void> _stopToPreview() async {
     _captureGeneration++;
     _recordTimer?.cancel();
     phase = RecordingPhase.stopping;
@@ -243,12 +243,8 @@ class RecordingController extends ChangeNotifier {
       _clip = clip;
       _key = _createKey();
       phase = RecordingPhase.draft;
-      if (upload && _foreground) {
-        await _upload();
-      } else {
-        message = '녹음을 멈췄어요. 녹음 보내기를 누르거나 다시 녹음해 주세요.';
-        _emit();
-      }
+      message = null;
+      _emit();
     } catch (error) {
       _fail(error, fallback: '녹음을 저장하지 못했어요. 다시 녹음해 주세요.');
     }
@@ -353,7 +349,7 @@ class RecordingController extends ChangeNotifier {
     _foreground = foreground;
     if (!foreground) {
       _stopPolling();
-      if (isCapturing) _operation = _stopAndUpload(upload: false);
+      if (isCapturing) _operation = _stopToPreview();
     } else if (!busy && !hasDraft && recordingId != null) {
       refreshStatus();
     }

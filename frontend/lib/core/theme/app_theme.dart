@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_tokens.dart';
+import 'button_painter.dart';
 
 /// 앱 전체 테마. 값은 `app_tokens.dart`의 디자인 토큰(Figma v2)에서 가져온다.
 ///
@@ -14,8 +15,9 @@ import 'app_tokens.dart';
 /// - bodySmall = 보조 안내 (Body/S 16)
 /// - labelLarge = 큰 버튼 글자 (Button/L 26)
 ///
-/// 버튼의 안쪽 그림자(`AppInnerShadows`)는 `ButtonStyle`로 그릴 수 없어 아직
-/// 적용하지 않았다. 공통 버튼 위젯을 만들 때 넣는다.
+/// Primary 버튼의 안쪽 그림자는 backgroundBuilder에서 공통으로 그린다.
+/// 바깥 그림자는 Material elevation으로 근사한다. builder는 버튼 모양으로
+/// 잘리므로 Figma의 두 바깥 그림자를 정확히 재현하지는 않는다.
 class AppTheme {
   static ThemeData light() {
     const scheme = ColorScheme(
@@ -94,21 +96,42 @@ class AppTheme {
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(AppSizes.buttonL),
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-          backgroundColor: AppColors.actionPrimary,
-          foregroundColor: AppColors.textOnPrimary,
-          disabledBackgroundColor: AppColors.borderSoft,
-          disabledForegroundColor: AppColors.textDisabled,
-          textStyle: AppText.buttonL,
-          iconSize: AppSizes.iconL,
-          shape: buttonShape,
-          // Figma `Button` 효과는 흐림 없는 그림자 2개다. ButtonStyle은 그림자를
-          // 하나만 그려서 elevation으로 비슷하게만 맞춘다.
-          elevation: 3,
-          shadowColor: const Color(0xFFB05F20),
-        ),
+        style:
+            FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(AppSizes.buttonL),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+              backgroundColor: AppColors.actionPrimary,
+              foregroundColor: AppColors.textOnPrimary,
+              disabledBackgroundColor: AppColors.borderSoft,
+              disabledForegroundColor: AppColors.textDisabled,
+              textStyle: AppText.buttonL,
+              iconSize: AppSizes.iconL,
+              shape: buttonShape,
+              shadowColor: AppShadows.button.first.color,
+            ).copyWith(
+              elevation: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) return 0;
+                return states.contains(WidgetState.pressed) ? 1 : 3;
+              }),
+              backgroundBuilder: (context, states, child) {
+                if (states.contains(WidgetState.disabled)) {
+                  return child ?? const SizedBox.shrink();
+                }
+                // 작은 버튼 등에서 개별 지정한 모양을 유지한다.
+                final widget = context.widget;
+                final shape = widget is ButtonStyleButton
+                    ? widget.style?.shape?.resolve(states)
+                    : null;
+                return CustomPaint(
+                  painter: ButtonInnerShadowPainter(
+                    shape: shape ?? buttonShape,
+                    textDirection: Directionality.of(context),
+                    pressed: states.contains(WidgetState.pressed),
+                  ),
+                  child: child,
+                );
+              },
+            ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: outlinedStyle.copyWith(

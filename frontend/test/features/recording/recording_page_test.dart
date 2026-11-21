@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +10,8 @@ import 'package:life_record/features/recording/presentation/recording_controller
 import 'package:life_record/features/recording/presentation/recording_page.dart';
 
 import 'fakes.dart';
+import '../../core/audio_playback_card_test.dart' show FakePlayer;
+import '../../helpers/phone_size.dart';
 
 void main() {
   const args = RecordingArgs(
@@ -56,7 +60,7 @@ void main() {
     await tester.pump();
     expect(find.text('녹음하고 있어요'), findsOneWidget);
     expect(find.text('00:00'), findsOneWidget);
-    expect(find.byTooltip('녹음 끝내고 보내기'), findsOneWidget);
+    expect(find.byTooltip('녹음 끝내기'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
@@ -84,7 +88,7 @@ void main() {
     await tester.pump();
     expect(find.textContaining('잠깐 멈췄어요'), findsOneWidget);
     expect(find.text('잠깐 멈추기'), findsNothing);
-    expect(find.text('그만 말하고 보내기'), findsOneWidget);
+    expect(find.text('녹음 끝내기'), findsOneWidget);
     expect(recorder.pauses, 1);
 
     await tester.ensureVisible(find.text('이어서 말하기'));
@@ -190,6 +194,136 @@ void main() {
     expect(formatClock(0), '00:00');
     expect(formatClock(23), '00:23');
     expect(formatClock(60), '01:00');
+  });
+
+  for (final paused in [false, true]) {
+    testWidgets('미리 듣기 후 명시적 전송만 업로드한다 (paused=$paused)', (tester) async {
+      usePhoneSize(tester);
+      final recorder = FakeRecorder();
+      final repository = FakeRecordingRepository()
+        ..uploadGate = Completer<void>();
+      final controller = RecordingController(
+        args: args,
+        repository: repository,
+        recorder: recorder,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            home: RecordingPage(args: args, controller: controller),
+          ),
+        ),
+      );
+      await controller.start();
+      if (paused) await controller.pause();
+      await tester.pump();
+      final stop = paused ? find.text('녹음 끝내기') : find.byTooltip('녹음 끝내기');
+      await tester.ensureVisible(stop);
+      await tester.tap(stop);
+      await tester.pumpAndSettle();
+      expect(controller.phase, RecordingPhase.draft);
+      expect(repository.keys, isEmpty);
+      final player = tester.widget<AudioPlaybackCard>(
+        find.byType(AudioPlaybackCard),
+      );
+      expect(player.source.url, Uri.file(recorder.clip.path).toString());
+      expect(player.enabled, isTrue);
+      expect(find.text('녹음 들어보기'), findsOneWidget);
+      // 듣기는 선택이다. 재생하지 않고 보내기를 두 번 눌러도 한 번만 전송한다.
+      await tester.ensureVisible(find.text('보내기'));
+      await tester.tap(find.text('보내기'));
+      await tester.tap(find.text('보내기'));
+      await tester.pump();
+      expect(repository.keys, hasLength(1));
+      expect(controller.phase, RecordingPhase.uploading);
+      repository.uploadGate!.complete();
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+  }
+
+  testWidgets('미리 듣기는 로컬 파일을 재생하고 업로드하지 않는다', (tester) async {
+    usePhoneSize(tester);
+    final recorder = FakeRecorder();
+    final repository = FakeRecordingRepository();
+    final controller = RecordingController(
+      args: args,
+      repository: repository,
+      recorder: recorder,
+    );
+    final player = FakePlayer();
+    await controller.start();
+    await controller.stop();
+    // 실제 코덱 대신 재생기에 전달되는 로컬 파일과 재생 요청을 확인한다.
+    final source = Uri.file(controller.draft!.path).toString();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AudioPlaybackCard(
+            source: PlaybackSource(source),
+            label: '녹음 들어보기',
+            playerFactory: () => player,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    expect(player.urls, [source]);
+    expect(player.plays, 1);
+    expect(repository.keys, isEmpty);
+    expect(controller.phase, RecordingPhase.draft);
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+    await tester.pump();
+  });
+
+  testWidgets('미리 듣기에서 다시 녹음은 확인 후에만 초안을 버린다', (tester) async {
+    usePhoneSize(tester);
+    final recorder = FakeRecorder();
+    final repository = FakeRecordingRepository();
+    final controller = RecordingController(
+      args: args,
+      repository: repository,
+      recorder: recorder,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: RecordingPage(args: args, controller: controller),
+        ),
+      ),
+    );
+    await controller.start();
+    await controller.stop();
+    await tester.pumpAndSettle();
+    final draft = controller.draft;
+    await tester.ensureVisible(find.text('다시 녹음'));
+    await tester.tap(find.text('다시 녹음'));
+    await tester.pumpAndSettle();
+    expect(find.text('아직 보내지 않은 녹음은 지워져요.'), findsOneWidget);
+    await tester.tap(find.text('계속 보관'));
+    await tester.pumpAndSettle();
+    expect(controller.draft, same(draft));
+    expect(recorder.starts, 1);
+    expect(repository.keys, isEmpty);
+    await tester.tap(find.text('다시 녹음'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('다시 녹음'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(controller.phase, RecordingPhase.recording);
+    expect(controller.hasDraft, isFalse);
+    expect(recorder.starts, 2);
+    expect(repository.keys, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 
   testWidgets('멈춘 상태에서 뒤로 가면 저장되지 않는다고 묻는다', (tester) async {
