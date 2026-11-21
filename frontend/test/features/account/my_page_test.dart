@@ -104,7 +104,7 @@ void main() {
     await _pump(tester);
 
     expect(find.text('김민지'), findsOneWidget);
-    expect(find.text('부모님'), findsOneWidget);
+    expect(find.text('부모'), findsOneWidget);
     expect(find.text('1.0.0'), findsOneWidget);
     // Flaticon 라이선스상 아이콘 출처를 앱 안에 표기해야 한다
     expect(find.text(uiconsAttribution), findsOneWidget);
@@ -158,7 +158,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('로그아웃하지 못했어요. 다시 시도해 주세요.'), findsOneWidget);
-      expect(find.text('마이페이지'), findsOneWidget);
+      expect(find.text(MyPage.title), findsOneWidget);
       expect(find.text('가입 화면'), findsNothing);
     });
 
@@ -167,7 +167,7 @@ void main() {
 
       await _tapAndConfirm(tester, item: '로그아웃', action: '취소');
 
-      expect(find.text('마이페이지'), findsOneWidget);
+      expect(find.text(MyPage.title), findsOneWidget);
       expect(await _token(), 'token');
     });
   });
@@ -192,7 +192,7 @@ void main() {
 
       await _tapAndConfirm(tester, item: '탈퇴하기', action: '취소');
 
-      expect(find.text('마이페이지'), findsOneWidget);
+      expect(find.text(MyPage.title), findsOneWidget);
       expect(await _token(), 'token');
     });
 
@@ -205,7 +205,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('잠시 후 다시 시도해 주세요.'), findsOneWidget);
-      expect(find.text('마이페이지'), findsOneWidget);
+      expect(find.text(MyPage.title), findsOneWidget);
       expect(await _token(), 'token');
     });
 

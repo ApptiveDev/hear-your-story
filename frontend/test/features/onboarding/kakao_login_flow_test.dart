@@ -195,7 +195,7 @@ void main() {
 
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃').last);
+    await tester.tap(find.widgetWithText(FilledButton, '로그아웃'));
     await _settle(tester);
 
     expect(find.text('카카오로 시작하기'), findsOneWidget);

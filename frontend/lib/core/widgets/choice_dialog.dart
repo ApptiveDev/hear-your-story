@@ -55,3 +55,55 @@ Future<bool> showChoiceDialog(
   );
   return result ?? false;
 }
+
+/// Figma `Dialog/Confirm` (마이 로그아웃·탈퇴): 위에 [confirmLabel], 아래에 `취소`.
+///
+/// [confirmLabel]을 누르면 true, 그 밖에는 false를 돌려준다.
+Future<bool> showConfirmDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(AppSizes.screenPadding),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: AppText.headingM,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center, style: AppText.bodyM),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(confirmLabel),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  return result ?? false;
+}
