@@ -34,6 +34,9 @@ abstract final class AppColors {
 
   /// 질문 책장 `Card/Stack` 가운데 카드. Figma 변수로는 아직 없다.
   static const cardStack = Color(0xFFF7DDB0);
+
+  /// 공책 종이 `Margin line`. Figma 변수로는 아직 없다.
+  static const noteMargin = Color(0xFFCD8F66);
 }
 
 abstract final class AppFonts {

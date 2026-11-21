@@ -3,17 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/stories/data/stories_providers.dart';
+import 'package:life_record/features/today/data/today_providers.dart';
+import 'package:life_record/features/today/presentation/today_provider.dart';
 import 'package:life_record/features/today/presentation/month_records.dart';
 
 import '../../helpers/phone_size.dart';
 import '../stories/fake_stories_repository.dart';
+import 'today_fixtures.dart';
 
 void main() {
   Future<void> pump(WidgetTester tester, FakeStoriesRepository repo) async {
     usePhoneSize(tester);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
+        overrides: [
+          storiesRepositoryProvider.overrideWithValue(repo),
+          todayDataSourceProvider.overrideWithValue(
+            FakeTodayDataSource(json: todayFixture('revealed')),
+          ),
+        ],
         child: MaterialApp(
           home: Scaffold(
             body: ListView(
@@ -63,5 +71,47 @@ void main() {
     await pump(tester, repo);
 
     expect(find.text('11월 기록'), findsNothing);
+  });
+
+  testWidgets('홈을 새로고침하면 이번 달 기록을 다시 불러온다', (tester) async {
+    usePhoneSize(tester);
+    final repo = FakeStoriesRepository(
+      {},
+      months: {
+        '2026-11': [testStory('1', assignedDate: DateTime(2026, 11, 2))],
+      },
+    );
+    late WidgetRef ref;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storiesRepositoryProvider.overrideWithValue(repo),
+          todayDataSourceProvider.overrideWithValue(
+            FakeTodayDataSource(json: todayFixture('revealed')),
+          ),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, r, _) {
+              ref = r;
+              r.watch(todayProvider); // 홈이 오늘 질문을 보고 있는 상태
+              return Scaffold(
+                body: ListView(
+                  children: [MonthRecords(now: () => DateTime(2026, 11, 20))],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(repo.requestedMonths, ['2026-11']);
+
+    ref.invalidate(todayProvider); // 새로고침·상대 답 공개로 오늘 상태가 바뀜
+    await tester.pumpAndSettle();
+
+    expect(repo.requestedMonths, ['2026-11', '2026-11']);
+    expect(find.text('질문 1'), findsOneWidget); // 다시 불러오는 동안에도 목록 유지
   });
 }

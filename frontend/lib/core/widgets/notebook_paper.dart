@@ -68,7 +68,7 @@ class _PaperPainter extends CustomPainter {
 
     canvas.drawRect(
       Rect.fromLTRB(42, 10, 43, size.height - 10),
-      Paint()..color = const Color(0xFFCD8F66), // 여백선 (Figma Margin line)
+      Paint()..color = AppColors.noteMargin,
     );
   }
 
