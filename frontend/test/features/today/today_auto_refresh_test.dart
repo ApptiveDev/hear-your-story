@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../helpers/no_month_records.dart';
+
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
 import 'package:life_record/features/today/domain/today.dart';
@@ -25,7 +28,10 @@ Future<void> _pump(WidgetTester tester, FakeTodayDataSource source) async {
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [todayDataSourceProvider.overrideWithValue(source)],
+      overrides: [
+        noMonthRecords,
+        todayDataSourceProvider.overrideWithValue(source),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );

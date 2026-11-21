@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../helpers/no_month_records.dart';
+
 import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_args.dart';
 import 'package:life_record/features/recording/presentation/recording_args.dart';
@@ -54,7 +57,10 @@ Future<_Harness> _pump(WidgetTester tester, FakeTodayDataSource source) async {
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [todayDataSourceProvider.overrideWithValue(source)],
+      overrides: [
+        noMonthRecords,
+        todayDataSourceProvider.overrideWithValue(source),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );

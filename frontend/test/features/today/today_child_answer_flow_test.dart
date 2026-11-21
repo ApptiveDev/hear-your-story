@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../helpers/no_month_records.dart';
+
 import 'package:life_record/features/child_answer/data/child_answer_providers.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_args.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_page.dart';
@@ -30,6 +33,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          noMonthRecords,
           todayDataSourceProvider.overrideWithValue(today),
           childAnswerRepositoryProvider.overrideWithValue(
             FakeChildAnswerRepository(),

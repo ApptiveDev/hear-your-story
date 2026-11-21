@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../helpers/no_month_records.dart';
+
 import 'package:life_record/app/app.dart';
 import 'package:life_record/core/text_scale/text_scale.dart';
 import 'package:life_record/core/text_scale/text_scale_button.dart';
@@ -37,6 +40,7 @@ Future<void> _launchHome(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        noMonthRecords,
         initialTextSizeProvider.overrideWithValue(initial),
         todayDataSourceProvider.overrideWithValue(
           FakeTodayDataSource(json: todayFixture('waiting_for_both')),
