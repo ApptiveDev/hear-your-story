@@ -116,9 +116,17 @@ void main() {
   );
 
   testWidgets('부모 이야기 카드: 자녀 답 음성 401', (tester) async {
-    await launch(tester, ParentStoryCard(story: testStory('1')), [
-      parentAnswerOverride,
-    ]);
+    final story = testStory('1');
+    await launch(
+      tester,
+      Column(
+        children: [
+          ParentStoryCard(story: story),
+          ParentStoryAudio(story: story), // 듣기는 상세 화면 아래 고정 영역이다
+        ],
+      ),
+      [parentAnswerOverride],
+    );
 
     await expectSignedOut(tester);
   });
@@ -145,7 +153,7 @@ void main() {
       childAnswer: story.childAnswer,
       revealedAt: story.revealedAt,
     );
-    await launch(tester, ChildStoryCard(story: expired), [
+    await launch(tester, ChildStoryAudio(story: expired), [
       storiesDataSourceProvider.overrideWith(
         (ref) => ApiStoriesDataSource(unauthorizedDio(ref)),
       ),
@@ -163,8 +171,8 @@ void main() {
       tester,
       ListView(
         children: [
-          ParentStoryCard(story: testStory('1')),
-          ParentStoryCard(story: testStory('2')),
+          ParentStoryAudio(story: testStory('1')),
+          ParentStoryAudio(story: testStory('2')),
         ],
       ),
       [parentAnswerOverride],

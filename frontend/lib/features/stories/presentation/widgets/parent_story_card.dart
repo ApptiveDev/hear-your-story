@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/widgets/audio_playback_card.dart';
 import '../../../parent_answer/data/parent_answer_providers.dart';
 import '../../domain/story.dart';
@@ -17,15 +18,17 @@ class ParentStoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return StoryCardFrame(
       story: story,
+      mine: StoryEntry(
+        icon: AppIcons.heart,
+        label: '내 이야기',
+        text: parentAnswerText(story.parentAnswer),
+      ),
+      theirs: StoryEntry(
+        icon: AppIcons.childHead,
+        label: '자녀의 이야기',
+        text: childAnswerText(story.childAnswer),
+      ),
       children: [
-        _ChildVoiceSection(answer: story.childAnswer),
-        const SizedBox(height: 12),
-        AnswerSection(label: '자녀의 답', text: childAnswerText(story.childAnswer)),
-        const SizedBox(height: 16),
-        AnswerSection(
-          label: '내가 남긴 답',
-          text: parentAnswerText(story.parentAnswer),
-        ),
         // 부모는 자기 녹음만 지울 수 있다. 자녀 답은 자녀가 지운다.
         if (!story.parentAnswer.isDeleted &&
             story.parentAnswer.recordingId != null)
@@ -41,18 +44,24 @@ class ParentStoryCard extends StatelessWidget {
   }
 }
 
-/// 부모에게 자녀 답을 목소리(TTS)로 들려주는 영역
-class _ChildVoiceSection extends ConsumerWidget {
-  const _ChildVoiceSection({required this.answer});
-  final StoryChildAnswer answer;
+/// 자녀 답을 목소리로 들려줄 수 있거나 만드는 중인지. 지워진 답은 그리지 않는다.
+bool hasParentStoryAudio(Story story) {
+  final answer = story.childAnswer;
+  return answer.answerId != null &&
+      (answer.isTtsReady || answer.isTtsProcessing);
+}
+
+/// Figma WF-021·022 진행 막대와 버튼: 자녀 답을 목소리(TTS)로 듣는다. 만드는 중이면
+/// 눌리지 않는 `목소리를 담고 있어요` 버튼을 보인다.
+class ParentStoryAudio extends ConsumerWidget {
+  const ParentStoryAudio({super.key, required this.story});
+  final Story story;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final answer = story.childAnswer;
     if (answer.isTtsProcessing) {
-      return Text(
-        '자녀의 답을 목소리로 바꾸고 있어요.',
-        style: Theme.of(context).textTheme.bodyMedium,
-      );
+      return const FilledButton(onPressed: null, child: Text('목소리를 담고 있어요'));
     }
     // 지워진 답(answerId == null)은 음성 주소를 요청하지 않는다.
     final answerId = answer.answerId;

@@ -21,3 +21,22 @@ class StoryCard extends ConsumerWidget {
         : ChildStoryCard(story: story);
   }
 }
+
+/// 듣기 영역을 그려야 하는지.
+bool hasStoryAudio(Story story, UserRole? role) => role == UserRole.parent
+    ? hasParentStoryAudio(story)
+    : hasChildStoryAudio(story);
+
+/// 역할에 맞는 듣기 영역: 부모는 자녀 답 TTS, 자녀는 부모님 원본 목소리.
+class StoryAudio extends ConsumerWidget {
+  const StoryAudio({super.key, required this.story});
+  final Story story;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(currentUserProvider).value?.role;
+    return role == UserRole.parent
+        ? ParentStoryAudio(story: story)
+        : ChildStoryAudio(story: story);
+  }
+}

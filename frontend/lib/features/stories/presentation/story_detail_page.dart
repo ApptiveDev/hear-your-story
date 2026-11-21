@@ -5,13 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/step_layout.dart';
 import '../domain/story.dart';
+import '../../onboarding/data/auth_providers.dart';
 import 'stories_controller.dart';
 import 'stories_month_provider.dart';
 import 'widgets/story_card.dart';
 
 /// 질문 책장에서 고른 이야기 하나. 두 답과 듣기·내 답 지우기를 보여준다.
 ///
-/// Figma에 상세 화면 시안이 없어 `Note/Page` 모양의 이야기 카드를 그대로 쓴다.
+/// Figma WF-021·022 구성: 위에 질문, 가운데 `Note/Page` 공책.
+/// 내 답 지우기는 공책 바로 아래, 듣기는 그 아래 내용 끝에 둔다(고정하지 않는다).
 /// 질문 책장에서 오면 목록을, 달력에서 오면([month]) 그 달 데이터를 읽는다.
 /// 이미 불러온 이야기를 읽으므로 따로 요청하지 않는다.
 class StoryDetailPage extends ConsumerWidget {
@@ -32,6 +34,7 @@ class StoryDetailPage extends ConsumerWidget {
         ? ref.watch(storiesControllerProvider).whenData((s) => s.items)
         : ref.watch(storiesMonthProvider(month));
     final story = stories.value?.where((s) => s.storyId == storyId).firstOrNull;
+    final role = ref.watch(currentUserProvider).value?.role;
 
     return Scaffold(
       body: SafeArea(
@@ -39,9 +42,17 @@ class StoryDetailPage extends ConsumerWidget {
           onBack: () => _back(context),
           actions: const [],
           children: [
-            if (story != null)
-              StoryCard(key: ValueKey(story.storyId), story: story)
-            else if (stories.isLoading)
+            if (story != null) ...[
+              StoryCard(key: ValueKey(story.storyId), story: story),
+              // 듣기는 아래 고정 영역이 아니라 내용 끝에 두어 스크롤해서 닿는다
+              if (hasStoryAudio(story, role)) ...[
+                const SizedBox(height: 24),
+                StoryAudio(
+                  key: ValueKey('audio_${story.storyId}'),
+                  story: story,
+                ),
+              ],
+            ] else if (stories.isLoading)
               const Padding(
                 padding: EdgeInsets.all(48),
                 child: Center(child: CircularProgressIndicator()),
