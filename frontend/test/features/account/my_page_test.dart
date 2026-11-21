@@ -11,6 +11,8 @@ import 'package:life_record/features/account/data/account_providers.dart';
 import 'package:life_record/features/account/data/account_repository_impl.dart';
 import 'package:life_record/features/account/domain/account_repository.dart';
 import 'package:life_record/features/account/presentation/account_deleted_page.dart';
+import 'package:life_record/features/account/domain/legal_documents.dart';
+import 'package:life_record/features/account/presentation/legal_page.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/domain/auth_repository.dart';
@@ -40,6 +42,14 @@ Future<void> _pump(
     initialLocation: '/my',
     routes: [
       GoRoute(path: '/my', builder: (_, _) => const MyPage()),
+      GoRoute(
+        path: '/my/privacy',
+        builder: (_, _) => const LegalPage(document: privacyPolicy),
+      ),
+      GoRoute(
+        path: '/my/terms',
+        builder: (_, _) => const LegalPage(document: termsOfService),
+      ),
       GoRoute(path: '/onboarding', builder: (_, _) => const Text('가입 화면')),
       GoRoute(
         path: '/account-deleted',
@@ -116,15 +126,35 @@ void main() {
     expect(find.text('자녀'), findsOneWidget);
   });
 
-  testWidgets('처리방침·문의 주소가 정해지기 전에는 준비 중 안내를 보여준다', (tester) async {
+  testWidgets('개인정보 처리방침과 이용약관을 열어 읽고 이전으로 돌아온다', (tester) async {
     await _pump(tester);
 
     await tester.tap(find.text('개인정보 처리방침'));
     await tester.pumpAndSettle();
-    expect(find.text('준비 중이에요.'), findsOneWidget);
-
-    await tester.tap(find.text('닫기'));
+    expect(find.text('1. 수집하는 정보'), findsOneWidget);
+    // 긴 본문은 스크롤해야 보인다
+    await tester.scrollUntilVisible(find.text('4. 맡겨서 처리하는 곳'), 300);
+    expect(find.textContaining('OpenAI'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('이전'),
+      -300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('이전'));
     await tester.pumpAndSettle();
+    expect(find.text(MyPage.title), findsOneWidget);
+
+    await tester.tap(find.text('이용약관'));
+    await tester.pumpAndSettle();
+    expect(find.text('1. 목적'), findsOneWidget);
+    expect(find.text('10. 문의와 변경'), findsNothing); // 아래로 스크롤해야 보인다
+    await tester.scrollUntilVisible(find.text('10. 문의와 변경'), 300);
+    expect(find.text('10. 문의와 변경'), findsOneWidget);
+  });
+
+  testWidgets('문의 주소가 정해지기 전에는 준비 중 안내를 보여준다', (tester) async {
+    await _pump(tester);
+
     await tester.tap(find.text('문의하기'));
     await tester.pumpAndSettle();
     expect(find.text('준비 중이에요.'), findsOneWidget);
@@ -289,7 +319,7 @@ void main() {
       expect(_canPop(tester), isTrue);
       expect(await _token(), 'token');
       // 다른 항목을 다시 누를 수 있다
-      await tester.tap(find.text('개인정보 처리방침'));
+      await tester.tap(find.text('문의하기'));
       await tester.pumpAndSettle();
       expect(find.text('준비 중이에요.'), findsOneWidget);
     });

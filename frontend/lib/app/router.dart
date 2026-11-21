@@ -16,6 +16,8 @@ import '../features/stories/presentation/stories_calendar_page.dart';
 import '../features/stories/presentation/stories_page.dart';
 import '../features/stories/presentation/story_detail_page.dart';
 import '../features/account/presentation/account_deleted_page.dart';
+import '../features/account/domain/legal_documents.dart';
+import '../features/account/presentation/legal_page.dart';
 import '../features/account/presentation/my_page.dart';
 import '../core/widgets/app_tab_shell.dart';
 
@@ -98,6 +100,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/my', builder: (context, state) => const MyPage()),
         ],
       ),
+      // 탭 막대 없이 읽는 약관 화면 (마이에서 연다)
+      GoRoute(
+        path: '/my/privacy',
+        builder: (context, state) => const LegalPage(document: privacyPolicy),
+      ), // C
+      GoRoute(
+        path: '/my/terms',
+        builder: (context, state) => const LegalPage(document: termsOfService),
+      ), // C
       GoRoute(
         path: '/account-deleted',
         builder: (context, state) => const AccountDeletedPage(),
