@@ -21,6 +21,15 @@ class UserTest {
 	}
 
 	@Test
+	void countsEmojiAsUserPerceivedCharacters() {
+		User user = new User("usr_parent", "김영희😊😊😊😊", Role.PARENT, "device", NOW);
+
+		user.renameTo("가👨‍👩‍👧‍👦");
+
+		assertThat(user.getName()).isEqualTo("가👨‍👩‍👧‍👦");
+	}
+
+	@Test
 	void rejectsInvalidNameAtEntityBoundary() {
 		User user = new User("usr_parent", "기존 이름", Role.PARENT, "device", NOW);
 

@@ -1,6 +1,7 @@
 package com.apptive.backend.domain.user.entity;
 
 import java.time.OffsetDateTime;
+import java.util.regex.Pattern;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,6 +20,8 @@ import lombok.Getter;
 public class User {
 
 	public static final int MAX_NAME_LENGTH = 10;
+	public static final String NAME_PATTERN = "^(?:\\X){1," + MAX_NAME_LENGTH + "}$";
+	private static final Pattern VALID_NAME_PATTERN = Pattern.compile(NAME_PATTERN);
 
 	@Id
 	@Column(length = 40, nullable = false, updatable = false)
@@ -98,7 +101,7 @@ public class User {
 			throw new IllegalArgumentException("이름은 필수입니다.");
 		}
 		String normalized = name.trim();
-		if (normalized.isEmpty() || normalized.length() > MAX_NAME_LENGTH) {
+		if (!VALID_NAME_PATTERN.matcher(normalized).matches()) {
 			throw new IllegalArgumentException("이름은 1자 이상 10자 이하여야 합니다.");
 		}
 		return normalized;
