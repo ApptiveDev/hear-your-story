@@ -1,4 +1,4 @@
-# API 계약 v0.1 — 2026-11-04 출시 준비
+# API 계약 v0.7 — 2026-11-22 출시 준비
 
 이 문서는 Flutter와 Spring Boot 사이의 **단일 API 계약(source of truth)**이다.
 프론트는 이 문서의 예시 JSON으로 Mock을 만들고, 백엔드는 동일한 필드와 상태값을
@@ -250,6 +250,7 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 | 9 | `GET /stories?cursor=&limit=` | 공통 | 공개된 지난 이야기 목록 |
 | 10 | `GET /stories?month=YYYY-MM` | 공통 | 공개된 지난 이야기 월별 목록 |
 | 11 | `DELETE /users/me` | 공통 | 회원 탈퇴 요청·본인 데이터 삭제 시작 |
+| 12 | `PATCH /users/me` | 공통 | 가족에게 표시되는 내 이름 변경 |
 
 `GET /questions/today`와 `GET /today?pairId=`는 제거한다. 오늘 화면은 `GET
 /today` 하나로 통합하고 Pair는 인증 사용자로부터 서버가 결정한다.
@@ -914,6 +915,41 @@ access token 없이 호출한다. 요청:
 부모 녹음의 message는 `부모님이 이 음성 기록을 삭제했어요.`다. 프론트는 재작성·수정·
 음성 재생·처리 상태 폴링을 노출하지 않는다. `type=DELETED`는 답변 원문과 음성 ID를 포함하지 않는다.
 
+### 5.16 내 이름 변경 — `PATCH /users/me` — 확정
+
+[API Issue #96](https://github.com/ApptiveDev/hear-your-story/issues/96)에서 요청·응답과
+프론트 연동 영향을 관리한다.
+
+access token이 필요하다. 부모와 자녀 모두 본인의 이름만 변경할 수 있다. 이름은 가족
+연결과 지난 이야기에서 사용자에게 표시되는 값이며 카카오 계정의 프로필명은 변경하지
+않는다.
+
+요청:
+
+```json
+{
+  "name": "새 이름"
+}
+```
+
+- 앞뒤 공백을 제거한 뒤 1자 이상 10자 이하여야 한다.
+- 빈 문자열, 공백만 있는 값, 10자를 초과한 값은 `400 VALIDATION_ERROR`다.
+- 현재 이름과 동일한 값을 보내도 성공하며 별도 오류를 반환하지 않는다.
+
+응답 `200 OK`:
+
+```json
+{
+  "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
+  "name": "새 이름",
+  "role": "PARENT",
+  "pairingStatus": "PAIRED"
+}
+```
+
+응답 형식은 `GET /users/me`와 동일하다. 프론트는 성공 응답으로 로컬 사용자 정보를
+갱신해 MY 화면과 홈에 새 이름이 즉시 표시되게 한다.
+
 ## 6. 프론트 Mock 파일 권장 구조
 
 ```text
@@ -962,3 +998,4 @@ frontend/
 | 2026-11-14 | v0.4 | Issue #73 결정에 따라 카카오 OIDC 로그인, 가입용 token, access·refresh token 갱신, 로그아웃, `GET /users/me` 계약 확정 |
 | 2026-11-14 | v0.5 | 부모·자녀 회원 탈퇴 정책, 카카오 연결 해제, Pair 비활성화와 작성자별 데이터 삭제 계약 확정 |
 | 2026-11-22 | v0.6 | 부모 녹음·자녀 답변 개별 삭제 구현, 파일 삭제 영속 큐, 오늘 답변 DELETED 응답과 삭제 후 재작성 차단 확정 |
+| 2026-11-22 | v0.7 | 본인 이름 변경 `PATCH /users/me`, 1~10자 검증과 갱신된 사용자 응답 계약 확정 |

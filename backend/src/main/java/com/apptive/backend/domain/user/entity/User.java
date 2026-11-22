@@ -1,6 +1,7 @@
 package com.apptive.backend.domain.user.entity;
 
 import java.time.OffsetDateTime;
+import java.util.regex.Pattern;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +18,10 @@ import lombok.Getter;
 @Table(name = "app_users", uniqueConstraints = @UniqueConstraint(name = "uk_app_users_auth_identity", columnNames = {
         "auth_provider", "auth_subject"}))
 public class User {
+
+	public static final int MAX_NAME_LENGTH = 10;
+	public static final String NAME_PATTERN = "^(?:\\X){1," + MAX_NAME_LENGTH + "}$";
+	private static final Pattern VALID_NAME_PATTERN = Pattern.compile(NAME_PATTERN);
 
 	@Id
 	@Column(length = 40, nullable = false, updatable = false)
@@ -54,7 +59,7 @@ public class User {
 
 	public User(String id, String name, Role role, String deviceId, OffsetDateTime createdAt) {
 		this.id = id;
-		this.name = name;
+		this.name = normalizeName(name);
 		this.role = role;
 		this.deviceId = deviceId;
 		this.createdAt = createdAt;
@@ -63,7 +68,7 @@ public class User {
 	public User(String id, String name, Role role, AuthProvider authProvider, String authSubject,
 	    OffsetDateTime createdAt) {
 		this.id = id;
-		this.name = name;
+		this.name = normalizeName(name);
 		this.role = role;
 		this.authProvider = authProvider;
 		this.authSubject = authSubject;
@@ -72,6 +77,10 @@ public class User {
 
 	public boolean isActive() {
 		return accountStatus == AccountStatus.ACTIVE;
+	}
+
+	public void renameTo(String name) {
+		this.name = normalizeName(name);
 	}
 
 	public void requestDeletion(OffsetDateTime now) {
@@ -85,6 +94,17 @@ public class User {
 
 	public void completeDeletion() {
 		this.accountStatus = AccountStatus.DELETED;
+	}
+
+	private static String normalizeName(String name) {
+		if (name == null) {
+			throw new IllegalArgumentException("이름은 필수입니다.");
+		}
+		String normalized = name.trim();
+		if (!VALID_NAME_PATTERN.matcher(normalized).matches()) {
+			throw new IllegalArgumentException("이름은 1자 이상 10자 이하여야 합니다.");
+		}
+		return normalized;
 	}
 
 }

@@ -84,6 +84,11 @@ class UserPairControllerTest {
 	}
 
 	@Test
+	void registrationCountsUserPerceivedCharacters() throws Exception {
+		register("김영희😊😊😊😊", "PARENT", "emoji-name-subject", 201);
+	}
+
+	@Test
 	void invalidRegistrationReturnsFieldErrorsInCommonFormat() throws Exception {
 		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content("""
 		    {"name":" ","role":"PARENT","registrationToken":""}

@@ -15,6 +15,7 @@ import com.apptive.backend.common.id.IdGenerator;
 import com.apptive.backend.domain.auth.dto.AuthenticatedResponse;
 import com.apptive.backend.domain.auth.service.SessionService;
 import com.apptive.backend.domain.user.dto.CreateUserRequest;
+import com.apptive.backend.domain.user.dto.UpdateUserNameRequest;
 import com.apptive.backend.domain.user.dto.UserResponse;
 import com.apptive.backend.domain.user.entity.AuthProvider;
 import com.apptive.backend.domain.user.entity.User;
@@ -56,6 +57,17 @@ public class UserService {
 	public UserResponse getMe(AuthenticatedUser authenticatedUser) {
 		User user = userRepository.findById(authenticatedUser.userId())
 		    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+		return sessionService.toUserResponse(user);
+	}
+
+	@Transactional
+	public UserResponse updateName(AuthenticatedUser authenticatedUser, UpdateUserNameRequest request) {
+		User user = userRepository.findByIdForUpdate(authenticatedUser.userId())
+		    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+		if (!user.isActive()) {
+			throw new ApiException(ErrorCode.UNAUTHORIZED);
+		}
+		user.renameTo(request.name());
 		return sessionService.toUserResponse(user);
 	}
 
