@@ -917,6 +917,9 @@ access token 없이 호출한다. 요청:
 
 ### 5.16 내 이름 변경 — `PATCH /users/me` — 확정
 
+[API Issue #96](https://github.com/ApptiveDev/hear-your-story/issues/96)에서 요청·응답과
+프론트 연동 영향을 관리한다.
+
 access token이 필요하다. 부모와 자녀 모두 본인의 이름만 변경할 수 있다. 이름은 가족
 연결과 지난 이야기에서 사용자에게 표시되는 값이며 카카오 계정의 프로필명은 변경하지
 않는다.
