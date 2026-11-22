@@ -684,6 +684,8 @@ photoFile: family-photo.jpg
 
 ### 5.12 부모 녹음 삭제 — `DELETE /recordings/{recordingId}` — 확정
 
+[API Issue #93](https://github.com/ApptiveDev/hear-your-story/issues/93)에서 개별 삭제와 오늘 삭제 상태 연동을 추적한다.
+
 인증이 필요하다. 아래 nullable 응답은 지난 이야기·월별 조회에 동일하게 적용한다.
 
 녹음을 제출한 부모만 호출할 수 있다. 자녀 답변은 함께 지우지 않으며 자녀 본인이

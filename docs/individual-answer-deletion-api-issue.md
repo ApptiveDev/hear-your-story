@@ -1,6 +1,7 @@
 # [API] 부모 녹음·자녀 답변 개별 삭제
 
-GitHub API Issue 등록용 초안. 계약 담당자 확인과 실제 Issue 등록은 PR 준비 시 진행한다.
+[API Issue #93](https://github.com/ApptiveDev/hear-your-story/issues/93)에 등록했다.
+프론트 담당자의 계약 확인과 실제 서버·기기 연동 QA는 PR에서 확인한다.
 
 ## 영향 endpoint
 
