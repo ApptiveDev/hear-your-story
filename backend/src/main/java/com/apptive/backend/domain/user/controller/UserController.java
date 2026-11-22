@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import com.apptive.backend.common.auth.AuthenticatedUser;
 import com.apptive.backend.domain.auth.dto.AuthenticatedResponse;
 import com.apptive.backend.domain.user.dto.AccountDeletionResponse;
 import com.apptive.backend.domain.user.dto.CreateUserRequest;
+import com.apptive.backend.domain.user.dto.UpdateUserNameRequest;
 import com.apptive.backend.domain.user.dto.UserResponse;
 import com.apptive.backend.domain.user.service.AccountDeletionService;
 import com.apptive.backend.domain.user.service.UserService;
@@ -38,6 +40,12 @@ public class UserController {
 	@GetMapping("/me")
 	public ResponseEntity<UserResponse> getMe(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 		return ResponseEntity.ok(userService.getMe(authenticatedUser));
+	}
+
+	@PatchMapping("/me")
+	public ResponseEntity<UserResponse> updateName(@AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+	    @Valid @RequestBody UpdateUserNameRequest request) {
+		return ResponseEntity.ok(userService.updateName(authenticatedUser, request));
 	}
 
 	@DeleteMapping("/me")

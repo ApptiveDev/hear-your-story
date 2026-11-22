@@ -18,6 +18,8 @@ import lombok.Getter;
         "auth_provider", "auth_subject"}))
 public class User {
 
+	public static final int MAX_NAME_LENGTH = 10;
+
 	@Id
 	@Column(length = 40, nullable = false, updatable = false)
 	private String id;
@@ -54,7 +56,7 @@ public class User {
 
 	public User(String id, String name, Role role, String deviceId, OffsetDateTime createdAt) {
 		this.id = id;
-		this.name = name;
+		this.name = normalizeName(name);
 		this.role = role;
 		this.deviceId = deviceId;
 		this.createdAt = createdAt;
@@ -63,7 +65,7 @@ public class User {
 	public User(String id, String name, Role role, AuthProvider authProvider, String authSubject,
 	    OffsetDateTime createdAt) {
 		this.id = id;
-		this.name = name;
+		this.name = normalizeName(name);
 		this.role = role;
 		this.authProvider = authProvider;
 		this.authSubject = authSubject;
@@ -72,6 +74,10 @@ public class User {
 
 	public boolean isActive() {
 		return accountStatus == AccountStatus.ACTIVE;
+	}
+
+	public void renameTo(String name) {
+		this.name = normalizeName(name);
 	}
 
 	public void requestDeletion(OffsetDateTime now) {
@@ -85,6 +91,17 @@ public class User {
 
 	public void completeDeletion() {
 		this.accountStatus = AccountStatus.DELETED;
+	}
+
+	private static String normalizeName(String name) {
+		if (name == null) {
+			throw new IllegalArgumentException("이름은 필수입니다.");
+		}
+		String normalized = name.trim();
+		if (normalized.isEmpty() || normalized.length() > MAX_NAME_LENGTH) {
+			throw new IllegalArgumentException("이름은 1자 이상 10자 이하여야 합니다.");
+		}
+		return normalized;
 	}
 
 }
