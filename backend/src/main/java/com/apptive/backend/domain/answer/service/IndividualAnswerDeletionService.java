@@ -15,7 +15,6 @@ import com.apptive.backend.domain.assignment.entity.Assignment;
 import com.apptive.backend.domain.assignment.repository.AssignmentRepository;
 import com.apptive.backend.domain.recording.entity.Recording;
 import com.apptive.backend.domain.recording.repository.RecordingRepository;
-import com.apptive.backend.domain.user.entity.Role;
 import com.apptive.backend.domain.user.repository.UserRepository;
 import com.apptive.backend.infra.storage.StorageDeletionQueue;
 
@@ -37,7 +36,7 @@ public class IndividualAnswerDeletionService {
 		String assignmentId = recordingRepository.findAssignmentId(id)
 		    .orElseThrow(() -> new ApiException(ErrorCode.RECORDING_NOT_FOUND));
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId).orElseThrow();
-		if (user.role() != Role.PARENT || !assignment.belongsToParent(user.userId())) {
+		if (!assignment.isParentAuthor(user.userId(), user.role())) {
 			throw new ApiException(ErrorCode.RESOURCE_ACCESS_DENIED);
 		}
 		Recording recording = recordingRepository.findByIdForUpdate(id).orElseThrow();
@@ -52,7 +51,7 @@ public class IndividualAnswerDeletionService {
 		String assignmentId = answerRepository.findAssignmentId(id)
 		    .orElseThrow(() -> new ApiException(ErrorCode.ANSWER_NOT_FOUND));
 		Assignment assignment = assignmentRepository.findByIdForUpdate(assignmentId).orElseThrow();
-		if (user.role() != Role.CHILD || !assignment.belongsToChild(user.userId())) {
+		if (!assignment.isChildAuthor(user.userId(), user.role())) {
 			throw new ApiException(ErrorCode.RESOURCE_ACCESS_DENIED);
 		}
 		ChildAnswer answer = answerRepository.findByIdForUpdate(id).orElseThrow();
