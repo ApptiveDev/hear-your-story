@@ -17,6 +17,8 @@ import com.apptive.backend.domain.recording.entity.ProcessingStatus;
 import com.apptive.backend.domain.recording.entity.Recording;
 
 public interface RecordingRepository extends JpaRepository<Recording, String> {
+	@Query("select r.assignment.id from Recording r where r.id = :id")
+	Optional<String> findAssignmentId(@Param("id") String id);
 
 	Optional<Recording> findByAssignment_Id(String assignmentId);
 

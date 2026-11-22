@@ -14,6 +14,7 @@ import jakarta.persistence.UniqueConstraint;
 
 import com.apptive.backend.domain.pair.entity.FamilyPair;
 import com.apptive.backend.domain.question.entity.Question;
+import com.apptive.backend.domain.user.entity.Role;
 
 import lombok.Getter;
 
@@ -59,6 +60,14 @@ public class Assignment {
 
 	public boolean belongsToChild(String userId) {
 		return familyPair.hasChild(userId);
+	}
+
+	public boolean isParentAuthor(String userId, Role role) {
+		return role == Role.PARENT && belongsToParent(userId);
+	}
+
+	public boolean isChildAuthor(String userId, Role role) {
+		return role == Role.CHILD && belongsToChild(userId);
 	}
 
 }

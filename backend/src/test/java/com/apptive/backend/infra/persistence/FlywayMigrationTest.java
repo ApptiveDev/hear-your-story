@@ -27,7 +27,7 @@ class FlywayMigrationTest {
 
 	@Test
 	void appliesInitialSchemaAndPassesValidation() {
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 
 		List<String> migratedTables = jdbcTemplate.queryForList("""

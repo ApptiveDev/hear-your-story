@@ -59,6 +59,8 @@ public class RecordingUploadService {
 
 		String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
 		Recording existing = recordingRepository.findByAssignment_Id(assignmentId).orElse(null);
+		if (existing != null && existing.isDeleted())
+			throw new ApiException(ErrorCode.ANSWER_LOCKED);
 		if (existing != null && normalizedKey != null && Objects.equals(existing.getIdempotencyKey(), normalizedKey)) {
 			return toResponse(existing);
 		}
