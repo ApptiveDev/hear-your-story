@@ -16,6 +16,8 @@ import com.apptive.backend.domain.answer.entity.ChildAnswer;
 import com.apptive.backend.domain.answer.entity.TtsStatus;
 
 public interface ChildAnswerRepository extends JpaRepository<ChildAnswer, String> {
+	@Query("select a.assignment.id from ChildAnswer a where a.id = :id")
+	Optional<String> findAssignmentId(@Param("id") String id);
 
 	Optional<ChildAnswer> findByAssignment_Id(String assignmentId);
 

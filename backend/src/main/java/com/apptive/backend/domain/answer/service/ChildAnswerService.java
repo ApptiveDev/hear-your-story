@@ -60,6 +60,8 @@ public class ChildAnswerService {
 		}
 
 		ChildAnswer existing = childAnswerRepository.findByAssignment_Id(assignmentId).orElse(null);
+		if (existing != null && existing.isDeleted())
+			throw new ApiException(ErrorCode.ANSWER_LOCKED);
 		if (existing != null && recordingRepository.findByAssignment_Id(assignmentId).isPresent()) {
 			throw new ApiException(ErrorCode.ANSWER_LOCKED);
 		}

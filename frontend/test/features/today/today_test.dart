@@ -6,6 +6,16 @@ import 'package:life_record/features/today/presentation/today_page.dart';
 import 'today_fixtures.dart';
 
 void main() {
+  test('삭제된 오늘 답은 음성·텍스트 파싱 없이 안내로 읽고 제출 상태를 유지한다', () {
+    final today = Today.fromJson(todayFixture('deleted'));
+    expect(today.myAnswer, isA<DeletedAnswer>());
+    expect(
+      (today.partnerAnswer as DeletedAnswer).message,
+      '부모님이 이 음성 기록을 삭제했어요.',
+    );
+    expect(today.iAnswered, isTrue);
+    expect(today.isRevealed, isTrue);
+  });
   test('아무도 답하지 않은 상태: 내 답이 없다', () {
     final today = Today.fromJson(todayFixture('waiting_for_both'));
 

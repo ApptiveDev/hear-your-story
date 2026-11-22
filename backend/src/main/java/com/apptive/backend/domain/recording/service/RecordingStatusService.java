@@ -33,6 +33,8 @@ public class RecordingStatusService {
 		if (!recording.getAssignment().belongsToParent(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
+		if (recording.isDeleted())
+			throw new ApiException(ErrorCode.RECORDING_NOT_FOUND);
 		return toResponse(recording);
 	}
 

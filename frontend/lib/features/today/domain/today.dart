@@ -54,6 +54,8 @@ sealed class TodayAnswer {
 
   factory TodayAnswer.fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
+      case 'DELETED':
+        return DeletedAnswer(json['message'] as String);
       case 'VOICE':
         return VoiceAnswer.fromJson(json);
       case 'TEXT':
@@ -62,6 +64,11 @@ sealed class TodayAnswer {
         throw FormatException('알 수 없는 답변 type: ${json['type']}');
     }
   }
+}
+
+class DeletedAnswer extends TodayAnswer {
+  const DeletedAnswer(this.message);
+  final String message;
 }
 
 class VoiceAnswer extends TodayAnswer {

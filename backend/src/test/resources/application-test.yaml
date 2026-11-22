@@ -10,6 +10,9 @@ spring:
     show-sql: false
 
 app:
+  storage-deletion:
+    initial-delay: 1h
+    fixed-delay: 1h
   auth:
     jwt-secret: test-only-jwt-secret-at-least-32-bytes
     access-token-expiration-minutes: 30

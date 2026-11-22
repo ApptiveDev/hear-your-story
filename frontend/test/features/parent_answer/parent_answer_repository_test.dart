@@ -24,6 +24,25 @@ class _Source implements ParentAnswerDataSource {
 }
 
 void main() {
+  test('삭제된 양쪽 답은 안내로 읽고 TTS 요청용 ID를 만들지 않는다', () async {
+    final source = _Source()
+      ..json['canViewPartnerAnswer'] = true
+      ..json['revealStatus'] = 'REVEALED'
+      ..json['myAnswer'] = {
+        'type': 'DELETED',
+        'availability': 'DELETED',
+        'message': '부모님이 이 음성 기록을 삭제했어요.',
+      }
+      ..json['partnerAnswer'] = {
+        'type': 'DELETED',
+        'availability': 'DELETED',
+        'message': '삭제된 답이에요.',
+      };
+    final result = await ParentAnswerRepositoryImpl(source).getToday();
+    expect(result.answerId, isNull);
+    expect(result.text, '삭제된 답이에요.');
+    expect(result.myText, '부모님이 이 음성 기록을 삭제했어요.');
+  });
   test('서버가 비공개로 표시하면 포함된 답변도 노출하지 않는다', () async {
     final result = await ParentAnswerRepositoryImpl(_Source()).getToday();
     expect(result.canView, isFalse);

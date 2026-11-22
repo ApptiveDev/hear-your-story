@@ -302,6 +302,7 @@ class _ChildSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final myText = switch (today.myAnswer) {
       TextAnswer(:final text) => text,
+      DeletedAnswer(:final message) => message,
       _ => null,
     };
 
@@ -311,10 +312,11 @@ class _ChildSection extends ConsumerWidget {
         children: [
           _StatusCard(body: myText),
           const SizedBox(height: 20),
-          OutlinedButton(
-            onPressed: () => _openChildAnswer(context, ref, today, myText),
-            child: const Text('답 고치기'),
-          ),
+          if (today.myAnswer is! DeletedAnswer)
+            OutlinedButton(
+              onPressed: () => _openChildAnswer(context, ref, today, myText),
+              child: const Text('답 고치기'),
+            ),
         ],
       );
     }
@@ -333,6 +335,8 @@ class _ChildSection extends ConsumerWidget {
               ? parent.displayText ??
                     parent.processingNotice ??
                     '부모님이 목소리로 답하셨어요.'
+              : parent is DeletedAnswer
+              ? parent.message
               : '부모님이 목소리로 답하셨어요.',
         ),
         if (parent is VoiceAnswer && parent.originalAudioUrl != null) ...[
@@ -380,13 +384,14 @@ class _ParentSection extends ConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _StatusCard(body: body),
+          _StatusCard(body: my is DeletedAnswer ? my.message : body),
           const SizedBox(height: 20),
-          OutlinedButton.icon(
-            onPressed: () => _openParentRecording(context, ref, today),
-            icon: const Icon(AppIcons.microphone),
-            label: const Text('다시 녹음하기'),
-          ),
+          if (my is! DeletedAnswer)
+            OutlinedButton.icon(
+              onPressed: () => _openParentRecording(context, ref, today),
+              icon: const Icon(AppIcons.microphone),
+              label: const Text('다시 녹음하기'),
+            ),
         ],
       );
     }
@@ -395,11 +400,20 @@ class _ParentSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _AnswerCard(label: '내 답변', text: myVoice?.displayText ?? '목소리로 답했어요.'),
+        _AnswerCard(
+          label: '내 답변',
+          text: my is DeletedAnswer
+              ? my.message
+              : myVoice?.displayText ?? '목소리로 답했어요.',
+        ),
         const SizedBox(height: 16),
         _PartnerNote(
           label: '자녀의 답변',
-          text: child is TextAnswer ? child.text : '자녀가 답했어요.',
+          text: child is TextAnswer
+              ? child.text
+              : child is DeletedAnswer
+              ? child.message
+              : '자녀가 답했어요.',
         ),
         if (child is TextAnswer) ...[
           const SizedBox(height: 20),

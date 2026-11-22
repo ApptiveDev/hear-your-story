@@ -1,0 +1,27 @@
+{
+  "assignment": {
+    "id": "asg_01J8M90G3M9BT7PRD6X4CN9C0E",
+    "assignedDate": "2026-09-24",
+    "question": {
+      "id": "qst_045",
+      "text": "어릴 때 가장 좋아했던 놀이는 무엇이었나요?",
+      "category": "CHILDHOOD",
+      "audioUrl": "https://cdn.example.com/questions/qst_045.mp3"
+    }
+  },
+  "viewerRole": "CHILD",
+  "parentSubmissionStatus": "SUBMITTED",
+  "childSubmissionStatus": "SUBMITTED",
+  "revealStatus": "REVEALED",
+  "canViewPartnerAnswer": true,
+  "myAnswer": {
+    "type": "DELETED",
+    "availability": "DELETED",
+    "message": "삭제된 답이에요."
+  },
+  "partnerAnswer": {
+    "type": "DELETED",
+    "availability": "DELETED",
+    "message": "부모님이 이 음성 기록을 삭제했어요."
+  }
+}

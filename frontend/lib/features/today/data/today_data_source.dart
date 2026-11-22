@@ -13,7 +13,7 @@ abstract class TodayDataSource {
 class MockTodayDataSource implements TodayDataSource {
   /// 다른 상태를 볼 때: flutter run --dart-define=MOCK_TODAY=revealed
   /// 지원 값: waiting_for_both(기본), waiting_for_parent, waiting_for_child,
-  /// revealed, PAIR_NOT_FOUND, TODAY_ASSIGNMENT_NOT_FOUND, NETWORK
+  /// revealed, deleted, PAIR_NOT_FOUND, TODAY_ASSIGNMENT_NOT_FOUND, NETWORK
   MockTodayDataSource(
     this._userStorage, {
     this.delay = const Duration(milliseconds: 500),
