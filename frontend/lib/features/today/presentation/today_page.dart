@@ -565,6 +565,8 @@ bool hasTodayChanged(Today before, Today after) {
   return before.assignmentId != after.assignmentId ||
       before.revealStatus != after.revealStatus ||
       before.iAnswered != after.iAnswered ||
+      before.myAnswer.runtimeType != after.myAnswer.runtimeType ||
+      before.partnerAnswer.runtimeType != after.partnerAnswer.runtimeType ||
       _processing(before.myAnswer) != _processing(after.myAnswer) ||
       _processing(before.partnerAnswer) != _processing(after.partnerAnswer);
 }

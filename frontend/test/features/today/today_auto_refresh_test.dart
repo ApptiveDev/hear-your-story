@@ -173,6 +173,18 @@ void main() {
     expect(find.text('글로 답하기'), findsOneWidget);
   });
 
+  testWidgets('앱으로 돌아오면 그사이 삭제된 답을 삭제 안내로 바꾼다', (tester) async {
+    final source = FakeTodayDataSource(json: todayFixture('revealed'));
+    await _pump(tester, source);
+
+    source.json = todayFixture('deleted');
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(find.text('부모님이 이 음성 기록을 삭제했어요.'), findsOneWidget);
+  });
+
   group('부모 녹음 처리 안내', () {
     testWidgets('글 정리 중이면 정리하고 있다고 알린다', (tester) async {
       await _pump(
@@ -213,6 +225,16 @@ void main() {
       processing['partnerAnswer']['processingStatus'] = 'LLM_PROCESSING';
       expect(
         hasTodayChanged(parse(processing), parse(todayFixture('revealed'))),
+        isTrue,
+      );
+    });
+
+    test('답이 삭제되어 종류만 바뀌어도 바뀐 것으로 본다', () {
+      expect(
+        hasTodayChanged(
+          parse(todayFixture('revealed')),
+          parse(todayFixture('deleted')),
+        ),
         isTrue,
       );
     });
