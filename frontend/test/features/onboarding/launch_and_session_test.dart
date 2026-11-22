@@ -66,7 +66,7 @@ void main() {
     testWidgets('가입 정보가 없으면 카카오 로그인부터 시작한다', (tester) async {
       await _launch(tester, stored: {});
 
-      expect(find.text('카카오로 시작하기'), findsOneWidget);
+      expect(find.text('카카오 로그인'), findsOneWidget);
     });
 
     testWidgets('연결된 사용자는 바로 오늘 질문으로 간다', (tester) async {
@@ -85,7 +85,7 @@ void main() {
     testWidgets('토큰이 없으면 사용자 정보가 있어도 카카오 로그인부터 한다', (tester) async {
       await _launch(tester, stored: _stored(token: null));
 
-      expect(find.text('카카오로 시작하기'), findsOneWidget);
+      expect(find.text('카카오 로그인'), findsOneWidget);
     });
   });
 
@@ -99,7 +99,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(find.textContaining('같은 카카오 계정이면 이야기가 이어져요.'), findsOneWidget);
 
     const storage = FlutterSecureStorage();
@@ -179,7 +179,7 @@ void main() {
       await _launch(tester, stored: _stored(), auth: auth);
       await tester.pumpAndSettle();
 
-      expect(find.text('카카오로 시작하기'), findsOneWidget);
+      expect(find.text('카카오 로그인'), findsOneWidget);
       expect(find.textContaining('다시 로그인해 주세요.'), findsOneWidget);
       const storage = FlutterSecureStorage();
       expect(await storage.read(key: 'access_token'), isNull);
@@ -192,7 +192,7 @@ void main() {
       await _launch(tester, stored: {}, auth: auth);
 
       expect(auth.meCalls, 0);
-      expect(find.text('카카오로 시작하기'), findsOneWidget);
+      expect(find.text('카카오 로그인'), findsOneWidget);
     });
   });
 }
