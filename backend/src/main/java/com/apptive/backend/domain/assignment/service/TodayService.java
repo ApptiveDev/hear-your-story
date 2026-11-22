@@ -13,6 +13,7 @@ import com.apptive.backend.common.exception.ErrorCode;
 import com.apptive.backend.common.id.IdGenerator;
 import com.apptive.backend.domain.answer.entity.ChildAnswer;
 import com.apptive.backend.domain.answer.repository.ChildAnswerRepository;
+import com.apptive.backend.domain.assignment.dto.DeletedTodayAnswerResponse;
 import com.apptive.backend.domain.assignment.dto.TextTodayAnswerResponse;
 import com.apptive.backend.domain.assignment.dto.TodayAnswerResponse;
 import com.apptive.backend.domain.assignment.dto.TodayAssignmentResponse;
@@ -95,11 +96,15 @@ public class TodayService {
 		if (recording == null) {
 			return null;
 		}
+		if (recording.isDeleted())
+			return DeletedTodayAnswerResponse.of("부모님이 이 음성 기록을 삭제했어요.");
 		return VoiceTodayAnswerResponse.from(recording,
 		    recordingStorage.createSignedReadUrl(recording.getObjectKey()).orElse(null));
 	}
 
 	private TodayAnswerResponse textAnswer(ChildAnswer childAnswer) {
+		if (childAnswer != null && childAnswer.isDeleted())
+			return DeletedTodayAnswerResponse.of("삭제된 답이에요.");
 		return childAnswer == null ? null : TextTodayAnswerResponse.from(childAnswer);
 	}
 }

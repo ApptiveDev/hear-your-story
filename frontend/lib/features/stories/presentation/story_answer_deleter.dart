@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/stories_providers.dart';
+import '../../today/presentation/today_provider.dart';
 import '../domain/story.dart';
 import 'stories_controller.dart';
 import 'stories_month_provider.dart';
@@ -38,6 +39,7 @@ class StoryAnswerDeleter {
   /// 목록과 그 달의 달력에서 이 카드만 바꾼다. 다시 불러오지 않으므로 연결이
   /// 끊겨도 지운 결과가 바로 보인다.
   void _apply(Story story, Story Function(Story story) update) {
+    _ref.invalidate(todayProvider);
     if (_ref.exists(storiesControllerProvider)) {
       _ref
           .read(storiesControllerProvider.notifier)

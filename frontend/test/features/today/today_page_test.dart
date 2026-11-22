@@ -69,6 +69,14 @@ Future<_Harness> _pump(WidgetTester tester, FakeTodayDataSource source) async {
 }
 
 void main() {
+  testWidgets('삭제된 답은 안내만 보이고 다시 작성·음성 재생을 노출하지 않는다', (tester) async {
+    await _pump(tester, FakeTodayDataSource(json: todayFixture('deleted')));
+    expect(find.text('삭제된 답이에요.'), findsOneWidget);
+    expect(find.text('부모님이 이 음성 기록을 삭제했어요.'), findsOneWidget);
+    expect(find.text('글로 답하기'), findsNothing);
+    expect(find.text('답 고치기'), findsNothing);
+    expect(find.text('부모님 목소리 듣기'), findsNothing);
+  });
   // 홈 인사말이 저장된 사용자 이름을 읽는다
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 

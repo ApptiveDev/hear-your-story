@@ -39,8 +39,6 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 |---|---|---|
 | `PUT /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 저장·권한·DTO·테스트, 프론트 모델·업로드·Mock·테스트 |
 | `DELETE /assignments/{assignmentId}/my-photo` | 미구현 | 백엔드 삭제·권한·테스트, 프론트 삭제 흐름·Mock·테스트 |
-| `DELETE /recordings/{recordingId}`와 삭제된 답변 응답 | 삭제 endpoint와 `availability=DELETED` 응답이 미구현이며, 현재 프론트는 `recordingId`와 `processingStatus`를 필수 문자열로 파싱한다. | 백엔드 삭제·nullable DTO·테스트, 프론트 nullable 모델·재생 차단·Mock·파싱 테스트 |
-| `DELETE /answers/{answerId}` | 미구현 | 백엔드 삭제·권한·nullable DTO·테스트, 프론트 삭제 흐름·Mock·테스트 |
 
 **답변 삭제 단위 (2026-11-10 개발 회의 결정)**: 부모와 자녀는 각자 **본인 답만
 개별로** 삭제한다. 부모는 본인 녹음(5.12), 자녀는 본인 텍스트 답(5.15)을 지우며,
@@ -48,13 +46,12 @@ enum이지만 현재 화면에는 건너뛰기 동작을 노출하지 않는다.
 이야기는 지난 이야기·월별 목록에 남고, 지운 쪽 답만 `availability=DELETED`로
 반환한다.
 
-사진과 개별 답변 삭제에만 쓰이는 `myPhoto`, `partnerPhoto`, `parentPhoto`,
-`childPhoto`와 관련 `errorCode`는 초안이다. `DELETE /users/me`에서 사용하는
-`AnswerAvailability`와 `availability`는 회원 탈퇴 계약에 한해 확정이다.
+사진에만 쓰이는 `myPhoto`, `partnerPhoto`, `parentPhoto`, `childPhoto`와 관련
+`errorCode`는 초안이다. 개별 답변 삭제는 5.12·5.15, 회원 탈퇴는 5.13을 따른다.
 
 각 기능은 루트 `AGENTS.md`의 API 계약 변경 절차에 따라 `[API]` Issue에 현재·제안
 JSON을 기록하고 프론트·백엔드 담당자가 확인한 뒤, 구현과 같은 PR에서 해당 항목을
-`확정`으로 바꾼다. 그전에는 월별 조회를 호출하거나 `DELETED` 응답을 내려서는 안 된다.
+`확정`으로 바꾼다. 사진 초안의 필드·endpoint는 확정 전 사용하지 않는다.
 
 ### 1.2 카카오 로그인·기록 복구 — 확정
 
@@ -685,11 +682,11 @@ photoFile: family-photo.jpg
 반환한다. 사진이 없으면 `404 PHOTO_NOT_FOUND`, 다른 사람 리소스면
 `403 RESOURCE_ACCESS_DENIED`다. 음성·텍스트 답변과 이야기 자체는 유지한다.
 
-### 5.12 부모 녹음 삭제 — `DELETE /recordings/{recordingId}` — 초안, 미구현
+### 5.12 부모 녹음 삭제 — `DELETE /recordings/{recordingId}` — 확정
 
-현재 백엔드에는 이 삭제 endpoint가 없고, 현재 프론트 DTO의 `recordingId`와
-`processingStatus`는 non-nullable 문자열이다. 아래 nullable 응답은 양쪽 구현과
-파싱 테스트가 함께 반영되기 전에는 서버가 반환하지 않는다.
+[API Issue #93](https://github.com/ApptiveDev/hear-your-story/issues/93)에서 개별 삭제와 오늘 삭제 상태 연동을 추적한다.
+
+인증이 필요하다. 아래 nullable 응답은 지난 이야기·월별 조회에 동일하게 적용한다.
 
 녹음을 제출한 부모만 호출할 수 있다. 자녀 답변은 함께 지우지 않으며 자녀 본인이
 5.15로 지운다. 성공하면 원본 음성, STT 원문, LLM 정리본과
@@ -713,6 +710,11 @@ photoFile: family-photo.jpg
 
 프론트는 삭제된 음성의 재생·재발급을 시도하지 않고 안내 문구만 표시한다. 다른
 부모의 녹음 또는 본인 Pair 밖의 녹음은 `403 RESOURCE_ACCESS_DENIED`다.
+
+이미 삭제됐거나 없는 녹음은 `404 RECORDING_NOT_FOUND`다. 연결이 해제된 과거 Pair의
+기록도 작성자 본인은 삭제할 수 있다. DB의 개인 데이터는 요청 트랜잭션에서 비우고,
+파일은 같은 트랜잭션에서 등록한 영속 작업 큐로 삭제한다. 실패·서버 재시작 시
+5분 뒤부터 재시도한다. 완료 전 기존 signed URL은 만료 또는 파일 삭제까지 유효할 수 있다.
 
 ### 5.13 회원 탈퇴 — `DELETE /users/me` — 확정
 
@@ -868,10 +870,10 @@ access token 없이 호출한다. 요청:
 동일하게 `204`로 처리한다. 프론트는 응답 성공 여부와 관계없이 로컬 서비스 token을
 지우고 Kakao SDK 로그아웃을 수행한다.
 
-### 5.15 자녀 답변 삭제 — `DELETE /answers/{answerId}` — 초안, 미구현
+### 5.15 자녀 답변 삭제 — `DELETE /answers/{answerId}` — 확정
 
-1.1의 답변 삭제 단위 결정에 따라 추가한 초안이다. 현재 백엔드에는 이 endpoint가
-없다.
+인증과 본인 소유권이 필요하며, 과거 Pair 기록도 작성자 본인은 삭제할 수 있다.
+파일 삭제·재시도 방식은 5.12와 동일하다.
 
 답변을 작성한 자녀만 호출할 수 있다. 성공하면 답변 텍스트와 해당 답변의 TTS 음성
 파일 등 관련 저장소 객체를 삭제하고 `204 No Content`를 반환한다. 질문, 부모 녹음과
@@ -891,8 +893,26 @@ access token 없이 호출한다. 요청:
 - 부모 화면은 삭제된 답변의 TTS 상태·재생 URL을 요청하지 않고 안내 문구만 표시한다.
 - 다른 자녀의 답변 또는 본인 Pair 밖의 답변은 `403 RESOURCE_ACCESS_DENIED`다.
 - 이미 삭제됐거나 없는 답변은 `404 ANSWER_NOT_FOUND`다.
-- 삭제한 날의 답을 다시 작성할 수 있는지는 미정이다. 확정 전에는 다시 작성하는
-  화면을 노출하지 않는다.
+- 삭제한 날의 답은 다시 작성·수정할 수 없다 (`409 ANSWER_LOCKED`). 부모 녹음도 동일하다.
+- 삭제는 제출 이력을 유지한다. 질문·상대 답변·공개 여부와 목록의 정렬·페이지네이션은 유지한다.
+- 삭제 후 TTS URL 조회는 `404 ANSWER_NOT_FOUND`, 녹음 상태 조회는 `404 RECORDING_NOT_FOUND`다.
+
+#### 삭제 후 오늘 질문 응답
+
+오늘의 `parentSubmissionStatus`·`childSubmissionStatus`는 삭제 후에도 `SUBMITTED`다.
+`myAnswer` 또는 공개된 `partnerAnswer`가 삭제됐으면 아래 응답을 사용한다. 공개 전에는
+상대 답변을 계속 숨긴다. 기존 `VOICE`·`TEXT` 응답은 그대로 유지한다.
+
+```json
+{
+  "type": "DELETED",
+  "availability": "DELETED",
+  "message": "삭제된 답이에요."
+}
+```
+
+부모 녹음의 message는 `부모님이 이 음성 기록을 삭제했어요.`다. 프론트는 재작성·수정·
+음성 재생·처리 상태 폴링을 노출하지 않는다. `type=DELETED`는 답변 원문과 음성 ID를 포함하지 않는다.
 
 ## 6. 프론트 Mock 파일 권장 구조
 
@@ -941,3 +961,4 @@ frontend/
 | 2026-11-11 | v0.3 | 개발 회의 결정(부모·자녀 각자 본인 답만 개별 삭제)을 반영해 자녀 답변 삭제 `DELETE /answers/{answerId}`와 `ANSWER_NOT_FOUND`를 초안으로 추가 |
 | 2026-11-14 | v0.4 | Issue #73 결정에 따라 카카오 OIDC 로그인, 가입용 token, access·refresh token 갱신, 로그아웃, `GET /users/me` 계약 확정 |
 | 2026-11-14 | v0.5 | 부모·자녀 회원 탈퇴 정책, 카카오 연결 해제, Pair 비활성화와 작성자별 데이터 삭제 계약 확정 |
+| 2026-11-22 | v0.6 | 부모 녹음·자녀 답변 개별 삭제 구현, 파일 삭제 영속 큐, 오늘 답변 DELETED 응답과 삭제 후 재작성 차단 확정 |

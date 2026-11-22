@@ -28,10 +28,12 @@ class ParentAnswerRepositoryImpl implements ParentAnswerRepository {
       answerId: partner?['type'] == 'TEXT'
           ? partner!['answerId'] as String
           : null,
-      text: partner?['type'] == 'TEXT' ? partner!['text'] as String : null,
+      text: partner?['type'] == 'TEXT'
+          ? partner!['text'] as String
+          : partner?['message'] as String?,
       myText: my != null && my['type'] == 'VOICE'
           ? (my['summaryText'] ?? my['sttText']) as String?
-          : null,
+          : my?['message'] as String?,
     );
   }
 

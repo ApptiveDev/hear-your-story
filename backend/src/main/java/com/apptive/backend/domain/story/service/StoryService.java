@@ -130,7 +130,10 @@ public class StoryService {
 
 	private StoryParentAnswerResponse toParentAnswer(Recording recording) {
 		if (recording.isDeleted()) {
-			return StoryParentAnswerResponse.deleted();
+			return new StoryParentAnswerResponse("DELETED", null, null, null, null, null, null,
+			    recording.getAssignment().getFamilyPair().getParent().isActive()
+			        ? "부모님이 이 음성 기록을 삭제했어요."
+			        : "부모님이 탈퇴하여 음성 기록이 삭제되었어요.");
 		}
 		SignedAudioUrl signedAudio = recordingStorage.createSignedReadUrl(recording.getObjectKey()).orElse(null);
 		return new StoryParentAnswerResponse("AVAILABLE", recording.getId(), recording.getProcessingStatus(),

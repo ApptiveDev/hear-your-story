@@ -35,6 +35,8 @@ public class AnswerAudioService {
 		if (!answer.getAssignment().belongsToParent(authenticatedUser.userId())) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}
+		if (answer.isDeleted())
+			throw new ApiException(ErrorCode.ANSWER_NOT_FOUND);
 		if (recordingRepository.findByAssignment_Id(answer.getAssignment().getId()).isEmpty()) {
 			throw new ApiException(ErrorCode.PAIR_ACCESS_DENIED);
 		}

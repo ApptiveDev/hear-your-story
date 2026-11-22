@@ -29,5 +29,19 @@ class AssignmentTest {
 		assertThat(assignment.belongsToChild(child.getId())).isTrue();
 		assertThat(assignment.belongsToParent(child.getId())).isFalse();
 		assertThat(assignment.belongsToChild(parent.getId())).isFalse();
+
+		assertThat(assignment.isParentAuthor(parent.getId(), Role.PARENT)).isTrue();
+		assertThat(assignment.isChildAuthor(child.getId(), Role.CHILD)).isTrue();
+		assertThat(assignment.isParentAuthor(parent.getId(), Role.CHILD)).isFalse();
+		assertThat(assignment.isChildAuthor(child.getId(), Role.PARENT)).isFalse();
+		assertThat(assignment.isParentAuthor(child.getId(), Role.PARENT)).isFalse();
+		assertThat(assignment.isChildAuthor(parent.getId(), Role.CHILD)).isFalse();
+		assertThat(assignment.isParentAuthor("usr_other", Role.PARENT)).isFalse();
+		assertThat(assignment.isChildAuthor("usr_other", Role.CHILD)).isFalse();
+
+		// 연결 해제 후에도 과거 답변의 작성자는 바뀌지 않는다.
+		pair.deactivate(now);
+		assertThat(assignment.isParentAuthor(parent.getId(), Role.PARENT)).isTrue();
+		assertThat(assignment.isChildAuthor(child.getId(), Role.CHILD)).isTrue();
 	}
 }
