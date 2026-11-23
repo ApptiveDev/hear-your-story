@@ -22,24 +22,31 @@ class StepLayout extends StatelessWidget {
   /// 아래에 고정할 버튼. 위에서부터 차례로 쌓는다.
   final List<Widget> actions;
 
+  /// 아래 여백 중 스크롤 안쪽에 두는 몫. 주 버튼 그림자가 보일 자리다.
+  static const _shadowRoom = 12.0;
+
   @override
   Widget build(BuildContext context) {
+    const side = EdgeInsets.symmetric(horizontal: AppSizes.screenPadding);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.screenPadding,
-        16,
-        AppSizes.screenPadding,
-        AppSizes.screenPadding,
+      padding: EdgeInsets.only(
+        top: 16,
+        bottom: AppSizes.screenPadding - (actions.isEmpty ? _shadowRoom : 0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppHeader(onBack: onBack),
+          Padding(
+            padding: side,
+            child: AppHeader(onBack: onBack),
+          ),
           const SizedBox(height: 24),
           // 한 화면 분량이라 ListView 대신 모두 그려 둔다. 화면 밖으로 밀린 안내도
           // 화면 읽기 프로그램과 테스트가 찾을 수 있다.
           Expanded(
             child: SingleChildScrollView(
+              // 여백을 스크롤 안쪽에 둬서 버튼 그림자가 가장자리에서 잘리지 않게 한다
+              padding: side.copyWith(bottom: _shadowRoom),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: children,
@@ -47,8 +54,8 @@ class StepLayout extends StatelessWidget {
             ),
           ),
           for (final (i, action) in actions.indexed) ...[
-            SizedBox(height: i == 0 ? 24 : 12),
-            action,
+            SizedBox(height: i == 0 ? 24 - _shadowRoom : 12),
+            Padding(padding: side, child: action),
           ],
         ],
       ),

@@ -6,8 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
 import 'package:life_record/core/text_scale/text_scale.dart';
 import 'package:life_record/core/text_scale/text_scale_button.dart';
+import 'package:life_record/core/theme/app_theme.dart';
 import 'package:life_record/core/theme/app_tokens.dart';
 import 'package:life_record/core/widgets/app_tab_shell.dart';
+import 'package:life_record/core/widgets/note_paper.dart';
+import 'package:life_record/core/widgets/notebook_paper.dart';
 import 'package:life_record/core/widgets/step_layout.dart';
 import 'package:life_record/features/account/domain/legal_documents.dart';
 import 'package:life_record/features/account/presentation/legal_page.dart';
@@ -17,15 +20,20 @@ import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
 import 'package:life_record/features/onboarding/domain/app_user.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/pairing/presentation/pairing_page.dart';
+import 'package:life_record/features/parent_answer/domain/parent_answer.dart';
+import 'package:life_record/features/parent_answer/presentation/parent_answer_controller.dart';
+import 'package:life_record/features/parent_answer/presentation/parent_answer_page.dart';
 import 'package:life_record/features/stories/data/stories_providers.dart';
 import 'package:life_record/features/stories/domain/story.dart';
 import 'package:life_record/features/stories/presentation/stories_calendar_page.dart';
 import 'package:life_record/features/stories/presentation/stories_page.dart';
+import 'package:life_record/features/stories/presentation/story_detail_page.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
 import 'package:life_record/features/today/presentation/today_page.dart';
 
 import 'onboarding/fake_auth_data_source.dart';
 import 'pairing/fake_pairing_data_source.dart';
+import 'parent_answer/fake_parent_answer_repository.dart';
 import 'stories/fake_stories_repository.dart';
 import 'today/today_fixtures.dart';
 
@@ -98,6 +106,26 @@ Future<void> _pumpToday(WidgetTester tester, Map<String, dynamic> json) async {
     ),
   );
   await tester.pumpAndSettle();
+}
+
+/// 공책의 두 이야기 글이 모두 가로 줄 사이에서 시작하고 끝나는지
+void _expectOnPaperLines(WidgetTester tester, double scale) {
+  final paper = tester.getTopLeft(find.byType(NotebookPaper)).dy + 12;
+  final unit = 30 * scale;
+  final texts = find.descendant(
+    of: find.byType(NoteEntry),
+    matching: find.byWidgetPredicate(
+      (w) => w is Text && w.style?.fontSize == AppText.bodyL.fontSize,
+    ),
+  );
+  expect(texts, findsNWidgets(2));
+  for (var i = 0; i < 2; i++) {
+    final rect = tester.getRect(texts.at(i));
+    for (final y in [rect.top, rect.bottom]) {
+      final line = (y - paper) / unit;
+      expect(line, closeTo(line.roundToDouble(), 0.05));
+    }
+  }
 }
 
 void main() {
@@ -291,6 +319,60 @@ void main() {
         }
         // 버튼은 오른쪽 여백에 붙는다
         expect(button.right, 360 - AppSizes.screenPadding);
+      });
+
+      testWidgets('부모 답변: 두 이야기 모두 공책 줄에 맞는다', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        final repository = FakeParentAnswerRepository()
+          ..today = const ParentAnswer(
+            questionText: '어릴 때 가장 좋아했던 간식은 뭐였어요?',
+            revealStatus: 'REVEALED',
+            canView: true,
+            answerId: 'ans_1',
+            text: '나는 엄마가 싸준 계란말이 도시락! 소풍 날 뚜껑을 열면 제일 먼저 먹었어요.',
+            myText: '겨울이면 할머니가 구워주신 군고구마가 제일 좋았단다.',
+          )
+          ..audio = const AnswerAudio(status: AnswerTtsStatus.failed);
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: AppTheme.light(),
+              home: Scaffold(
+                body: ParentAnswerPage(
+                  controller: ParentAnswerController(repository),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        _expectOnPaperLines(tester, scale);
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+
+      testWidgets('책장 상세: 두 이야기 모두 공책 줄에 맞는다', (tester) async {
+        _phoneWithTextScale(tester, scale);
+        final repo = FakeStoriesRepository({
+          null: StoryPage(
+            items: [testStory('1', summaryText: '아주 긴 부모님 답 ' * 8)],
+            nextCursor: null,
+            hasNext: false,
+          ),
+        });
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [storiesRepositoryProvider.overrideWithValue(repo)],
+            child: MaterialApp(
+              theme: AppTheme.light(),
+              home: const StoryDetailPage(storyId: 'story_1'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        _expectOnPaperLines(tester, scale);
+        await tester.pumpWidget(const SizedBox.shrink());
       });
 
       final todayCases = <String, Map<String, dynamic> Function()>{
