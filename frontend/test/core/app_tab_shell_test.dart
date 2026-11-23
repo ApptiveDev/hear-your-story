@@ -85,6 +85,43 @@ void main() {
     expect(bar.height, lessThan(screen.height / 3));
   });
 
+  testWidgets('막대 뒤로 화면이 비치고, 끝까지 내리면 막대에 가리지 않는다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppTabShell(
+          location: '/today',
+          child: Scaffold(
+            body: SafeArea(
+              bottom: false,
+              child: Builder(
+                builder: (context) => ListView(
+                  padding: tabPagePadding(context),
+                  children: const [SizedBox(height: 2000), Text('마지막')],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final bar = find.byType(AppTabBar);
+    expect(
+      find.descendant(of: bar, matching: find.byType(ColoredBox)),
+      findsNothing,
+    );
+    expect(
+      tester.getRect(find.byType(ListView)).bottom,
+      tester.getRect(bar).bottom,
+    );
+
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(bar).top - tester.getRect(find.text('마지막')).bottom,
+      24,
+    );
+  });
+
   testWidgets('월별 조회를 끈 빌드에서는 달력 탭을 숨긴다', (tester) async {
     await _pump(tester, calendar: false);
 

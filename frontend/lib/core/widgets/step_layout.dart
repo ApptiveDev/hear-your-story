@@ -31,7 +31,7 @@ class StepLayout extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(
         top: 16,
-        bottom: AppSizes.screenPadding - (actions.isEmpty ? _shadowRoom : 0),
+        bottom: actions.isEmpty ? 0 : AppSizes.screenPadding,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,7 +46,13 @@ class StepLayout extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               // 여백을 스크롤 안쪽에 둬서 버튼 그림자가 가장자리에서 잘리지 않게 한다
-              padding: side.copyWith(bottom: _shadowRoom),
+              padding: side.copyWith(
+                // 아래 버튼이 없으면 화면 끝(탭 막대 뒤)까지 스크롤된다
+                bottom: actions.isEmpty
+                    ? AppSizes.screenPadding +
+                          MediaQuery.paddingOf(context).bottom
+                    : _shadowRoom,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: children,

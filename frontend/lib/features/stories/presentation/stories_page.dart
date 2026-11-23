@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_tab_shell.dart';
 import '../../onboarding/presentation/session.dart';
 import '../domain/story.dart';
 import 'stories_controller.dart';
@@ -27,6 +28,7 @@ class StoriesPage extends ConsumerWidget {
     final stories = ref.watch(storiesControllerProvider);
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: stories.when(
           loading: () => const _Skeleton(),
           error: (e, _) => _ErrorView(
@@ -64,13 +66,6 @@ class _Title extends StatelessWidget {
     child: const Text(StoriesPage.title, style: AppText.headingXL),
   );
 }
-
-const _padding = EdgeInsets.fromLTRB(
-  AppSizes.screenPadding,
-  32,
-  AppSizes.screenPadding,
-  AppSizes.screenPadding,
-);
 
 /// 같은 달 이야기 묶음. 목록은 최신순이라 달도 최신 달부터 나온다.
 class StoryMonth {
@@ -113,7 +108,7 @@ class _StoryList extends ConsumerWidget {
       },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: _padding,
+        padding: tabPagePadding(context),
         children: [
           const _Title(),
           for (final month in months) ...[
@@ -361,7 +356,7 @@ class _Skeleton extends StatelessWidget {
       ),
     );
     return ListView(
-      padding: _padding,
+      padding: tabPagePadding(context),
       children: [
         const _Title(),
         const SizedBox(height: 32),
@@ -435,7 +430,7 @@ class _EmptyView extends StatelessWidget {
     // RefreshIndicator가 동작하려면 빈 화면도 스크롤 가능해야 한다.
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: _padding,
+      padding: tabPagePadding(context),
       children: [
         const _Title(),
         const SizedBox(height: 72),
@@ -522,7 +517,7 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: _padding,
+      padding: tabPagePadding(context),
       children: [
         const _Title(),
         const SizedBox(height: 120),
