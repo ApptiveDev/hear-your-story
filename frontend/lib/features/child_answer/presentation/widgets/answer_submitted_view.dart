@@ -43,7 +43,7 @@ class AnswerSubmittedView extends StatelessWidget {
               ),
               child: const Icon(
                 AppIcons.check,
-                size: 40,
+                size: 46,
                 color: AppColors.textBrand,
               ),
             ),
@@ -61,11 +61,7 @@ class AnswerSubmittedView extends StatelessWidget {
         const SizedBox(height: 16),
         // 제출 응답에는 공개 여부(revealStatus)가 없다. 부모님이 먼저 답했으면 이미
         // 공개됐을 수 있으므로 공개 상태를 단정하지 않는 문구만 쓴다.
-        Text(
-          submittedNote,
-          textAlign: TextAlign.center,
-          style: AppText.bodyL.copyWith(color: AppColors.textSub),
-        ),
+        Text(submittedNote, textAlign: TextAlign.center, style: AppText.bodyL),
         const SizedBox(height: 24),
         NotePaper(label: '내 답변', text: answerText),
       ],

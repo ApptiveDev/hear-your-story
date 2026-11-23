@@ -38,6 +38,7 @@ class StoryDetailPage extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: StepLayout(
           onBack: () => _back(context),
           actions: const [],

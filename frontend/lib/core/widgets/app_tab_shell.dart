@@ -36,6 +36,15 @@ int tabIndexFor(String location, List<AppTab> tabs) {
   return best;
 }
 
+/// 탭 화면 스크롤 여백. 끝까지 내리면 내용이 탭 막대 위로 올라온다.
+EdgeInsets tabPagePadding(BuildContext context, {double top = 32}) =>
+    EdgeInsets.fromLTRB(
+      AppSizes.screenPadding,
+      top,
+      AppSizes.screenPadding,
+      AppSizes.screenPadding + MediaQuery.paddingOf(context).bottom,
+    );
+
 /// 홈·책장·달력·마이 화면을 감싸고 아래에 탭 막대를 둔다.
 class AppTabShell extends StatelessWidget {
   const AppTabShell({
@@ -63,6 +72,9 @@ class AppTabShell extends StatelessWidget {
         if (!didPop) context.go(tabs.first.location);
       },
       child: Scaffold(
+        // 막대 뒤로 화면이 이어져 보이게 한다. 막대 높이는 화면의 아래 안전 영역으로
+        // 전달되므로 각 화면이 스크롤 끝에 그만큼 여백을 둔다([tabPagePadding]).
+        extendBody: true,
         body: child,
         bottomNavigationBar: AppTabBar(
           tabs: tabs,
@@ -91,32 +103,29 @@ class AppTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.bgApp,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(17, 8, 18, 12),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 80),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.bgUnder,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              boxShadow: AppShadows.tabBar,
-            ),
-            child: Row(
-              children: [
-                for (final (i, tab) in tabs.indexed)
-                  Expanded(
-                    child: _TabItem(
-                      tab: tab,
-                      selected: i == currentIndex,
-                      onTap: () => onTap(i),
-                    ),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(17, 8, 18, 12),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 80),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.bgUnder,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            boxShadow: AppShadows.tabBar,
+          ),
+          child: Row(
+            children: [
+              for (final (i, tab) in tabs.indexed)
+                Expanded(
+                  child: _TabItem(
+                    tab: tab,
+                    selected: i == currentIndex,
+                    onTap: () => onTap(i),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),

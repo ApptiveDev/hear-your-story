@@ -96,6 +96,7 @@ class _AnswerInputState extends State<AnswerInput> {
                     hintText: widget.hintText,
                     hintStyle: AppText.bodyL.copyWith(color: AppColors.textSub),
                     isCollapsed: true,
+                    contentPadding: EdgeInsets.zero,
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -103,7 +104,7 @@ class _AnswerInputState extends State<AnswerInput> {
                     disabledBorder: InputBorder.none,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   '$length / ${AnswerValidator.maxLength}',
                   textAlign: TextAlign.right,

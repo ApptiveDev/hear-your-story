@@ -11,39 +11,48 @@ class StepLayout extends StatelessWidget {
   const StepLayout({
     super.key,
     this.onBack,
-    this.showTextScale = true,
     required this.children,
     required this.actions,
   });
 
   /// null이면 헤더에 `이전`을 그리지 않는다.
   final VoidCallback? onBack;
-
-  /// 헤더 오른쪽 `글자 크기` 버튼. Figma에 버튼이 없는 화면(가입·페어링)은 false.
-  final bool showTextScale;
   final List<Widget> children;
 
   /// 아래에 고정할 버튼. 위에서부터 차례로 쌓는다.
   final List<Widget> actions;
 
+  /// 아래 여백 중 스크롤 안쪽에 두는 몫. 주 버튼 그림자가 보일 자리다.
+  static const _shadowRoom = 12.0;
+
   @override
   Widget build(BuildContext context) {
+    const side = EdgeInsets.symmetric(horizontal: AppSizes.screenPadding);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.screenPadding,
-        16,
-        AppSizes.screenPadding,
-        AppSizes.screenPadding,
+      padding: EdgeInsets.only(
+        top: 16,
+        bottom: actions.isEmpty ? 0 : AppSizes.screenPadding,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppHeader(onBack: onBack, showTextScale: showTextScale),
+          Padding(
+            padding: side,
+            child: AppHeader(onBack: onBack),
+          ),
           const SizedBox(height: 24),
           // 한 화면 분량이라 ListView 대신 모두 그려 둔다. 화면 밖으로 밀린 안내도
           // 화면 읽기 프로그램과 테스트가 찾을 수 있다.
           Expanded(
             child: SingleChildScrollView(
+              // 여백을 스크롤 안쪽에 둬서 버튼 그림자가 가장자리에서 잘리지 않게 한다
+              padding: side.copyWith(
+                // 아래 버튼이 없으면 화면 끝(탭 막대 뒤)까지 스크롤된다
+                bottom: actions.isEmpty
+                    ? AppSizes.screenPadding +
+                          MediaQuery.paddingOf(context).bottom
+                    : _shadowRoom,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: children,
@@ -51,8 +60,8 @@ class StepLayout extends StatelessWidget {
             ),
           ),
           for (final (i, action) in actions.indexed) ...[
-            SizedBox(height: i == 0 ? 24 : 12),
-            action,
+            SizedBox(height: i == 0 ? 24 - _shadowRoom : 12),
+            Padding(padding: side, child: action),
           ],
         ],
       ),

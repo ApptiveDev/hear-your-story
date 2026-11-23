@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_icons.dart';
+import '../../../../core/widgets/note_paper.dart';
 import '../../../../core/widgets/audio_playback_card.dart';
 import '../../../parent_answer/data/parent_answer_providers.dart';
 import '../../domain/story.dart';
@@ -18,12 +19,12 @@ class ParentStoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return StoryCardFrame(
       story: story,
-      mine: StoryEntry(
+      mine: NoteEntry(
         icon: AppIcons.heart,
         label: '내 이야기',
         text: parentAnswerText(story.parentAnswer),
       ),
-      theirs: StoryEntry(
+      theirs: NoteEntry(
         icon: AppIcons.childHead,
         label: '자녀의 이야기',
         text: childAnswerText(story.childAnswer),

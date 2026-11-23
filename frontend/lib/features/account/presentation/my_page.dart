@@ -6,6 +6,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_tab_shell.dart';
 import '../../../core/widgets/choice_dialog.dart';
 import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
@@ -147,15 +148,11 @@ class _MyPageState extends ConsumerState<MyPage> {
       canPop: !_busy, // 탈퇴를 요청하는 동안은 뒤로 가지 못하게 한다
       child: Scaffold(
         body: SafeArea(
+          bottom: false,
           child: AbsorbPointer(
             absorbing: _busy, // 탈퇴를 요청하는 동안 다른 항목을 누르지 못하게 한다
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.screenPadding,
-                32,
-                AppSizes.screenPadding,
-                AppSizes.screenPadding,
-              ),
+              padding: tabPagePadding(context),
               children: [
                 Semantics(
                   header: true,
@@ -174,7 +171,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                       onTap: () => context.push('/my/privacy'),
                     ),
                     _MenuRow(
-                      icon: AppIcons.books,
+                      icon: AppIcons.bookAlt,
                       label: '이용약관',
                       onTap: () => context.push('/my/terms'),
                     ),
@@ -350,7 +347,7 @@ class _MenuRow extends StatelessWidget {
       trailing = const Icon(
         AppIcons.arrowRight,
         size: 24,
-        color: AppColors.borderDisabled,
+        color: AppColors.borderSoft,
       );
     } else {
       trailing = const SizedBox.shrink();

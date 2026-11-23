@@ -8,6 +8,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/text_scale/text_scale_button.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_tab_shell.dart';
 import '../../../core/widgets/audio_playback_card.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../child_answer/presentation/child_answer_args.dart';
@@ -103,10 +104,12 @@ class _TodayPageState extends ConsumerState<TodayPage>
     final today = ref.watch(todayProvider);
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: today.when(
           skipLoadingOnRefresh: true,
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => _TodayError(error: e),
+          loading: () =>
+              const SafeArea(child: Center(child: CircularProgressIndicator())),
+          error: (e, _) => SafeArea(child: _TodayError(error: e)),
           data: (today) => RefreshIndicator(
             onRefresh: () => ref.refresh(todayProvider.future),
             child: _TodayContent(today: today),
@@ -151,26 +154,11 @@ class _TodayContent extends ConsumerWidget {
     final isChild = today.viewerRole == UserRole.child;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(), // 당겨서 새로고침
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.screenPadding,
-        16,
-        AppSizes.screenPadding,
-        AppSizes.screenPadding,
-      ),
+      padding: tabPagePadding(context, top: 16),
       children: [
-        // 맨 위 한 줄: 날짜와 `글자 크기`. 부모님이 홈에서 바로 글씨를 키울 수 있게 한다
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                formatAssignedDate(today.assignedDate),
-                style: AppText.labelL,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Flexible(child: TextScaleButton()),
-          ],
-        ),
+        // 맨 위 오른쪽 `글자 크기`. 부모님이 홈에서 바로 글씨를 키울 수 있게 한다
+        const Align(alignment: Alignment.centerRight, child: TextScaleButton()),
+        Text(formatAssignedDate(today.assignedDate), style: AppText.labelL),
         if (name != null && name.isNotEmpty) ...[
           const SizedBox(height: 6),
           Semantics(

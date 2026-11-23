@@ -15,9 +15,7 @@ import 'button_painter.dart';
 /// - bodySmall = 보조 안내 (Body/S 16)
 /// - labelLarge = 큰 버튼 글자 (Button/L 26)
 ///
-/// Primary 버튼의 안쪽 그림자는 backgroundBuilder에서 공통으로 그린다.
-/// 바깥 그림자는 Material elevation으로 근사한다. builder는 버튼 모양으로
-/// 잘리므로 Figma의 두 바깥 그림자를 정확히 재현하지는 않는다.
+/// Primary 버튼의 안팎 그림자는 [DepthButtonShape]가 공통으로 그린다.
 class AppTheme {
   static ThemeData light() {
     const scheme = ColorScheme(
@@ -106,33 +104,19 @@ class AppTheme {
               disabledForegroundColor: AppColors.textDisabled,
               textStyle: AppText.buttonL,
               iconSize: AppSizes.iconL,
-              shape: buttonShape,
-              shadowColor: AppShadows.button.first.color,
+              elevation: 0,
             ).copyWith(
-              elevation: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.disabled)) return 0;
-                return states.contains(WidgetState.pressed) ? 1 : 3;
-              }),
-              backgroundBuilder: (context, states, child) {
-                if (states.contains(WidgetState.disabled)) {
-                  return child ?? const SizedBox.shrink();
-                }
-                // 작은 버튼 등에서 개별 지정한 모양을 유지한다.
-                final widget = context.widget;
-                final shape = widget is ButtonStyleButton
-                    ? widget.style?.shape?.resolve(states)
-                    : null;
-                return CustomPaint(
-                  painter: ButtonInnerShadowPainter(
-                    shape: shape ?? buttonShape,
-                    textDirection: Directionality.of(context),
-                    pressed: states.contains(WidgetState.pressed),
-                  ),
-                  child: child,
-                );
-              },
+              shape: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.disabled)
+                    ? buttonShape
+                    : DepthButtonShape(
+                        borderRadius: buttonShape.borderRadius,
+                        pressed: states.contains(WidgetState.pressed),
+                      ),
+              ),
             ),
       ),
+      dialogTheme: const DialogThemeData(barrierColor: AppColors.dim),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: outlinedStyle.copyWith(
           side: WidgetStateProperty.resolveWith(_outlinedSide),

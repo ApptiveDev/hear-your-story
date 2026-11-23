@@ -62,6 +62,7 @@ void main() {
   testWidgets('역할을 고르면 이름 입력으로 넘어가고, 뒤로 가면 다시 고를 수 있다', (tester) async {
     await _pumpApp(tester, FakeAuthDataSource());
 
+    expect(find.text('/가'), findsOneWidget); // 가입할 때부터 글씨를 키울 수 있다
     // 카드를 골라도 바로 넘어가지 않고 `다음`을 눌러야 넘어간다
     await tester.tap(find.text('부모'));
     await tester.pumpAndSettle();

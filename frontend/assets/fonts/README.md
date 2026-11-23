@@ -18,6 +18,10 @@
 |---|---|---|---|---|
 | Flaticon UIcons 3.3.1 (Solid/Regular Rounded) | `uicons-solid-rounded.ttf`, `uicons-regular-rounded.ttf` | `lib/core/theme/app_icons.dart` | npm `@flaticon/flaticon-uicons@3.3.1`의 woff2를 ttf로 바꾼 것 | Flaticon License. 무료로 쓰려면 앱 안에 "Uicons by Flaticon" 출처 표기가 필요하다 |
 
+| AppIcons | `app-icons.ttf` | `lib/core/theme/app_icons.dart` | Figma `icon/*` 부품과 완료 체크의 벡터를 글꼴로 옮긴 것 | 디자인 파일의 벡터. 마이크·화살표는 Flaticon 계열일 수 있어 아래 출처 표기를 유지한다 |
+
+- `app-icons.ttf`: U+E900부터 home, books, calendar, user, microphone, arrowLeft, arrowRight, check.
+  틀(28·30·56) 전체를 1em으로 맞춰 `Icon`의 size가 Figma 틀 크기와 같다.
 - Figma 디자인(`fi-sr-*`, `fi-rr-*`)이 이 아이콘을 쓴다.
 - 출처 표기는 마이페이지 `아이콘 출처` 항목에 있다. 지우지 않는다.
 - `const IconData`로만 쓰면 출시 빌드에서 쓰지 않는 글자는 자동으로 빠진다.

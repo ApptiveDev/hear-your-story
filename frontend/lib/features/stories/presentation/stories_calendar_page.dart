@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_tab_shell.dart';
 import '../../onboarding/presentation/session.dart';
 import '../domain/story.dart';
 import 'stories_month_provider.dart';
@@ -71,13 +72,9 @@ class _StoriesCalendarPageState extends ConsumerState<StoriesCalendarPage> {
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.screenPadding,
-            32,
-            AppSizes.screenPadding,
-            AppSizes.screenPadding,
-          ),
+          padding: tabPagePadding(context),
           children: [
             Semantics(
               header: true,

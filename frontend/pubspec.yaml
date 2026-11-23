@@ -88,6 +88,10 @@ flutter:
     - family: UIconsRegularRounded
       fonts:
         - asset: assets/fonts/uicons-regular-rounded.ttf
+    # Figma `icon/*` 부품을 글꼴로 옮긴 것
+    - family: AppIcons
+      fonts:
+        - asset: assets/fonts/app-icons.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
