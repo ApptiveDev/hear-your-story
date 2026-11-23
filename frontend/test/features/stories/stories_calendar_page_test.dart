@@ -228,7 +228,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
   });
   // 질문 책장 → 달력 이동은 아래 탭 막대가 맡는다 (test/core/app_tab_shell_test.dart)
 

@@ -120,7 +120,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('카카오로 시작하기'));
+        await tester.tap(find.text('카카오 로그인'));
         await tester.pumpAndSettle();
         expect(find.text('누구로 시작할까요?'), findsOneWidget);
 

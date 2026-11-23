@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -13,6 +14,7 @@ import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/network/session_expired_signal.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/data/kakao_sign_in.dart';
+import 'package:life_record/features/onboarding/presentation/onboarding_page.dart';
 import 'package:life_record/features/pairing/data/pairing_providers.dart';
 import 'package:life_record/features/today/data/today_providers.dart';
 
@@ -60,8 +62,27 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 Future<void> _tapLogin(WidgetTester tester) async {
-  await tester.tap(find.text('카카오로 시작하기'));
+  await tester.tap(find.text('카카오 로그인'));
   await _settle(tester);
+}
+
+/// 안내 문구 속 링크를 누른다. 테스트 글꼴은 낱말 이음표(U+2060)의 글자 위치를
+/// 실제 글꼴과 다르게 계산해서 좌표로 누르지 않고 링크 동작을 직접 부른다.
+/// (실제 글꼴 Pretendard에서 좌표로 누르는 것은 따로 확인했다)
+void _tapLink(WidgetTester tester, String link) {
+  TapGestureRecognizer? found;
+  for (final rich in tester.widgetList<RichText>(find.byType(RichText))) {
+    rich.text.visitChildren((span) {
+      if (span is TextSpan &&
+          span.text == keepWords(link) &&
+          span.recognizer is TapGestureRecognizer) {
+        found = span.recognizer! as TapGestureRecognizer;
+      }
+      return found == null;
+    });
+  }
+  expect(found, isNotNull, reason: '$link 링크가 없다');
+  found!.onTap!();
 }
 
 Map<String, String> _signedIn({String role = 'CHILD'}) => {
@@ -80,8 +101,28 @@ void main() {
   testWidgets('로그인 전이면 카카오 로그인부터 보여준다', (tester) async {
     await _pumpApp(tester, auth: FakeAuthDataSource());
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(find.text('누구로 시작할까요?'), findsNothing);
+  });
+
+  testWidgets('로그인 화면에서 약관 이름을 누르면 전문을 열고 돌아올 수 있다', (tester) async {
+    await _pumpApp(tester, auth: FakeAuthDataSource());
+    expect(find.text('들려줘요'), findsOneWidget);
+    expect(find.text(keepWords('하루 한 질문으로 이어지는\n우리 가족 이야기')), findsOneWidget);
+
+    for (final (link, title) in [
+      ('이용약관', '이용약관'),
+      ('개인정보 처리방침', '개인정보 처리방침'),
+    ]) {
+      _tapLink(tester, link);
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+      expect(find.text('카카오 로그인'), findsNothing);
+
+      await tester.tap(find.text('이전'));
+      await tester.pumpAndSettle();
+      expect(find.text('카카오 로그인'), findsOneWidget);
+    }
   });
 
   testWidgets('기존 계정이면 로그인하자마자 오늘 질문으로 간다', (tester) async {
@@ -130,7 +171,7 @@ void main() {
   testWidgets('로그인만 하고 가입을 마치지 않은 채 다시 켜면 카카오 로그인부터 한다', (tester) async {
     await _pumpApp(tester, auth: FakeAuthDataSource());
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
   });
 
   testWidgets('카카오 창을 닫으면 안내 없이 로그인 화면에 머문다', (tester) async {
@@ -140,7 +181,7 @@ void main() {
     await _tapLogin(tester);
 
     expect(kakao.signInCalls, 1);
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(find.byIcon(Icons.error_outline), findsNothing);
   });
 
@@ -202,7 +243,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '로그아웃'));
     await _settle(tester);
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(await _storage.read(key: 'access_token'), isNull);
     expect(await _storage.read(key: 'refresh_token'), isNull);
     expect(await _storage.read(key: 'current_user'), isNull);
@@ -220,7 +261,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, '로그아웃').last);
     await _settle(tester);
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
   });
 
   testWidgets('로그인이 만료되면 다시 로그인하라고 안내한다', (tester) async {
@@ -234,7 +275,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(find.textContaining('다시 로그인해 주세요.'), findsOneWidget);
     expect(await _storage.read(key: 'refresh_token'), isNull);
   });
@@ -252,7 +293,7 @@ void main() {
         .emit();
     await tester.pumpAndSettle();
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(await _storage.read(key: 'refresh_token'), isNull);
   });
 
@@ -265,9 +306,14 @@ void main() {
       ..kakaoGate = serverGate.future;
 
     await _pumpApp(tester, auth: auth, kakao: kakao);
-    await tester.tap(find.text('카카오로 시작하기'));
+    await tester.tap(find.text('카카오 로그인'));
     await tester.pump();
     expect(find.text('카카오에서 확인하고 있어요'), findsOneWidget);
+    // 로그인하는 동안에는 버튼을 다시 누를 수 없다
+    expect(
+      tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
+      isNull,
+    );
 
     kakaoGate.complete();
     await tester.pump();
@@ -276,5 +322,12 @@ void main() {
     serverGate.complete();
     await _settle(tester);
     expect(find.text(_question), findsOneWidget);
+  });
+
+  test('keepWords는 띄어쓰기와 줄바꿈만 남기고 낱말 안 글자를 잇는다', () {
+    const text = '이어지는 우리\n가족';
+    final kept = keepWords(text);
+    expect(kept.replaceAll('\u2060', ''), text);
+    expect(kept, '이\u2060어\u2060지\u2060는 우\u2060리\u2060\n\u2060가\u2060족');
   });
 }

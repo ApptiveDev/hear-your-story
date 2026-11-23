@@ -13,6 +13,6 @@ void main() {
     await tester.pumpAndSettle(); // 화면 이동이 끝날 때까지 대기
 
     // 첫 화면(/onboarding)의 카카오 로그인 버튼이 보이는지 확인
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
   });
 }

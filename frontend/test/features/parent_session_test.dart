@@ -82,7 +82,7 @@ void main() {
         await tester.pumpAndSettle();
         const storage = FlutterSecureStorage();
         if (status == 401) {
-          expect(find.text('카카오로 시작하기'), findsOneWidget);
+          expect(find.text('카카오 로그인'), findsOneWidget);
           expect(await storage.read(key: 'access_token'), isNull);
           expect(await storage.read(key: 'current_user'), isNull);
         } else {

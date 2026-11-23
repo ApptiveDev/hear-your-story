@@ -37,6 +37,10 @@ abstract final class AppColors {
 
   /// 공책 종이 `Margin line`. Figma 변수로는 아직 없다.
   static const noteMargin = Color(0xFFCD8F66);
+
+  /// 카카오 로그인 버튼 (`kakao/bg`, `kakao/text`). 카카오 디자인 가이드 색이다.
+  static const kakaoBg = Color(0xFFFEE500);
+  static const kakaoText = Color(0xD9000000); // 검정 85%
 }
 
 abstract final class AppFonts {
@@ -50,6 +54,15 @@ abstract final class AppFonts {
 /// 글자색은 가장 많이 쓰는 색을 기본으로 넣었다. 버튼 글자는 테마가 색을 정하므로
 /// 색을 넣지 않는다.
 abstract final class AppText {
+  /// Heading/XXL 40 Bold: 로그인 화면 앱 이름
+  static const headingXXL = TextStyle(
+    fontFamily: AppFonts.pretendard,
+    fontSize: 40,
+    fontWeight: FontWeight.w700,
+    height: 1.5,
+    color: AppColors.textBrand,
+  );
+
   /// Heading/XL 30 Bold: 홈 인사
   static const headingXL = TextStyle(
     fontFamily: AppFonts.pretendard,
