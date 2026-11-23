@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_icons.dart';
+import '../../../../core/widgets/note_paper.dart';
 import '../../../../core/widgets/audio_playback_card.dart';
 import '../stories_controller.dart';
 import '../../domain/story.dart';
@@ -18,12 +19,12 @@ class ChildStoryCard extends ConsumerWidget {
     final parent = story.parentAnswer;
     return StoryCardFrame(
       story: story,
-      mine: StoryEntry(
+      mine: NoteEntry(
         icon: AppIcons.childHead,
         label: '내 이야기',
         text: childAnswerText(story.childAnswer),
       ),
-      theirs: StoryEntry(
+      theirs: NoteEntry(
         icon: AppIcons.heart,
         label: '부모님의 이야기',
         text: parentAnswerText(parent),

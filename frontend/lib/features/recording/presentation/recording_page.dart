@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/audio_playback_card.dart';
 import '../../../core/widgets/error_text.dart';
+import '../../../core/widgets/note_paper.dart';
 import '../../../core/widgets/step_layout.dart';
 import '../../onboarding/presentation/session.dart';
 import '../data/device_recorder_service.dart';
@@ -403,10 +404,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
           style: AppText.headingL.copyWith(color: AppColors.textBrand),
         ),
         const SizedBox(height: 24),
-        Text(
-          '들어보고 마음에 들면 보내주세요',
-          style: AppText.bodyL.copyWith(color: AppColors.textSub),
-        ),
+        Text('들어보고 마음에 들면 보내주세요', style: AppText.bodyL),
         if (clip != null) ...[
           const SizedBox(height: 24),
           AudioPlaybackCard(
@@ -438,10 +436,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
           ),
         ),
         const SizedBox(height: 24),
-        Text(
-          '화면을 닫지 말고 잠시만 기다려 주세요',
-          style: AppText.bodyL.copyWith(color: AppColors.textSub),
-        ),
+        Text('화면을 닫지 말고 잠시만 기다려 주세요', style: AppText.bodyL),
         const SizedBox(height: 24),
         _Panel(
           children: [
@@ -474,11 +469,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         const SizedBox(height: 20),
         _CenterTitle(title),
         const SizedBox(height: 20),
-        Text(
-          body,
-          textAlign: TextAlign.center,
-          style: AppText.bodyL.copyWith(color: AppColors.textSub),
-        ),
+        Text(body, textAlign: TextAlign.center, style: AppText.bodyL),
       ],
     );
   }
@@ -492,27 +483,13 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
       children: [
         const SizedBox(height: 72),
         const _Badge(
-          child: Icon(AppIcons.check, size: 48, color: AppColors.textBrand),
+          child: Icon(AppIcons.check, size: 56, color: AppColors.textBrand),
         ),
         const SizedBox(height: 20),
         const _CenterTitle('이야기가 저장됐어요'),
         if (story != null) ...[
           const SizedBox(height: 20),
-          _Panel(
-            color: AppColors.surfaceCard,
-            radius: AppRadius.note,
-            children: [
-              Text(
-                '내 이야기',
-                style: AppText.labelM.copyWith(color: AppColors.textBrand),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                story,
-                style: AppText.bodyL.copyWith(color: AppColors.textStrong),
-              ),
-            ],
-          ),
+          NotePaper(label: '내 이야기', text: story),
         ],
       ],
     );
@@ -547,11 +524,7 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         const SizedBox(height: 16),
         _CenterTitle(title),
         const SizedBox(height: 20),
-        Text(
-          body,
-          textAlign: TextAlign.center,
-          style: AppText.bodyL.copyWith(color: AppColors.textSub),
-        ),
+        Text(body, textAlign: TextAlign.center, style: AppText.bodyL),
       ],
     );
   }
@@ -782,25 +755,19 @@ class _CenterTitle extends StatelessWidget {
   }
 }
 
-/// 흰 카드 (업로드 진행, 내 이야기)
+/// 흰 카드 (업로드 진행)
 class _Panel extends StatelessWidget {
-  const _Panel({
-    required this.children,
-    this.color = AppColors.surfaceWhite,
-    this.radius = AppRadius.cardSmall,
-  });
+  const _Panel({required this.children});
 
   final List<Widget> children;
-  final Color color;
-  final double radius;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(radius),
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppRadius.cardSmall),
         boxShadow: AppShadows.card,
       ),
       child: Column(

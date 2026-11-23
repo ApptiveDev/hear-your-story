@@ -48,9 +48,7 @@ class MonthCalendar extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       weekday,
-                      style: AppText.labelM.copyWith(
-                        color: AppColors.textBrand,
-                      ),
+                      style: AppText.labelM.copyWith(color: AppColors.textSub),
                     ),
                   ),
                 ),

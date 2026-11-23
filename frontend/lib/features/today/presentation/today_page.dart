@@ -158,19 +158,9 @@ class _TodayContent extends ConsumerWidget {
         AppSizes.screenPadding,
       ),
       children: [
-        // 맨 위 한 줄: 날짜와 `글자 크기`. 부모님이 홈에서 바로 글씨를 키울 수 있게 한다
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                formatAssignedDate(today.assignedDate),
-                style: AppText.labelL,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Flexible(child: TextScaleButton()),
-          ],
-        ),
+        // 맨 위 오른쪽 `글자 크기`. 부모님이 홈에서 바로 글씨를 키울 수 있게 한다
+        const Align(alignment: Alignment.centerRight, child: TextScaleButton()),
+        Text(formatAssignedDate(today.assignedDate), style: AppText.labelL),
         if (name != null && name.isNotEmpty) ...[
           const SizedBox(height: 6),
           Semantics(

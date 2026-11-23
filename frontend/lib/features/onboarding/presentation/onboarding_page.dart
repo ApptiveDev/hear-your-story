@@ -251,7 +251,6 @@ class _RoleStepState extends State<_RoleStep> {
   Widget build(BuildContext context) {
     final selected = _selected;
     return StepLayout(
-      showTextScale: false,
       actions: [
         FilledButton(
           onPressed: selected == null ? null : () => widget.onNext(selected),
@@ -379,7 +378,7 @@ class _CheckMark extends StatelessWidget {
             : Border.all(color: AppColors.borderSoft, width: 2),
       ),
       child: selected
-          ? const Icon(AppIcons.check, size: 14, color: AppColors.textOnPrimary)
+          ? const Icon(AppIcons.check, size: 21, color: AppColors.textOnPrimary)
           : null,
     );
   }
@@ -427,7 +426,6 @@ class _NameStepState extends ConsumerState<_NameStep> {
         final serverError = state.error;
 
         return StepLayout(
-          showTextScale: false,
           onBack: widget.onBack,
           actions: [
             FilledButton(

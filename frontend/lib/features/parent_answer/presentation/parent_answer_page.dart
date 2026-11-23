@@ -8,6 +8,8 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/audio_playback_card.dart';
+import '../../../core/widgets/note_paper.dart';
+import '../../../core/widgets/notebook_paper.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/step_layout.dart';
 import '../../onboarding/presentation/session.dart';
@@ -152,7 +154,7 @@ class _ParentAnswerPageState extends ConsumerState<ParentAnswerPage>
       Text(
         c.audioMessage ?? '목소리는 잠시 후 다시 들려드릴게요',
         textAlign: TextAlign.center,
-        style: AppText.bodyM.copyWith(color: AppColors.textSub),
+        style: AppText.bodyM,
       ),
       OutlinedButton(onPressed: c.retryAudio, child: const Text('다시 시도')),
     ];
@@ -166,8 +168,6 @@ String waitingMessage(String revealStatus) => switch (revealStatus) {
 };
 
 /// Figma `Note/Page`: 내 이야기와 자녀의 이야기가 함께 적힌 공책 한 장.
-///
-/// 디자인의 왼쪽 구멍·줄 장식은 빼고 두 이야기만 옮겼다.
 class _NotePage extends StatelessWidget {
   const _NotePage({
     required this.myText,
@@ -185,63 +185,22 @@ class _NotePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final myText = this.myText;
     final childText = this.childText;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.note),
-      ),
+    return NotebookPaper(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (myText != null) ...[
-            const _NoteLabel(icon: AppIcons.heart, text: '내 이야기'),
-            const SizedBox(height: 8),
-            Text(
-              myText,
-              style: AppText.bodyL.copyWith(color: AppColors.textStrong),
-            ),
-            const SizedBox(height: 32),
+            NoteEntry(icon: AppIcons.heart, label: '내 이야기', text: myText),
+            SizedBox(height: NotebookPaper.lineHeight(context) * 2),
           ],
-          const _NoteLabel(icon: AppIcons.childHead, text: '자녀의 이야기'),
-          const SizedBox(height: 8),
-          if (childText != null)
-            Text(
-              childText,
-              style: AppText.bodyL.copyWith(color: AppColors.textStrong),
-            )
-          else
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                waitingText,
-                style: AppText.bodyL.copyWith(color: AppColors.textSub),
-              ),
-            ),
+          NoteEntry(
+            icon: AppIcons.childHead,
+            label: '자녀의 이야기',
+            text: childText ?? waitingText,
+            waiting: childText == null,
+          ),
         ],
       ),
-    );
-  }
-}
-
-class _NoteLabel extends StatelessWidget {
-  const _NoteLabel({required this.icon, required this.text});
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 22, color: AppColors.textBrand),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            text,
-            style: AppText.labelM.copyWith(color: AppColors.textBrand),
-          ),
-        ),
-      ],
     );
   }
 }

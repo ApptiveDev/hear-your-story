@@ -32,6 +32,9 @@ abstract final class AppColors {
   /// 오류 테두리·안내 (`Field/Text` State=Error). Figma 변수로는 아직 없다.
   static const error = Color(0xFFB83A26);
 
+  /// 팝업 뒤 어두운 배경 (`Dim`, text/strong 50%). Figma 변수로는 아직 없다.
+  static const dim = Color(0x803B2A1F);
+
   /// 질문 책장 `Card/Stack` 가운데 카드. Figma 변수로는 아직 없다.
   static const cardStack = Color(0xFFF7DDB0);
 
@@ -225,8 +228,8 @@ abstract final class AppShadows {
 
 /// Figma 효과 중 안쪽 그림자(Inner shadow).
 ///
-/// Flutter `BoxShadow`는 안쪽 그림자를 그리지 못한다. 값만 모아 두고, 버튼 위젯을
-/// 만들 때 그라데이션이나 `CustomPainter`로 직접 그린다.
+/// Flutter `BoxShadow`는 안쪽 그림자를 그리지 못해 값만 모아 두고
+/// `DepthButtonShape`가 직접 그린다.
 abstract final class AppInnerShadows {
   /// Button: 위쪽 밝은 빛 + 아래쪽 어두운 테두리
   static const button = [

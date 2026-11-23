@@ -234,10 +234,7 @@ class _ChildAnswerPageState extends ConsumerState<ChildAnswerPage> {
           ),
         ),
         const SizedBox(height: 24),
-        Text(
-          '잠시만 기다려 주세요',
-          style: AppText.bodyL.copyWith(color: AppColors.textSub),
-        ),
+        Text('잠시만 기다려 주세요', style: AppText.bodyL),
         const SizedBox(height: 24),
         NotePaper(label: '내 답변', text: _text.text),
       ],

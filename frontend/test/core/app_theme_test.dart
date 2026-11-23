@@ -3,11 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/core/theme/app_theme.dart';
 import 'package:life_record/core/theme/app_tokens.dart';
 import 'package:life_record/core/theme/button_painter.dart';
+import 'package:life_record/core/widgets/choice_dialog.dart';
 
-Finder get shadowPaint => find.byWidgetPredicate(
-  (widget) =>
-      widget is CustomPaint && widget.painter is ButtonInnerShadowPainter,
-);
+/// 버튼 Material이 실제로 그리는 모양
+ShapeBorder? shapeOf(WidgetTester tester, Type button) => tester
+    .widget<Material>(
+      find.descendant(of: find.byType(button), matching: find.byType(Material)),
+    )
+    .shape;
 
 void main() {
   testWidgets('primary press preserves geometry, semantics and callback', (
@@ -46,18 +49,17 @@ void main() {
         hasFocusAction: true,
       ),
     );
-    ButtonInnerShadowPainter painter() =>
-        tester.widget<CustomPaint>(shadowPaint).painter!
-            as ButtonInnerShadowPainter;
-    expect(painter().pressed, isFalse);
+    DepthButtonShape shape() =>
+        shapeOf(tester, FilledButton)! as DepthButtonShape;
+    expect(shape().pressed, isFalse);
     final gesture = await tester.startGesture(tester.getCenter(button));
     await tester.pump();
-    expect(painter().pressed, isTrue);
+    expect(shape().pressed, isTrue);
     expect(tester.getSize(button), before);
     expect(calls, 0);
     await gesture.up();
     await tester.pumpAndSettle();
-    expect(painter().pressed, isFalse);
+    expect(shape().pressed, isFalse);
     expect(calls, 1);
     semantics.dispose();
   });
@@ -76,7 +78,7 @@ void main() {
         ),
       ),
     );
-    expect(shadowPaint, findsNothing);
+    expect(shapeOf(tester, FilledButton), isNot(isA<DepthButtonShape>()));
     final disabledMaterial = tester.widget<Material>(
       find.descendant(
         of: find.byType(FilledButton),
@@ -89,16 +91,12 @@ void main() {
       tester.getCenter(find.byType(OutlinedButton)),
     );
     await tester.pump();
-    expect(shadowPaint, findsNothing);
+    expect(shapeOf(tester, OutlinedButton), isNot(isA<DepthButtonShape>()));
     await gesture.up();
     await tester.pumpAndSettle();
     final style = AppTheme.light().filledButtonTheme.style!;
     expect(style.textStyle!.resolve({}), AppText.buttonL);
-    expect(style.elevation!.resolve({WidgetState.pressed}), 1);
-    expect(
-      style.elevation!.resolve({WidgetState.disabled, WidgetState.pressed}),
-      0,
-    );
+    expect(style.elevation!.resolve({WidgetState.pressed}), 0);
   });
 
   testWidgets('local shape and small button dimensions are preserved', (
@@ -125,11 +123,44 @@ void main() {
         ),
       ),
     );
-    final painter =
-        tester.widget<CustomPaint>(shadowPaint).painter!
-            as ButtonInnerShadowPainter;
-    expect(painter.shape, shape);
-    expect(tester.getSize(shadowPaint).height, 47);
+    expect(shapeOf(tester, FilledButton), shape);
+    expect(
+      tester
+          .getSize(
+            find.descendant(
+              of: find.byType(FilledButton),
+              matching: find.byType(Material),
+            ),
+          )
+          .height,
+      47,
+    );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('팝업 뒤 배경은 디자인의 갈색으로 어둡게 한다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showChoiceDialog(
+              context,
+              title: '제목',
+              message: '안내',
+              stayLabel: '계속',
+              leaveLabel: '나가기',
+            ),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widgetList<ModalBarrier>(find.byType(ModalBarrier)).last.color,
+      AppColors.dim,
+    );
   });
 }

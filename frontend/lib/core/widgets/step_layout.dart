@@ -11,16 +11,12 @@ class StepLayout extends StatelessWidget {
   const StepLayout({
     super.key,
     this.onBack,
-    this.showTextScale = true,
     required this.children,
     required this.actions,
   });
 
   /// null이면 헤더에 `이전`을 그리지 않는다.
   final VoidCallback? onBack;
-
-  /// 헤더 오른쪽 `글자 크기` 버튼. Figma에 버튼이 없는 화면(가입·페어링)은 false.
-  final bool showTextScale;
   final List<Widget> children;
 
   /// 아래에 고정할 버튼. 위에서부터 차례로 쌓는다.
@@ -38,7 +34,7 @@ class StepLayout extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppHeader(onBack: onBack, showTextScale: showTextScale),
+          AppHeader(onBack: onBack),
           const SizedBox(height: 24),
           // 한 화면 분량이라 ListView 대신 모두 그려 둔다. 화면 밖으로 밀린 안내도
           // 화면 읽기 프로그램과 테스트가 찾을 수 있다.

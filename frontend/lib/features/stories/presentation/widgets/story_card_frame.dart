@@ -1,22 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../core/widgets/note_paper.dart';
 import '../../../../core/widgets/notebook_paper.dart';
 
 import '../../domain/story.dart';
-
-/// 공책에 적힌 한 사람의 이야기: 아이콘 + 이름표 + 글 (Figma `My Entry`·`Their Entry`)
-class StoryEntry {
-  const StoryEntry({
-    required this.icon,
-    required this.label,
-    required this.text,
-  });
-
-  final IconData icon;
-  final String label;
-  final String text;
-}
 
 /// 부모·자녀 카드가 같이 쓰는 틀: 날짜 + 질문 + 두 사람의 이야기를 적은 공책 한 장
 class StoryCardFrame extends StatelessWidget {
@@ -30,8 +18,8 @@ class StoryCardFrame extends StatelessWidget {
   final Story story;
 
   /// 내 이야기(위)와 상대의 이야기(아래)
-  final StoryEntry mine;
-  final StoryEntry theirs;
+  final NoteEntry mine;
+  final NoteEntry theirs;
 
   /// 공책 바로 아래에 놓는 행동(내 답 지우기). 듣기는 화면 아래 고정 영역에 둔다.
   final List<Widget> children;
@@ -55,54 +43,19 @@ class StoryCardFrame extends StatelessWidget {
         const SizedBox(height: 8),
         Text(story.questionText, style: AppText.headingM),
         const SizedBox(height: 16),
-        // Figma `Note/Page`: 구멍·여백선·가로 줄이 있는 공책. 두 이야기 사이는 줄 높이(30)의
-        // 배수로 띄워 가로 줄이 이어지게 한다.
+        // Figma `Note/Page`: 구멍·여백선·가로 줄이 있는 공책. 두 이야기 사이는 두 줄을
+        // 띄워 가로 줄이 이어지게 한다.
         NotebookPaper(
-          lines: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _EntryView(entry: mine),
-              const SizedBox(height: 60),
-              _EntryView(entry: theirs),
+              mine,
+              SizedBox(height: NotebookPaper.lineHeight(context) * 2),
+              theirs,
             ],
           ),
         ),
         if (children.isNotEmpty) ...[const SizedBox(height: 8), ...children],
-      ],
-    );
-  }
-}
-
-class _EntryView extends StatelessWidget {
-  const _EntryView({required this.entry});
-  final StoryEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 높이 30: 가로 줄이 글줄 아래에 놓이게 이름표 높이를 맞춘다
-        ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 30),
-          child: Row(
-            children: [
-              Icon(entry.icon, size: 24, color: AppColors.textBrand),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  entry.label,
-                  style: AppText.labelM.copyWith(color: AppColors.textBrand),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          entry.text,
-          style: AppText.bodyL.copyWith(color: AppColors.textStrong),
-        ),
       ],
     );
   }

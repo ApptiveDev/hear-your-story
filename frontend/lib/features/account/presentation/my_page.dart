@@ -174,7 +174,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                       onTap: () => context.push('/my/privacy'),
                     ),
                     _MenuRow(
-                      icon: AppIcons.books,
+                      icon: AppIcons.bookAlt,
                       label: '이용약관',
                       onTap: () => context.push('/my/terms'),
                     ),
@@ -350,7 +350,7 @@ class _MenuRow extends StatelessWidget {
       trailing = const Icon(
         AppIcons.arrowRight,
         size: 24,
-        color: AppColors.borderDisabled,
+        color: AppColors.borderSoft,
       );
     } else {
       trailing = const SizedBox.shrink();

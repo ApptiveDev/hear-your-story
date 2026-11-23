@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
 import 'package:life_record/core/text_scale/text_scale.dart';
 import 'package:life_record/core/text_scale/text_scale_button.dart';
+import 'package:life_record/core/theme/app_tokens.dart';
 import 'package:life_record/core/widgets/app_tab_shell.dart';
 import 'package:life_record/core/widgets/step_layout.dart';
 import 'package:life_record/features/account/domain/legal_documents.dart';
@@ -284,13 +284,13 @@ void main() {
         expect(find.text('이전'), findsOneWidget);
         expect(find.byType(TextScaleButton), findsOneWidget);
         // 버튼 글자가 버튼 밖으로 잘리지 않는다(넘치면 오류 없이 잘리기만 한다)
-        final label = tester.renderObject<RenderParagraph>(
-          find.descendant(
-            of: find.byType(TextScaleButton),
-            matching: find.byType(RichText),
-          ),
-        );
-        expect(label.didExceedMaxLines, isFalse);
+        final button = tester.getRect(find.byType(TextScaleButton));
+        for (final text in ['가', '/가']) {
+          final label = tester.getRect(find.text(text));
+          expect(button.expandToInclude(label), button);
+        }
+        // 버튼은 오른쪽 여백에 붙는다
+        expect(button.right, 360 - AppSizes.screenPadding);
       });
 
       final todayCases = <String, Map<String, dynamic> Function()>{

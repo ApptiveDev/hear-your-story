@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_record/core/network/api_exception.dart';
+import 'package:life_record/core/theme/app_theme.dart';
 import 'package:life_record/features/child_answer/data/child_answer_providers.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_args.dart';
 import 'package:life_record/features/child_answer/presentation/child_answer_page.dart';
@@ -34,6 +35,24 @@ void main() {
 
     expect(find.text(ChildAnswerArgs.demo.questionText), findsOneWidget);
     expect(button(tester, '보내기').onPressed, isNull);
+  });
+
+  testWidgets('답변 입력칸은 앱 테마의 입력칸 여백이 겹치지 않는다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [childAnswerRepositoryProvider.overrideWithValue(repo)],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const ChildAnswerPage(args: ChildAnswerArgs.demo),
+        ),
+      ),
+    );
+
+    // 안쪽 여백은 입력칸 상자만 준다. 글은 TextField 왼쪽 위에서 바로 시작한다.
+    expect(
+      tester.getTopLeft(find.byType(EditableText)),
+      tester.getTopLeft(find.byType(TextField)),
+    );
   });
 
   testWidgets('글을 쓰고 보내면 완료 화면이 보인다', (tester) async {
