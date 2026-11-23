@@ -98,7 +98,7 @@ void main() {
   }
 
   Future<void> expectSignedOut(WidgetTester tester) async {
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(find.textContaining('다시 로그인해 주세요.'), findsOneWidget);
     const storage = FlutterSecureStorage();
     expect(await storage.read(key: 'access_token'), isNull);

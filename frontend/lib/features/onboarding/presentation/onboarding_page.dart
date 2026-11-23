@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -146,62 +147,238 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 /// 좌우 여백. Figma 393 프레임의 좌우 24.
 const _sidePadding = EdgeInsets.symmetric(horizontal: AppSizes.screenPadding);
 
-/// 카카오 로그인. 디자인이 붙기 전의 기능 확인용 화면이다.
+/// Figma `LOGIN · 카카오 로그인`: 가운데 로고·앱 이름, 아래쪽 카카오 버튼과 약관 안내.
+///
+/// 화면이 남으면 로고를 가운데에 두고, 글씨를 키워 넘치면 스크롤한다.
 class _KakaoLoginStep extends ConsumerWidget {
   const _KakaoLoginStep();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(kakaoLoginControllerProvider);
-    final textTheme = Theme.of(context).textTheme;
-    return ListView(
-      padding: _sidePadding.add(const EdgeInsets.only(bottom: 24)),
-      children: [
-        const SizedBox(height: 120),
-        Text(
-          '들려줘요',
-          textAlign: TextAlign.center,
-          style: textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '부모님의 목소리와 자녀의 글을\n하루 한 질문으로 주고받아요',
-          textAlign: TextAlign.center,
-          style: textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 72),
-        if (state.error != null) ...[
-          _ErrorMessage(error: state.error!, login: true),
-          const SizedBox(height: 16),
-        ],
-        FilledButton(
-          onPressed: state.busy
-              ? null
-              : () => ref.read(kakaoLoginControllerProvider.notifier).login(),
-          child: state.busy ? const _ButtonSpinner() : const Text('카카오로 시작하기'),
-        ),
-        _PhaseText(phase: state.phase),
-        const SizedBox(height: 32),
-        Text(
-          privacyNote,
-          textAlign: TextAlign.center,
-          style: textTheme.bodyMedium,
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: _sidePadding.add(
+              const EdgeInsets.only(top: 24, bottom: 32),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Expanded(child: Center(child: _LoginHero())),
+                const SizedBox(height: 40),
+                if (state.error != null) ...[
+                  _ErrorMessage(error: state.error!, login: true),
+                  const SizedBox(height: 16),
+                ],
+                _KakaoLoginButton(
+                  busy: state.busy,
+                  onPressed: () =>
+                      ref.read(kakaoLoginControllerProvider.notifier).login(),
+                ),
+                _PhaseText(phase: state.phase),
+                const SizedBox(height: 16),
+                const _TermsNotice(),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _ButtonSpinner extends StatelessWidget {
-  const _ButtonSpinner();
+/// Figma `Brand/Hero`: 하트 로고(임시), 앱 이름, 한 줄 소개.
+class _LoginHero extends StatelessWidget {
+  const _LoginHero();
 
   @override
-  Widget build(BuildContext context) => const SizedBox.square(
-    dimension: 28,
-    child: CircularProgressIndicator(
-      strokeWidth: 3,
-      color: AppColors.textOnPrimary,
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ExcludeSemantics(
+          child: Container(
+            width: 132,
+            height: 132,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceCard,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              AppIcons.heart,
+              size: 72,
+              color: AppColors.textBrand,
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        Semantics(
+          header: true,
+          child: const Text(
+            '들려줘요',
+            textAlign: TextAlign.center,
+            style: AppText.headingXXL,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          keepWords('하루 한 질문으로 이어지는\n우리 가족 이야기'),
+          textAlign: TextAlign.center,
+          style: AppText.headingM.copyWith(color: AppColors.textSub),
+        ),
+      ],
+    );
+  }
+}
+
+/// Figma `Button/ 카카오 로그인`. 카카오 디자인 가이드대로 노란 바탕에 말풍선과
+/// `카카오 로그인`을 쓴다. 앱 공통 버튼의 입체 효과는 넣지 않는다.
+class _KakaoLoginButton extends StatelessWidget {
+  const _KakaoLoginButton({required this.busy, required this.onPressed});
+
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: busy ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size.fromHeight(AppSizes.buttonL),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        backgroundColor: AppColors.kakaoBg,
+        foregroundColor: AppColors.kakaoText,
+        // 로그인 중에도 카카오 버튼 색을 유지한다
+        disabledBackgroundColor: AppColors.kakaoBg,
+        disabledForegroundColor: AppColors.kakaoText,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.buttonL),
+        ),
+        textStyle: AppText.buttonM,
+      ),
+      child: busy
+          ? const _ButtonSpinner(color: AppColors.kakaoText)
+          : const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _KakaoSymbol(),
+                SizedBox(width: 10),
+                Flexible(child: Text('카카오 로그인', textAlign: TextAlign.center)),
+              ],
+            ),
+    );
+  }
+}
+
+/// 카카오 말풍선 심볼 (Figma `카카오 로고`, 18x18).
+class _KakaoSymbol extends StatelessWidget {
+  const _KakaoSymbol();
+
+  static const size = 18.0;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(
+      // 글씨를 키우면 말풍선도 글자와 같은 비율로 키운다
+      size: Size.square(MediaQuery.textScalerOf(context).scale(size)),
+      painter: const _KakaoSymbolPainter(),
     ),
+  );
+}
+
+class _KakaoSymbolPainter extends CustomPainter {
+  const _KakaoSymbolPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Figma SVG 경로(18x18)를 그대로 옮겼다
+    canvas.scale(size.width / _KakaoSymbol.size);
+    final path = Path()
+      ..moveTo(9, 0.6)
+      ..cubicTo(4.029, 0.6, 0, 3.713, 0, 7.552)
+      ..cubicTo(0, 9.94, 1.558, 12.045, 3.932, 13.297)
+      ..lineTo(2.933, 16.945)
+      ..cubicTo(2.845, 17.267, 3.213, 17.524, 3.496, 17.337)
+      ..lineTo(7.873, 14.448)
+      ..cubicTo(8.243, 14.484, 8.618, 14.505, 9, 14.505)
+      ..cubicTo(13.971, 14.505, 18, 11.392, 18, 7.552)
+      ..cubicTo(18, 3.713, 13.971, 0.6, 9, 0.6)
+      ..close();
+    canvas.drawPath(path, Paint()..color = const Color(0xFF000000));
+  }
+
+  @override
+  bool shouldRepaint(_KakaoSymbolPainter oldDelegate) => false;
+}
+
+/// 줄을 바꿀 때 한국어 낱말 가운데가 끊기지 않게 글자 사이를 잇는다.
+///
+/// Flutter는 한글 글자마다 줄을 바꿀 수 있어서, 글씨를 키우면 `이어지는`이
+/// `이 / 어지는`처럼 갈라진다. 띄어쓰기에서만 줄이 바뀌게 한다.
+String keepWords(String text) =>
+    text.split(' ').map((word) => word.split('').join(_join)).join(' ');
+
+/// 보이지 않는 이음표(WORD JOINER). 이 자리에서는 줄을 바꾸지 않는다.
+const _join = '\u2060';
+
+/// 시작하면 약관에 동의한 것으로 본다는 안내. 약관 이름을 누르면 전문을 연다.
+class _TermsNotice extends StatefulWidget {
+  const _TermsNotice();
+
+  @override
+  State<_TermsNotice> createState() => _TermsNoticeState();
+}
+
+class _TermsNoticeState extends State<_TermsNotice> {
+  late final _terms = TapGestureRecognizer()
+    ..onTap = () => context.push('/my/terms');
+  late final _privacy = TapGestureRecognizer()
+    ..onTap = () => context.push('/my/privacy');
+
+  @override
+  void dispose() {
+    _terms.dispose();
+    _privacy.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const link = TextStyle(decoration: TextDecoration.underline);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: keepWords('시작하면 ')),
+          TextSpan(text: keepWords('이용약관'), style: link, recognizer: _terms),
+          // 앞 낱말에 붙는 조사도 줄이 바뀌어 떨어지지 않게 잇는다
+          TextSpan(text: '$_join${keepWords('과 ')}'),
+          TextSpan(
+            text: keepWords('개인정보 처리방침'),
+            style: link,
+            recognizer: _privacy,
+          ),
+          TextSpan(text: '$_join${keepWords('에\n동의한 것으로 봐요')}'),
+        ],
+      ),
+      textAlign: TextAlign.center,
+      style: AppText.bodyS.copyWith(height: 1.4),
+    );
+  }
+}
+
+class _ButtonSpinner extends StatelessWidget {
+  const _ButtonSpinner({this.color = AppColors.textOnPrimary});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: 28,
+    child: CircularProgressIndicator(strokeWidth: 3, color: color),
   );
 }
 

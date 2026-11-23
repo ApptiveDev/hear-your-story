@@ -41,7 +41,7 @@ Future<void> _pumpApp(
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('카카오로 시작하기'));
+  await tester.tap(find.text('카카오 로그인'));
   await tester.pumpAndSettle();
 }
 
@@ -172,7 +172,7 @@ void main() {
     await tester.tap(find.text('시작하기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('카카오 로그인'), findsOneWidget);
     expect(find.textContaining('같은 카카오 계정으로 다시 로그인해 주세요.'), findsOneWidget);
   });
 
