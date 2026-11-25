@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.MDC;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class TraceIdFilter extends OncePerRequestFilter {
@@ -21,7 +22,16 @@ public class TraceIdFilter extends OncePerRequestFilter {
 		String traceId = UUID.randomUUID().toString();
 		request.setAttribute(TRACE_ID_ATTRIBUTE, traceId);
 		response.setHeader(TRACE_ID_HEADER, traceId);
-		filterChain.doFilter(request, response);
+		String previous = MDC.get("traceId");
+		try {
+			MDC.put("traceId", traceId);
+			filterChain.doFilter(request, response);
+		} finally {
+			if (previous == null)
+				MDC.remove("traceId");
+			else
+				MDC.put("traceId", previous);
+		}
 	}
 
 	public static String getTraceId(HttpServletRequest request) {

@@ -124,7 +124,7 @@ class RecordingProcessorTest {
 
 		processor.process(event);
 
-		assertThat(output.getOut()).contains("stage=LLM", "httpStatus=none", "causeType=SocketTimeoutException")
+		assertThat(output.getOut()).contains("stage=LLM", "httpStatus=0", "causeType=SocketTimeoutException")
 		    .doesNotContain("private-request-url", "private-message", "받아쓰기 원문");
 		verify(statusService).markFailed("rec_123", "version-1", "LLM", "OPENAI_LLM_FAILED");
 	}

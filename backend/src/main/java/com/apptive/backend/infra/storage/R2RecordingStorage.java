@@ -6,14 +6,12 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.apptive.backend.common.exception.ApiException;
-import com.apptive.backend.common.exception.ErrorCode;
+import com.apptive.backend.common.exception.StorageException;
+import com.apptive.backend.infra.diagnostics.DependencyFailures;
 
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -23,7 +21,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -32,8 +29,6 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 @Component
 @ConditionalOnProperty(name = "app.storage.type", havingValue = "r2")
 public class R2RecordingStorage implements RecordingStorage {
-
-	private static final Logger log = LoggerFactory.getLogger(R2RecordingStorage.class);
 
 	private final S3Client s3Client;
 	private final S3Presigner presigner;
@@ -49,15 +44,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 			return objectKey;
 		} catch (IOException | SdkException exception) {
-			// 원본 예외는 debugger에서 확인하고, 로그에는 파일 경로·응답 원문을 남기지 않는다.
-			String r2Code = exception instanceof S3Exception s3 && s3.awsErrorDetails() != null
-			    ? s3.awsErrorDetails().errorCode()
-			    : null;
-			String safeCode = r2Code != null && r2Code.matches("[A-Za-z0-9_]{1,80}") ? r2Code : "unknown";
-			int status = exception instanceof S3Exception s3 ? s3.statusCode() : 0;
-			log.error("R2 recording upload failed: type={}, status={}, r2Code={}", exception.getClass().getSimpleName(),
-			    status, safeCode);
-			throw new ApiException(ErrorCode.STORAGE_ERROR, exception);
+			throw new StorageException(DependencyFailures.wrap("R2", "UPLOAD_RECORDING", exception));
 		}
 	}
 
@@ -70,7 +57,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			s3Client.putObject(request, RequestBody.fromBytes(audio));
 			return objectKey;
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "UPLOAD_TTS", exception));
 		}
 	}
 
@@ -82,7 +69,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
 			return response.asByteArray();
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "READ_AUDIO", exception));
 		}
 	}
 
@@ -97,7 +84,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			OffsetDateTime expiresAt = OffsetDateTime.now(clock).plus(properties.effectiveSignedUrlDuration());
 			return Optional.of(new SignedAudioUrl(signed.url().toString(), expiresAt));
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "SIGN_READ_URL", exception));
 		}
 	}
 
@@ -109,7 +96,7 @@ public class R2RecordingStorage implements RecordingStorage {
 		try {
 			s3Client.deleteObject(builder -> builder.bucket(properties.bucketName()).key(objectKey));
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "DELETE_AUDIO", exception));
 		}
 	}
 }

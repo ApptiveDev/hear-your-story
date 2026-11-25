@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.apptive.backend.common.exception.FailureLogger;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
 import lombok.RequiredArgsConstructor;
@@ -38,8 +39,13 @@ public class AnswerTtsProcessor {
 				recordingStorage.delete(result.previousObjectKey());
 			}
 		} catch (RuntimeException exception) {
+			FailureLogger.error("TTS", "TTS_PROCESSING_FAILED", exception);
 			if (newObjectKey != null) {
-				recordingStorage.delete(newObjectKey);
+				try {
+					recordingStorage.delete(newObjectKey);
+				} catch (RuntimeException cleanupFailure) {
+					FailureLogger.error("TTS_CLEANUP", "STORAGE_ERROR", cleanupFailure);
+				}
 			}
 			statusService.markFailed(event.answerId(), event.ttsVersion());
 		}

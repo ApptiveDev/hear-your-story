@@ -23,6 +23,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
+import com.apptive.backend.common.exception.FailureLogger;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -77,8 +78,10 @@ class R2RecordingStorageTest {
 		ApiException result = catchThrowableOfType(() -> storage.store("rec_private", file), ApiException.class);
 
 		assertThat(result.getErrorCode()).isEqualTo(ErrorCode.STORAGE_ERROR);
-		assertThat(result).hasCause(failure).hasMessage(ErrorCode.STORAGE_ERROR.message());
-		assertThat(output.getOut()).contains("status=403", "r2Code=AccessDenied")
+		assertThat(result).hasRootCause(failure).hasMessage(ErrorCode.STORAGE_ERROR.message());
+		FailureLogger.error("HTTP", "STORAGE_ERROR", result);
+		assertThat(output.getOut())
+		    .contains("httpStatus=403", "providerCode=AccessDenied", "operation=UPLOAD_RECORDING")
 		    .doesNotContain("sensitive-signed-url-and-object-key", "rec_private");
 	}
 
