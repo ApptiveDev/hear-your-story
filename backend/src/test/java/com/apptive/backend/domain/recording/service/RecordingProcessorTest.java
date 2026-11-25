@@ -1,5 +1,6 @@
 package com.apptive.backend.domain.recording.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -7,14 +8,23 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.SocketTimeoutException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
+@ExtendWith(OutputCaptureExtension.class)
 class RecordingProcessorTest {
 
 	private RecordingStatusService statusService;
@@ -89,6 +99,34 @@ class RecordingProcessorTest {
 		verify(statusService).markSttDone("rec_123", "version-1", "받아쓰기 원문");
 		verify(statusService).markFailed("rec_123", "version-1", "LLM", "OPENAI_LLM_FAILED");
 		verify(statusService, never()).markReady(any(), any(), any());
+	}
+
+	@Test
+	void logsSttHttpStatusWithoutSensitiveResponse(CapturedOutput output) {
+		var cause = HttpClientErrorException.create(HttpStatus.UNAUTHORIZED, "private-request-url", null,
+		    "private-audio-and-api-key".getBytes(java.nio.charset.StandardCharsets.UTF_8), null);
+		when(speechTranscriber.transcribe(any(AudioSource.class)))
+		    .thenThrow(new AudioProcessingException("STT", "OPENAI_STT_FAILED", cause));
+
+		processor.process(event);
+
+		assertThat(output.getOut()).contains("stage=STT", "failureCode=OPENAI_STT_FAILED", "httpStatus=401")
+		    .doesNotContain("private-request-url", "private-audio-and-api-key", "받아쓰기 원문", "recordings/rec_123");
+		verify(statusService).markFailed("rec_123", "version-1", "STT", "OPENAI_STT_FAILED");
+		verify(storySummarizer, never()).summarize(any());
+	}
+
+	@Test
+	void logsLlmConnectionRootCauseWithoutPrivateUrl(CapturedOutput output) {
+		var cause = new ResourceAccessException("private-request-url", new SocketTimeoutException("private-message"));
+		when(storySummarizer.summarize(any()))
+		    .thenThrow(new AudioProcessingException("LLM", "OPENAI_LLM_FAILED", cause));
+
+		processor.process(event);
+
+		assertThat(output.getOut()).contains("stage=LLM", "httpStatus=none", "causeType=SocketTimeoutException")
+		    .doesNotContain("private-request-url", "private-message", "받아쓰기 원문");
+		verify(statusService).markFailed("rec_123", "version-1", "LLM", "OPENAI_LLM_FAILED");
 	}
 
 	@Test
