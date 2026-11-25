@@ -1,6 +1,7 @@
 package com.apptive.backend.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -14,17 +15,26 @@ import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.apptive.backend.common.exception.ApiException;
+import com.apptive.backend.common.exception.ErrorCode;
+
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+@ExtendWith(OutputCaptureExtension.class)
 class R2RecordingStorageTest {
 
 	private S3Client s3Client;
@@ -53,6 +63,23 @@ class R2RecordingStorageTest {
 		assertThat(request.getValue().bucket()).isEqualTo("recordings");
 		assertThat(request.getValue().key()).isEqualTo(objectKey);
 		assertThat(request.getValue().contentType()).isEqualTo("audio/mp4");
+	}
+
+	@Test
+	void uploadFailurePreservesCauseWithoutLoggingSensitiveMessage(CapturedOutput output) {
+		S3Exception failure = (S3Exception) S3Exception.builder().statusCode(403)
+		    .awsErrorDetails(AwsErrorDetails.builder().errorCode("AccessDenied").build())
+		    .message("sensitive-signed-url-and-object-key").build();
+		when(s3Client.putObject(any(PutObjectRequest.class), any(software.amazon.awssdk.core.sync.RequestBody.class)))
+		    .thenThrow(failure);
+		MockMultipartFile file = new MockMultipartFile("audioFile", "answer.m4a", "audio/mp4", new byte[]{1});
+
+		ApiException result = catchThrowableOfType(() -> storage.store("rec_private", file), ApiException.class);
+
+		assertThat(result.getErrorCode()).isEqualTo(ErrorCode.STORAGE_ERROR);
+		assertThat(result).hasCause(failure).hasMessage(ErrorCode.STORAGE_ERROR.message());
+		assertThat(output.getOut()).contains("status=403", "r2Code=AccessDenied")
+		    .doesNotContain("sensitive-signed-url-and-object-key", "rec_private");
 	}
 
 	@Test
