@@ -141,7 +141,8 @@ MVP 날짜별 질문은 `src/main/resources/seed/mock-questions.json`에서 관�
 | 환경변수가 비어 있음 | `.env`를 셸에 export했는지 또는 IDE에 등록했는지 확인 |
 | Android에서 접속 실패 | 에뮬레이터는 `localhost` 대신 `10.0.2.2` 사용 |
 | `401 Unauthorized` | Bearer token 만료·누락 및 Security 공개 경로 확인 |
-| OpenAI `401` | API key와 프로젝트 사용 한도 확인 |
+| OpenAI `401` | API key 유효성·실제 실행 설정의 키 주입 확인 |
+| OpenAI `429` | `providerCode`로 잔액·할당량 부족과 요청 속도 제한 구분 |
 
 ### 기존 PostgreSQL이 5432를 사용 중일 때
 
@@ -155,3 +156,43 @@ MVP 날짜별 질문은 `src/main/resources/seed/mock-questions.json`에서 관�
 
 IntelliJ는 프로젝트의 `.env`를 자동으로 읽지 않는다. `.env`를 만들었더라도 Run
 Configuration의 Environment variables에 넣지 않았다면 기본값으로 접속한다.
+
+## 외부 연동 오류 로그 읽기
+
+사용자에게 보낼 API 오류와 서버에서 원인을 진단할 정보를 분리한다.
+API 요청·응답 계약은 변경하지 않는다.
+
+```text
+R2 / 로컬 파일 / OpenAI 원본 오류
+  → DependencyException: 공급자·작업·상태·허용된 오류 코드·원인 분류 + 원본 cause
+  → 저장소는 StorageException(ApiException), 음성 처리는 AudioProcessingException
+  → HTTP 공통 처리기 / STT·LLM·TTS 작업 처리기에서 FailureLogger 호출
+  → 안전한 로그 + 기존 API 응답 또는 DB 처리 실패 상태
+```
+
+예를 들어 아래 로그라면 서버의 사용자 인증이 아닌 OpenAI STT 인증 실패다.
+`httpStatus`는 외부 서비스의 응답 상태이며, 앱으로 반환하는 HTTP 상태와 다르다.
+
+```text
+Operation failed: traceId=..., stage=STT, failureCode=OPENAI_STT_FAILED, provider=OPENAI, operation=STT, httpStatus=401, providerCode=invalid_api_key, reason=AUTHENTICATION_FAILED, causeType=Unauthorized, location=...
+```
+
+| 필드 | 읽는 방법 |
+|---|---|
+| `traceId` | 응답의 `X-Trace-Id`·JSON `traceId`와 연결. HTTP 요청에서 시작한 비동기 작업에도 전달 |
+| `stage` / `operation` | 처리 단계와 실제 실패 작업. R2 읽기·쓰기·삭제·URL 서명을 구분 |
+| `provider` | `R2`, `LOCAL`, `OPENAI` |
+| `httpStatus` | 외부 HTTP 응답. `0`은 응답 상태가 없음(파일·네트워크·클라이언트 오류 등) |
+| `providerCode` | 허용 목록의 공급자 코드만 기록. 미확인 코드·비JSON 응답은 `unknown` |
+| `reason` | 인증, 권한, 리소스 없음, 할당량 부족, 속도 제한, timeout·DNS·TLS·파일 권한 등 |
+| `causeType` / `location` | 원인 예외 종류와 우리 코드의 예외 발생 위치 |
+
+`insufficient_quota`는 `QUOTA_EXHAUSTED`, `rate_limit_exceeded`는 `RATE_LIMITED`로 분류한다.
+429인데 공급자 코드가 없으면 추측하지 않고 `THROTTLED_OR_QUOTA`로 기록한다.
+처리 경계에서 로그를 남기고 어댑터에서는 예외만 변환하여 중복 기록을 줄인다.
+정기 삭제 등 요청 밖에서 시작한 작업에는 로그용 추적 ID를 새로 생성한다.
+
+원본 예외는 cause로 보존하지만 `exception.getMessage()`·HTTP 본문·헤더·URL·음성
+object key·답변 원문·Throwable 전체를 로그에 출력하지 않는다. 일반적인 4xx 업무
+오류는 서버 장애 ERROR 로그로 기록하지 않는다. `UNCLASSIFIED` 등으로 남는 알 수
+없는 오류는 위치·예외 종류로 추가 조사한다. 모든 공급자 오류를 단정할 수는 없다.

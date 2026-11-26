@@ -1,16 +1,15 @@
 package com.apptive.backend.infra.storage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import com.apptive.backend.common.exception.FailureLogger;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class StorageDeletionProcessor {
-	private static final Logger log = LoggerFactory.getLogger(StorageDeletionProcessor.class);
 	private final StorageDeletionQueue queue;
 	private final RecordingStorage storage;
 
@@ -24,7 +23,7 @@ public class StorageDeletionProcessor {
 				storage.delete(claim.objectKey());
 				queue.complete(claim.taskId());
 			} catch (RuntimeException exception) {
-				log.warn("Storage deletion will be retried: type={}", exception.getClass().getSimpleName());
+				FailureLogger.error("STORAGE_DELETION_RETRY", "STORAGE_ERROR", exception);
 			}
 		}
 	}

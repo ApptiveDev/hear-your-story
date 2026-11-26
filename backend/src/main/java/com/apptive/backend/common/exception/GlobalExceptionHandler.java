@@ -4,8 +4,6 @@ import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -24,13 +22,14 @@ import lombok.RequiredArgsConstructor;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
 	private final ApiErrorFactory apiErrorFactory;
 
 	@ExceptionHandler(ApiException.class)
 	public ResponseEntity<ApiErrorResponse> handleApiException(ApiException exception, HttpServletRequest request) {
 		ErrorCode errorCode = exception.getErrorCode();
+		if (errorCode.status().is5xxServerError()) {
+			FailureLogger.error("HTTP", errorCode.name(), exception);
+		}
 		return ResponseEntity.status(errorCode.status())
 		    .body(apiErrorFactory.create(request, errorCode, exception.getMessage(), List.of()));
 	}
@@ -91,8 +90,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception, HttpServletRequest request) {
-		log.error("Unhandled exception: type={}, traceId={}", exception.getClass().getName(),
-		    request.getAttribute(com.apptive.backend.common.web.TraceIdFilter.TRACE_ID_ATTRIBUTE));
+		FailureLogger.error("HTTP", ErrorCode.INTERNAL_ERROR.name(), exception);
 
 		return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.status()).body(
 		    apiErrorFactory.create(request, ErrorCode.INTERNAL_ERROR, ErrorCode.INTERNAL_ERROR.message(), List.of()));

@@ -1,11 +1,10 @@
 package com.apptive.backend.domain.recording.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.apptive.backend.common.exception.FailureLogger;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Component
 public class RecordingFileTransactionListener {
-
-	private static final Logger log = LoggerFactory.getLogger(RecordingFileTransactionListener.class);
 
 	private final RecordingStorage recordingStorage;
 
@@ -35,8 +32,7 @@ public class RecordingFileTransactionListener {
 		try {
 			recordingStorage.delete(objectKey);
 		} catch (RuntimeException exception) {
-			log.warn("Recording file cleanup failed after transaction {}: type={}", transactionResult,
-			    exception.getClass().getSimpleName());
+			FailureLogger.error("FILE_CLEANUP_" + transactionResult, "STORAGE_ERROR", exception);
 		}
 	}
 }

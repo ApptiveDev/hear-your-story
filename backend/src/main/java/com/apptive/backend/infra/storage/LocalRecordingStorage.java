@@ -15,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.apptive.backend.common.exception.ApiException;
 import com.apptive.backend.common.exception.ErrorCode;
+import com.apptive.backend.common.exception.StorageException;
+import com.apptive.backend.infra.diagnostics.DependencyFailures;
 
 @Component
 @ConditionalOnProperty(name = "app.storage.type", havingValue = "local", matchIfMissing = true)
@@ -32,7 +34,7 @@ public class LocalRecordingStorage implements RecordingStorage {
 		try {
 			return Files.readAllBytes(resolveSafely(objectKey));
 		} catch (IOException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("LOCAL", "READ_AUDIO", exception));
 		}
 	}
 
@@ -50,7 +52,7 @@ public class LocalRecordingStorage implements RecordingStorage {
 			Files.copy(input, destination, StandardCopyOption.REPLACE_EXISTING);
 			return objectKey;
 		} catch (IOException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("LOCAL", "UPLOAD_RECORDING", exception));
 		}
 	}
 
@@ -63,7 +65,7 @@ public class LocalRecordingStorage implements RecordingStorage {
 			Files.write(destination, audio);
 			return objectKey;
 		} catch (IOException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("LOCAL", "UPLOAD_TTS", exception));
 		}
 	}
 
@@ -75,7 +77,7 @@ public class LocalRecordingStorage implements RecordingStorage {
 		try {
 			Files.deleteIfExists(resolveSafely(objectKey));
 		} catch (IOException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("LOCAL", "DELETE_AUDIO", exception));
 		}
 	}
 

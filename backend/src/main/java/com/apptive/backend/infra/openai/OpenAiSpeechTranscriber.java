@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClientException;
 import com.apptive.backend.domain.recording.service.AudioProcessingException;
 import com.apptive.backend.domain.recording.service.AudioSource;
 import com.apptive.backend.domain.recording.service.SpeechTranscriber;
+import com.apptive.backend.infra.diagnostics.DependencyFailures;
 
 @Component
 @ConditionalOnProperty(name = "app.audio-processing.mode", havingValue = "openai")
@@ -44,7 +45,8 @@ public class OpenAiSpeechTranscriber implements SpeechTranscriber {
 		} catch (AudioProcessingException exception) {
 			throw exception;
 		} catch (RestClientException exception) {
-			throw new AudioProcessingException("STT", "OPENAI_STT_FAILED", exception);
+			throw new AudioProcessingException("STT", "OPENAI_STT_FAILED",
+			    DependencyFailures.wrap("OPENAI", "STT", exception));
 		}
 	}
 
