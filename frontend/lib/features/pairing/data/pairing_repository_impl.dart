@@ -11,8 +11,15 @@ class PairingRepositoryImpl implements PairingRepository {
   final UserStorage _userStorage;
 
   @override
-  Future<Invitation> createInvitation() async =>
-      Invitation.fromJson(await _dataSource.createInvitation());
+  Future<Invitation> createInvitation() async {
+    try {
+      return Invitation.fromJson(await _dataSource.createInvitation());
+    } on ApiException catch (e) {
+      // 자녀가 이미 연결돼 있으면 저장해 두고 화면이 홈으로 가게 오류를 그대로 알린다
+      if (e.errorCode == 'ALREADY_PAIRED') await _markPaired();
+      rethrow;
+    }
+  }
 
   @override
   Future<void> join(String inviteCode) async {

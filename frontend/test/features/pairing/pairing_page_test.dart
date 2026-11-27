@@ -24,6 +24,9 @@ AppUser _user(UserRole role) => AppUser(
   pairingStatus: PairingStatus.unpaired,
 );
 
+/// currentUserProvider를 읽은 횟수. 연결 후 다시 읽는지 확인한다.
+var _userReads = 0;
+
 Future<void> _pump(
   WidgetTester tester, {
   required AppUser? user,
@@ -42,7 +45,10 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        currentUserProvider.overrideWith((ref) async => user),
+        currentUserProvider.overrideWith((ref) async {
+          _userReads++;
+          return user;
+        }),
         pairingDataSourceProvider.overrideWithValue(dataSource),
         shareTextProvider.overrideWithValue(share ?? (_) async {}),
       ],
@@ -57,7 +63,10 @@ FilledButton _button(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton));
 
 void main() {
-  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+    _userReads = 0;
+  });
 
   testWidgets('가입 정보가 없으면 가입 화면으로 보낸다', (tester) async {
     await _pump(tester, user: null, dataSource: FakePairingDataSource());
@@ -124,9 +133,12 @@ void main() {
       expect(find.text('부모님과 연결됐어요'), findsOneWidget);
       expect(find.text('오늘 화면'), findsNothing);
 
+      final readsBeforeHome = _userReads;
       await tester.tap(find.text('홈으로 가기'));
       await tester.pumpAndSettle();
       expect(find.text('오늘 화면'), findsOneWidget);
+      // 마이페이지가 연결 상태를 보도록 사용자 정보를 다시 읽는다
+      expect(_userReads, greaterThan(readsBeforeHome));
     });
 
     testWidgets('코드의 유효 시간이 지나면 만료를 알리고 새 코드를 받는다', (tester) async {
@@ -214,6 +226,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오늘 화면'), findsOneWidget);
+      // 처음 한 번 읽은 뒤, 마이페이지가 연결 상태를 보도록 다시 읽는다
+      expect(_userReads, greaterThan(1));
     });
   });
 
@@ -270,9 +284,12 @@ void main() {
       expect(dataSource.joinedCodes, ['482913']);
       expect(find.text('자녀와 연결됐어요'), findsOneWidget);
 
+      final readsBeforeHome = _userReads;
       await tester.tap(find.text('홈으로 가기'));
       await tester.pumpAndSettle();
       expect(find.text('오늘 화면'), findsOneWidget);
+      // 마이페이지가 연결 상태를 보도록 사용자 정보를 다시 읽는다
+      expect(_userReads, greaterThan(readsBeforeHome));
     });
 
     testWidgets('이미 연결돼 있으면 연결된 것으로 본다', (tester) async {
