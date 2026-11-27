@@ -45,6 +45,9 @@ Spring Boot는 `.env`를 자동으로 읽지 않는다. IntelliJ로 실행한다
 | `APP_REFRESH_TOKEN_EXPIRATION_DAYS` | refresh token 만료 시간, 기본 30일 |
 | `KAKAO_NATIVE_APP_KEY` | 카카오 ID token의 `aud` 검증에 사용할 Native App Key |
 | `KAKAO_ADMIN_KEY` | 회원 탈퇴 시 카카오 연결 해제에 사용할 Admin Key |
+| `WEB_DELETION_ENABLED` | 앱 밖 카카오 본인 확인·탈퇴 HTML 경로 활성화, 기본 `false` |
+| `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET` | 앱과 같은 카카오 앱의 웹 로그인용 서버 자격증명 |
+| `WEB_DELETION_REDIRECT_URI` | 콘솔에 등록한 고정 HTTPS `/login/oauth2/code/kakao-deletion` 콜백 |
 | `OPENAI_API_KEY` | STT·LLM·TTS 호출 키 |
 | `R2_ACCOUNT_ID` | Cloudflare 계정 ID |
 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | R2 S3 호환 자격증명 |
@@ -60,6 +63,10 @@ Spring Boot는 `.env`를 자동으로 읽지 않는다. IntelliJ로 실행한다
 
 실제 `.env`, API key, 비밀번호는 커밋하지 않는다. 전체 형식은
 [`.env.example`](.env.example)을 복사해 사용한다.
+
+웹 삭제의 콘솔 설정·환경변수·단일 replica 제한·실환경 QA는
+[`웹 계정 삭제 운영 절차`](../docs/account-deletion-operations.md)를 따른다.
+설정을 준비한 뒤 기능을 켠다. 기존 모바일 API의 Bearer 인증과 웹 세션은 분리된다.
 
 ### 데이터베이스 마이그레이션
 

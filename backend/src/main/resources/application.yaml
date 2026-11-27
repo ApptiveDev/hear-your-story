@@ -25,8 +25,21 @@ spring:
 
 server:
   port: ${PORT:${SERVER_PORT:8080}}
+  servlet:
+    session:
+      timeout: 10m
+      tracking-modes: cookie
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
 
 app:
+  web-deletion:
+    enabled: ${WEB_DELETION_ENABLED:false}
+    rest-api-key: ${KAKAO_REST_API_KEY:}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
+    redirect-uri: ${WEB_DELETION_REDIRECT_URI:}
   auth:
     jwt-secret: ${APP_JWT_SECRET}
     access-token-expiration-minutes: ${APP_ACCESS_TOKEN_EXPIRATION_MINUTES:30}
