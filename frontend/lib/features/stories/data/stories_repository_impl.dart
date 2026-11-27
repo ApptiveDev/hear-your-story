@@ -1,3 +1,4 @@
+import '../../../core/network/api_exception.dart';
 import '../domain/stories_repository.dart';
 import '../domain/story.dart';
 import 'stories_data_source.dart';
@@ -12,17 +13,28 @@ class StoriesRepositoryImpl implements StoriesRepository {
 
   @override
   Future<StoryPage> fetchPage({String? cursor}) async {
-    final json = await _dataSource.fetchStories(
-      cursor: cursor,
-      limit: pageSize,
-    );
-    return StoriesDto.pageFromJson(json);
+    try {
+      final json = await _dataSource.fetchStories(
+        cursor: cursor,
+        limit: pageSize,
+      );
+      return StoriesDto.pageFromJson(json);
+    } on ApiException catch (e) {
+      // 한 번도 연결하지 않은 사용자도 책장에 들어올 수 있다.
+      if (e.errorCode != 'PAIR_NOT_FOUND') rethrow;
+      return const StoryPage(items: [], nextCursor: null, hasNext: false);
+    }
   }
 
   @override
   Future<List<Story>> fetchMonth(String month) async {
-    final json = await _dataSource.fetchStoriesByMonth(month);
-    return StoriesDto.pageFromJson(json).items;
+    try {
+      final json = await _dataSource.fetchStoriesByMonth(month);
+      return StoriesDto.pageFromJson(json).items;
+    } on ApiException catch (e) {
+      if (e.errorCode != 'PAIR_NOT_FOUND') rethrow;
+      return const [];
+    }
   }
 
   @override
