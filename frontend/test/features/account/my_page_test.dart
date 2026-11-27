@@ -134,7 +134,13 @@ void main() {
     expect(find.text('1. 수집하는 정보'), findsOneWidget);
     // 긴 본문은 스크롤해야 보인다
     await tester.scrollUntilVisible(find.text('4. 맡겨서 처리하는 곳'), 300);
+    await tester.scrollUntilVisible(find.textContaining('OpenAI'), 200);
     expect(find.textContaining('OpenAI'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('· 개인정보 문의 이메일: jesuji030502@naver.com'),
+      200,
+    );
+    expect(find.text('· 운영 대표 및 개인정보 보호책임자: 제수지'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('이전'),
       -300,
