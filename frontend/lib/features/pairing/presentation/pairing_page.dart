@@ -144,6 +144,8 @@ class _ChildInviteViewState extends ConsumerState<_ChildInviteView>
       _renewing = false;
       if (isAlreadyPaired(e)) {
         context.go('/today');
+        // 저장소가 연결됨으로 바뀌었으니 마이페이지 등이 새 정보를 읽게 한다
+        ref.invalidate(currentUserProvider);
       } else {
         handleSessionExpired(context, ref, e);
       }
@@ -413,12 +415,12 @@ class _ParentJoinViewState extends ConsumerState<_ParentJoinView> {
 }
 
 /// Figma WF-005 연결 완료: 연결을 축하하고 홈으로 안내한다.
-class _PairedView extends StatelessWidget {
+class _PairedView extends ConsumerWidget {
   const _PairedView({required this.role});
   final UserRole role;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final partner = role == UserRole.child ? '부모님과' : '자녀와';
     return Center(
       child: SingleChildScrollView(
@@ -448,7 +450,12 @@ class _PairedView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => context.go('/today'),
+              onPressed: () {
+                context.go('/today');
+                // 저장소에는 연결됨으로 바뀌었으니 마이페이지 등이 새 정보를 읽게 한다.
+                // 이동 뒤에 비워야 이 화면이 로딩으로 바뀌며 깜빡이지 않는다.
+                ref.invalidate(currentUserProvider);
+              },
               child: const Text('홈으로 가기'),
             ),
           ],

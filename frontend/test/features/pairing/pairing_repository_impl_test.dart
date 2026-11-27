@@ -70,6 +70,16 @@ void main() {
       expect((await userStorage.read())?.isPaired, isTrue);
     });
 
+    test('자녀가 초대 코드를 받을 때면 연결됨으로 저장하고 오류를 알린다', () async {
+      final repo = PairingRepositoryImpl(
+        FakePairingDataSource(invitationError: alreadyPaired()),
+        userStorage,
+      );
+
+      await expectLater(repo.createInvitation(), throwsA(isA<ApiException>()));
+      expect((await userStorage.read())?.isPaired, isTrue);
+    });
+
     test('자녀가 다른 분과 연결된 숫자면 오류를 그대로 알린다', () async {
       final repo = PairingRepositoryImpl(
         FakePairingDataSource(
