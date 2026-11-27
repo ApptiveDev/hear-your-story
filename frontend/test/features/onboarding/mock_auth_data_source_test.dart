@@ -28,7 +28,19 @@ void main() {
       'name': '김민지',
       'role': 'CHILD',
       'pairingStatus': 'PAIRED',
+      'partnerName': '김영희',
     });
+  });
+
+  test('partnerName이 없던 이전 저장 정보도 null로 읽는다', () {
+    final user = AppUser.fromJson({
+      'id': 'usr_test',
+      'name': '김민지',
+      'role': 'CHILD',
+      'pairingStatus': 'PAIRED',
+    });
+
+    expect(user.partnerName, isNull);
   });
 
   test('Mock GET /users/me는 가입 전이면 서버처럼 401을 준다', () async {

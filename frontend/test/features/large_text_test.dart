@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_record/app/app.dart';
+import 'package:life_record/core/network/api_exception.dart';
 import 'package:life_record/core/text_scale/text_scale.dart';
 import 'package:life_record/core/text_scale/text_scale_button.dart';
 import 'package:life_record/core/theme/app_theme.dart';
@@ -251,6 +252,10 @@ void main() {
             overrides: [
               currentUserProvider.overrideWith(
                 (ref) async => _user(UserRole.parent),
+              ),
+              // 들어올 때 다시 받는 사용자 정보는 실패로 두고 저장된 정보로 그린다
+              authDataSourceProvider.overrideWithValue(
+                FakeAuthDataSource(meError: ApiException()),
               ),
             ],
             child: const MaterialApp(home: MyPage()),
