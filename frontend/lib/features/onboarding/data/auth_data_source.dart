@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../domain/app_user.dart';
 import 'kakao_login_response.dart';
 import 'user_storage.dart';
 
@@ -76,6 +77,10 @@ class MockAuthDataSource implements AuthDataSource {
     }
     final json = user.toJson();
     if (_meScenario == 'UNPAIRED') json['pairingStatus'] = 'UNPAIRED';
+    // 서버처럼 연결된 상대의 이름은 연결됐을 때만 준다
+    json['partnerName'] = json['pairingStatus'] == 'PAIRED'
+        ? (user.role == UserRole.parent ? '김민지' : '김영희')
+        : null;
     return json;
   }
 
