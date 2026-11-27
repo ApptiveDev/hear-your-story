@@ -1,4 +1,4 @@
-# API 계약 v0.7 — 2026-11-22 출시 준비
+# API 계약 v0.8 — 2026-11-27 출시 준비
 
 이 문서는 Flutter와 Spring Boot 사이의 **단일 API 계약(source of truth)**이다.
 프론트는 이 문서의 예시 JSON으로 Mock을 만들고, 백엔드는 동일한 필드와 상태값을
@@ -295,7 +295,8 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
     "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
     "name": "김영희",
     "role": "PARENT",
-    "pairingStatus": "UNPAIRED"
+    "pairingStatus": "UNPAIRED",
+    "partnerName": null
   },
   "accessToken": "eyJhbGciOiJIUzI1NiJ9.example.signature",
   "refreshToken": "opaque-refresh-token",
@@ -791,7 +792,8 @@ photoFile: family-photo.jpg
     "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
     "name": "김영희",
     "role": "PARENT",
-    "pairingStatus": "PAIRED"
+    "pairingStatus": "PAIRED",
+    "partnerName": "김민지"
   },
   "accessToken": "access-token",
   "refreshToken": "opaque-refresh-token",
@@ -850,9 +852,17 @@ access token이 필요하다. 응답 `200 OK`:
   "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
   "name": "김영희",
   "role": "PARENT",
-  "pairingStatus": "PAIRED"
+  "pairingStatus": "PAIRED",
+  "partnerName": "김민지"
 }
 ```
+
+`partnerName`은 현재 활성 Pair의 상대가 서비스에 등록한 이름이다. 카카오 프로필
+이름이 아니다. 연결 전·상대 탈퇴·연결 해제로 `UNPAIRED`이면 `null`이며, 과거 Pair의
+상대 이름은 반환하지 않는다. 상대가 이름을 바꾸면 다음 조회부터 반영된다.
+`POST /users`, `POST /auth/kakao`의 `user`와 `PATCH /users/me` 응답도 같은 형식이다.
+프론트는 MY 화면에 들어올 때마다 이 API로 사용자 정보를 갱신하고, 이름이 없으면
+(구버전 서버·오프라인) 역할 기반 문구를 보여준다.
 
 기기 변경 후에도 같은 카카오 계정으로 로그인하면 동일한 User의 새 서비스 token을
 발급하므로 Pair와 이야기를 기존 endpoint에서 그대로 조회한다.
@@ -943,7 +953,8 @@ access token이 필요하다. 부모와 자녀 모두 본인의 이름만 변경
   "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
   "name": "새 이름",
   "role": "PARENT",
-  "pairingStatus": "PAIRED"
+  "pairingStatus": "PAIRED",
+  "partnerName": "김민지"
 }
 ```
 
@@ -1032,3 +1043,4 @@ frontend/
 | 2026-11-14 | v0.5 | 부모·자녀 회원 탈퇴 정책, 카카오 연결 해제, Pair 비활성화와 작성자별 데이터 삭제 계약 확정 |
 | 2026-11-22 | v0.6 | 부모 녹음·자녀 답변 개별 삭제 구현, 파일 삭제 영속 큐, 오늘 답변 DELETED 응답과 삭제 후 재작성 차단 확정 |
 | 2026-11-22 | v0.7 | 본인 이름 변경 `PATCH /users/me`, 1~10자 검증과 갱신된 사용자 응답 계약 확정 |
+| 2026-11-27 | v0.8 | 사용자 응답(`GET`·`PATCH /users/me`, `POST /users`, `POST /auth/kakao`)에 현재 연결된 상대 이름 `partnerName`(nullable) 추가 |

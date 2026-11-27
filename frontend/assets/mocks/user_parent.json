@@ -4,7 +4,8 @@
     "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
     "name": "김영희",
     "role": "PARENT",
-    "pairingStatus": "UNPAIRED"
+    "pairingStatus": "UNPAIRED",
+    "partnerName": null
   },
   "accessToken": "eyJhbGciOiJIUzI1NiJ9.example.signature",
   "refreshToken": "mock-refresh-token",

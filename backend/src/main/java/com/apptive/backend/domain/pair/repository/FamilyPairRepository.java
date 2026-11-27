@@ -13,6 +13,9 @@ import com.apptive.backend.domain.pair.entity.FamilyPair;
 
 public interface FamilyPairRepository extends JpaRepository<FamilyPair, String> {
 
+	@Query("select case when p.parent.id = :userId then p.child.name else p.parent.name end from FamilyPair p where p.deactivatedAt is null and (p.parent.id = :userId or p.child.id = :userId)")
+	Optional<String> findActivePartnerNameByMemberId(@Param("userId") String userId);
+
 	@Query("select (count(p) > 0) from FamilyPair p where p.deactivatedAt is null and (p.parent.id = :userId or p.child.id = :userId)")
 	boolean existsActiveByMemberId(@Param("userId") String userId);
 

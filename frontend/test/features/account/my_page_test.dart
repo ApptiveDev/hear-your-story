@@ -14,10 +14,12 @@ import 'package:life_record/features/account/presentation/account_deleted_page.d
 import 'package:life_record/features/account/domain/legal_documents.dart';
 import 'package:life_record/features/account/presentation/legal_page.dart';
 import 'package:life_record/features/account/presentation/my_page.dart';
+import 'package:life_record/features/onboarding/data/auth_data_source.dart';
 import 'package:life_record/features/onboarding/data/auth_providers.dart';
 import 'package:life_record/features/onboarding/domain/auth_repository.dart';
 
 import '../../helpers/phone_size.dart';
+import '../onboarding/fake_auth_data_source.dart';
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -25,19 +27,23 @@ Future<void> _pump(
   Duration deleteDelay = Duration.zero,
   AccountRepository? repository,
   AuthRepository? auth,
+  AuthDataSource? dataSource,
   String role = 'PARENT',
 }) async {
   usePhoneSize(tester);
+  final stored = {
+    'id': 'usr_test',
+    'name': '김민지',
+    'role': role,
+    'pairingStatus': 'PAIRED',
+  };
   FlutterSecureStorage.setMockInitialValues({
     'access_token': 'token',
     'refresh_token': 'refresh',
-    'current_user': jsonEncode({
-      'id': 'usr_test',
-      'name': '김민지',
-      'role': role,
-      'pairingStatus': 'PAIRED',
-    }),
+    'current_user': jsonEncode(stored),
   });
+  // 들어올 때 다시 받는 `GET /users/me`. 정하지 않으면 저장된 사용자를 그대로 준다.
+  dataSource ??= FakeAuthDataSource(me: stored);
   final router = GoRouter(
     initialLocation: '/my',
     routes: [
@@ -61,6 +67,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         if (auth != null) authRepositoryProvider.overrideWithValue(auth),
+        authDataSourceProvider.overrideWithValue(dataSource),
         accountRepositoryProvider.overrideWithValue(
           repository ??
               MockAccountRepository(failWith: deleteError, delay: deleteDelay),
@@ -118,6 +125,53 @@ void main() {
     expect(find.text('1.0.0'), findsOneWidget);
     // Flaticon 라이선스상 아이콘 출처를 앱 안에 표기해야 한다
     expect(find.text(uiconsAttribution), findsOneWidget);
+  });
+
+  group('연결 상태', () {
+    Map<String, dynamic> me({String status = 'PAIRED', String? partner}) => {
+      'id': 'usr_test',
+      'name': '김민지',
+      'role': 'PARENT',
+      'pairingStatus': status,
+      'partnerName': partner,
+    };
+
+    testWidgets('들어오면 서버에서 받은 상대 이름으로 보여준다', (tester) async {
+      final source = FakeAuthDataSource(me: me(partner: '이수민'));
+      await _pump(tester, dataSource: source);
+
+      expect(source.meCalls, 1);
+      expect(find.text('이수민님과 연결되어 있어요'), findsOneWidget);
+    });
+
+    testWidgets('상대가 연결을 끊었으면 연결되지 않았다고 보여준다', (tester) async {
+      await _pump(
+        tester,
+        dataSource: FakeAuthDataSource(me: me(status: 'UNPAIRED')),
+      );
+
+      expect(find.text('아직 연결되지 않았어요'), findsOneWidget);
+    });
+
+    testWidgets('서버에 닿지 않으면 저장된 정보로 역할 문구를 보여준다', (tester) async {
+      await _pump(
+        tester,
+        dataSource: FakeAuthDataSource(meError: ApiException()),
+      );
+
+      expect(find.text('자녀와 연결되어 있어요'), findsOneWidget);
+    });
+
+    testWidgets('로그인이 만료되면(401) 가입 화면으로 보낸다', (tester) async {
+      await _pump(
+        tester,
+        dataSource: FakeAuthDataSource(
+          meError: ApiException(statusCode: 401, errorCode: 'TOKEN_EXPIRED'),
+        ),
+      );
+
+      expect(find.text('가입 화면'), findsOneWidget);
+    });
   });
 
   testWidgets('자녀는 자녀로 보인다', (tester) async {
