@@ -4,7 +4,8 @@
     "id": "usr_01J8M8A9G39WJMB5KVX46DP3FQ",
     "name": "김영희",
     "role": "PARENT",
-    "pairingStatus": "PAIRED"
+    "pairingStatus": "PAIRED",
+    "partnerName": "김민지"
   },
   "accessToken": "draft-access-token",
   "refreshToken": "draft-refresh-token",
