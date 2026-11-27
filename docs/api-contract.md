@@ -961,6 +961,38 @@ access token이 필요하다. 부모와 자녀 모두 본인의 이름만 변경
 응답 형식은 `GET /users/me`와 동일하다. 프론트는 성공 응답으로 로컬 사용자 정보를
 갱신해 MY 화면과 홈에 새 이름이 즉시 표시되게 한다.
 
+### 5.17 앱 밖 웹 계정 삭제 — 구현안, 담당자 확인·배포 전
+
+앱의 `DELETE /api/v1/users/me` JSON 계약은 유지한다. 아래는 Flutter에서 호출하지 않는
+브라우저 전용 HTML 계약이며 `/api/v1` 접두어가 없다.
+[API Issue #105](https://github.com/ApptiveDev/hear-your-story/issues/105)와
+`docs/web-account-deletion-api-proposal.md`에 기록했다. 담당자 확인 후 확정한다.
+
+| 경로 | 인증·동작 | 응답 |
+|---|---|---|
+| `GET /account-deletion` | 공개. 삭제 범위·방법 안내만 제공 | `200 text/html; charset=UTF-8` |
+| `GET /oauth2/authorization/kakao-deletion` | 공개. 세션에 일회성 state·nonce 저장 후 카카오 본인 확인 시작 | `302` 카카오 인증 주소 |
+| `GET /login/oauth2/code/kakao-deletion` | code 교환, 서명·iss·aud·시간·state·nonce 검증. 신규 가입·삭제·서비스 JWT 발급 없음 | 성공 `302 /account-deletion/confirm`, 실패 `302 /account-deletion/error` |
+| `GET /account-deletion/confirm` | 10분 이내 검증된 세션으로 기존 활성 계정 조회. 표시한 user ID는 세션에 저장 | `200` HTML 계정·삭제 범위·동의 폼 |
+| `POST /account-deletion/confirm` | 같은 세션 + CSRF + form의 `confirm=yes`. 표시 계정과 현재 카카오 계정의 user ID 재검증 | `202` HTML 접수 안내 |
+| `POST /account-deletion/cancel` | 세션 + CSRF. 세션만 폐기하고 계정 유지 | `200` HTML |
+| `GET /account-deletion/error` | 공개. 상세 인증 정보 없는 재시도 안내 | `401` HTML |
+
+- 인증 전 보호 경로는 삭제 안내 페이지로 이동하며 CSRF 누락·오류는 `403`이다.
+- 본인 확인 만료·표시 계정 불일치는 `401`, 가입 계정 없음은 `404`, 이미 삭제 처리 중이면
+  `409`, 동의 누락은 `400` HTML로 안내한다. POST confirm은 `application/x-www-form-urlencoded`다.
+- 요청자가 user ID·이메일로 삭제 대상을 선택할 수 없다. 검증한 카카오 `sub`로만 찾는다.
+  앱과 **동일한 카카오 Developers 앱**의 REST API 키를 쓴다.
+- GET·로그인만으로 삭제하지 않는다. 확정 후 기존 5.13의 삭제 서비스·영속 큐를 재사용한다.
+  부모·자녀 삭제 범위와 상대 기록 보존은 동일하다. 확정 시 웹 세션을 폐기한다.
+- `202`는 요청 수락이며 R2 삭제·카카오 연결 해제 완료가 아니다. 기존 작업이 완료·재시도를 관리한다.
+- 토큰은 인증 중에만 사용하고 세션·DB에 보관하지 않는다. 세션에는 검증된 식별자·확인 시각·
+  표시 계정을 일시 보관하며 웹 세션으로 모바일 API를 인증할 수 없다.
+- 쿠키는 Secure·HttpOnly·SameSite=Lax, URL 세션 ID 금지. 고정 HTTPS 콜백만 허용하고
+  기능은 기본 비활성화다. HTML은 no-store·no-referrer·프레임 삽입 차단이다.
+- HTML 전용이므로 기존 Flutter DTO·모델·Mock 변경은 없다. 웹 전용 인증·CSRF·계정 구분·
+  삭제·취소·만료·오류 테스트로 검증한다.
+
 ## 6. 프론트 Mock 파일 권장 구조
 
 ```text
@@ -1001,6 +1033,7 @@ frontend/
 
 | 날짜 | 버전 | 변경 내용 |
 |---|---|---|
+| 2026-11-28 | v0.7 웹 추가 구현안 | 앱 밖 카카오 본인 확인·명시적 삭제 HTML 경로 추가. 모바일 JSON 유지, 담당자 확인·실환경 QA 전 |
 | 2026-09-24 | v0 | MVP API 분리, 공통 규칙·전체 요청/응답·Mock 계약 확정 |
 | 2026-09-28 | v0 | 공통 오류 표와 `POST /pairs/join` 실패 응답에 `INVITE_CODE_NOT_FOUND`, `INVITE_CODE_EXPIRED`, `PAIR_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` 추가 (백엔드 구현과 맞춤) |
 | 2026-11-04 | v0.1 | 월별 지난 이야기, 사진 첨부·삭제, 녹음 삭제, 회원 탈퇴, 재로그인·기록 복구 요구사항을 미구현 초안으로 추가 |

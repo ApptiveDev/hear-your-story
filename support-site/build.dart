@@ -31,7 +31,28 @@ String page(String title, String body) =>
 </html>
 ''';
 
-void main() {
+void main(List<String> arguments) {
+  String? deletionUrl;
+  if (arguments.isNotEmpty) {
+    if (arguments.length != 1 ||
+        !arguments.single.startsWith('--deletion-url=')) {
+      throw ArgumentError(
+        '사용법: dart run support-site/build.dart [--deletion-url=https://도메인/account-deletion]',
+      );
+    }
+    final value = arguments.single.substring('--deletion-url='.length);
+    final uri = Uri.tryParse(value);
+    if (uri == null ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        uri.path != '/account-deletion') {
+      throw ArgumentError('삭제 주소는 고정된 HTTPS /account-deletion 주소여야 합니다.');
+    }
+    deletionUrl = escape(uri.toString());
+  }
   // 작업 디렉터리와 무관하게 스크립트 옆에 생성한다.
   final root = File.fromUri(Platform.script).parent;
   final output = Directory('${root.path}/dist')..createSync(recursive: true);
@@ -82,6 +103,12 @@ void main() {
   final body = Uri.encodeComponent(
     '안녕하세요. 들려줘요 계정 삭제를 요청합니다.\n본인 확인 절차를 안내해 주세요.\n\n※ 카카오 비밀번호, 인증번호, 토큰, 주민등록번호는 보내지 않습니다.',
   );
+  final webRequest = deletionUrl == null
+      ? '<p class="notice">웹 카카오 본인 확인 경로가 아직 연결되지 않았어요. 검토용 페이지이며 현재 스토어 제출용 삭제 경로가 아닙니다.</p>'
+      : '''<p>가입했던 카카오 계정으로 본인 확인 후 삭제할 계정과 범위를 확인하고, 직접 탈퇴를 확정할 수 있어요. 앱 설치는 필요하지 않아요.</p>
+      <a class="button" href="$deletionUrl">카카오 계정 확인 후 삭제 요청하기</a>
+      <p>카카오 로그인만으로 삭제되지 않아요. 본인 확인은 10분간 유효하며 확정 전에 취소할 수 있어요.</p>
+      <p>삭제 요청 수락 시 계정 접근과 가족 연결을 해제하고 본인 답변 내용을 비워요. 음성 파일과 카카오 연결 해제는 별도 작업으로 처리하며 실패 시 재시도해요.</p>''';
   write(
     'deletion.html',
     page('계정 삭제 요청', '''
@@ -89,10 +116,10 @@ void main() {
     <p class="lead">들려줘요 계정과 본인이 작성한 기록을 삭제하는 방법을 안내해요.</p>
     <section><h2>앱을 사용할 수 있다면</h2><p>앱의 <strong>마이 → 탈퇴하기</strong>에서 요청할 수 있어요. 요청이 수락되면 계정 접근과 가족 연결을 해제하고 삭제 작업을 시작해요.</p></section>
     <section id="request"><h2>앱을 사용할 수 없다면</h2>
-      <p>아래 버튼을 눌러 운영팀에 삭제 요청을 보내주세요. 버튼은 사용 중인 이메일 앱을 열며, 이 웹사이트에서 정보를 입력받거나 서버에 전송하지 않아요.</p>
-      <a class="button" href="mailto:jesuji030502@naver.com?subject=$subject&amp;body=$body">이메일로 삭제 요청하기</a>
+      $webRequest
+      <p>본인 확인에 어려움이 있다면 이메일로 문의해 주세요. 메일만으로 본인 확인이 되거나 계정이 삭제되는 것은 아니에요.</p>
+      <a class="button" href="mailto:jesuji030502@naver.com?subject=$subject&amp;body=$body">운영팀에 문의하기</a>
       <p>메일 앱이 열리지 않으면 <a href="mailto:jesuji030502@naver.com">jesuji030502@naver.com</a>으로 제목에 ‘들려줘요 계정 삭제 요청’을 적어 보내주세요.</p>
-      <p class="notice">이메일 삭제 요청의 본인 확인 방법과 처리기간은 준비 중이에요. 아직 실제 운영 절차가 확정되지 않은 검토용 안내입니다.</p>
     </section>
     <section><h2>어떤 정보가 삭제되나요?</h2>
       <ul><li>이름·카카오 계정 연결정보는 삭제하거나 익명화하고, 로그인과 가족 연결을 해제해요.</li>
