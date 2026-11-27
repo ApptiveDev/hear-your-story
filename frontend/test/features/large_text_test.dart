@@ -281,6 +281,7 @@ void main() {
           await tester.scrollUntilVisible(
             find.text(document.sections.last.heading),
             300,
+            maxScrolls: 100,
           );
         }
       });
