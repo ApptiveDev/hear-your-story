@@ -277,15 +277,50 @@ STT/LLM이 실패해도 원본 음성은 보존한다. 공개 정책상 상대�
 
 `POST /auth/kakao`가 `REGISTRATION_REQUIRED`를 반환한 사용자만 호출한다.
 
-요청:
+**가입 연령 확인 추가 구현안 — [API Issue #108](https://github.com/ApptiveDev/hear-your-story/issues/108)**:
+기존 요청은 `name`, `role`, `registrationToken`만 받는다. 이 브랜치는 아래 필수 확인값을
+추가한 백엔드 구현이며 프론트 담당자의 실제 체크 UI·요청·Mock·테스트 연동과 계약 확인이
+남아 있다. 프론트 동기화 전 병합·배포하지 않는다. 성공 응답·로그인·갱신 계약은 유지한다.
+
+구현안 요청:
 
 ```json
 {
   "name": "김영희",
   "role": "PARENT",
-  "registrationToken": "short-lived-registration-token"
+  "registrationToken": "short-lived-registration-token",
+  "age14OrOlderConfirmed": true
 }
 ```
+
+| 항목 | 기준 |
+|---|---|
+| `age14OrOlderConfirmed` | 필수 Boolean. 부모·자녀 모두 본인이 만 14세 이상이라고 확인한 경우에만 `true` |
+| 누락·`null` | `400 VALIDATION_ERROR`, `fieldErrors`에 `field=age14OrOlderConfirmed`, `reason=not_null` |
+| `false` | `400 VALIDATION_ERROR`, 같은 field에 `reason=assert_true` |
+| 변환할 수 없는 잘못된 타입 | `400 VALIDATION_ERROR`, 기존 JSON 역직렬화 오류 처리 사용 |
+| 거절 시 부작용 | 사용자 생성·서비스 access/refresh token 발급 없음. 유효한 가입용 토큰으로 실제 확인 후 재시도 가능 |
+| 저장 | 생년월일·나이·확인값을 DB에 새로 보관하지 않음. migration 없음 |
+
+확인 실패 예시(`timestamp`·`traceId`는 요청마다 서버가 생성):
+
+```json
+{
+  "timestamp": "2026-11-28T02:00:00+09:00",
+  "status": 400,
+  "errorCode": "VALIDATION_ERROR",
+  "message": "요청값이 올바르지 않습니다.",
+  "path": "/api/v1/users",
+  "traceId": "example-trace-id",
+  "fieldErrors": [{"field": "age14OrOlderConfirmed", "reason": "assert_true"}]
+}
+```
+
+이 값은 **자기 신고 확인**이며 실제 나이 인증이나 보호자 동의를 의미하지 않는다.
+프론트는 기본 미체크로 제공하고 실제 체크 결과를 전달한다. `true` 하드코딩·자동 체크·
+누락 시 기본 허용을 하지 않는다. 카카오 식별정보를 받기 전부터 연령 안내·확인이 이뤄지도록
+가입 흐름에서 제어해야 하며, 서버가 프론트의 체크 화면 자체를 증명할 수는 없다.
+기존 가입자의 로그인·refresh를 소급 차단하거나 기존 사용자를 연령 인증된 것으로 표시하지 않는다.
 
 응답 `201 Created`:
 
@@ -1001,6 +1036,7 @@ frontend/
 
 | 날짜 | 버전 | 변경 내용 |
 |---|---|---|
+| 2026-11-28 | v0.8 가입 연령 추가 구현안 | #108: 가입 요청의 만 14세 이상 필수 자기 확인 추가. 미확인 가입 서버 거절, 프론트 동기화·담당자 확인 전 |
 | 2026-09-24 | v0 | MVP API 분리, 공통 규칙·전체 요청/응답·Mock 계약 확정 |
 | 2026-09-28 | v0 | 공통 오류 표와 `POST /pairs/join` 실패 응답에 `INVITE_CODE_NOT_FOUND`, `INVITE_CODE_EXPIRED`, `PAIR_NOT_FOUND`, `TODAY_ASSIGNMENT_NOT_FOUND` 추가 (백엔드 구현과 맞춤) |
 | 2026-11-04 | v0.1 | 월별 지난 이야기, 사진 첨부·삭제, 녹음 삭제, 회원 탈퇴, 재로그인·기록 복구 요구사항을 미구현 초안으로 추가 |

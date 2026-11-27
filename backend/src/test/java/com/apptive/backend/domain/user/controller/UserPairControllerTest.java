@@ -189,7 +189,7 @@ class UserPairControllerTest {
 		mockMvc
 		    .perform(post("/api/v1/users").header("Authorization", "Bearer stale-token")
 		        .contentType(MediaType.APPLICATION_JSON)
-		        .content(objectMapper.writeValueAsString(new RegisterBody("김영희", "PARENT", registrationToken))))
+		        .content(objectMapper.writeValueAsString(new RegisterBody("김영희", "PARENT", registrationToken, true))))
 		    .andExpect(status().isCreated()).andExpect(jsonPath("$.user.role").value("PARENT"));
 	}
 
@@ -201,7 +201,7 @@ class UserPairControllerTest {
 	    throws Exception {
 		org.springframework.test.web.servlet.ResultActions result = mockMvc
 		    .perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
-		        .content(objectMapper.writeValueAsString(new RegisterBody(name, role, registrationToken))))
+		        .content(objectMapper.writeValueAsString(new RegisterBody(name, role, registrationToken, true))))
 		    .andExpect(status().is(expectedStatus));
 		if (expectedStatus == 201) {
 			result.andExpect(jsonPath("$.authStatus").value("AUTHENTICATED"))
@@ -246,7 +246,7 @@ class UserPairControllerTest {
 		return "Bearer " + token;
 	}
 
-	private record RegisterBody(String name, String role, String registrationToken) {
+	private record RegisterBody(String name, String role, String registrationToken, boolean age14OrOlderConfirmed) {
 	}
 
 	private record InviteCodeBody(String inviteCode) {

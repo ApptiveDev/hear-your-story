@@ -37,6 +37,10 @@ public class UserService {
 
 	@Transactional
 	public AuthenticatedResponse register(CreateUserRequest request) {
+		// HTTP 검증을 거치지 않는 내부 호출도 미확인 상태로 가입시킬 수 없다.
+		if (!Boolean.TRUE.equals(request.age14OrOlderConfirmed())) {
+			throw new ApiException(ErrorCode.VALIDATION_ERROR);
+		}
 		String authSubject = parseRegistrationToken(request.registrationToken());
 		accountDeletionGuard.requireNotProcessing(AuthProvider.KAKAO, authSubject);
 		if (userRepository.findByAuthProviderAndAuthSubject(AuthProvider.KAKAO, authSubject).isPresent()) {
