@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClient;
 
 import com.apptive.backend.domain.answer.service.SpeechSynthesizer;
 import com.apptive.backend.domain.recording.service.AudioProcessingException;
+import com.apptive.backend.infra.diagnostics.DependencyFailures;
 
 @Component
 @ConditionalOnProperty(name = "app.audio-processing.mode", havingValue = "openai")
@@ -36,7 +37,8 @@ public class OpenAiSpeechSynthesizer implements SpeechSynthesizer {
 		} catch (AudioProcessingException exception) {
 			throw exception;
 		} catch (RuntimeException exception) {
-			throw new AudioProcessingException("TTS", "OPENAI_TTS_FAILED", exception);
+			throw new AudioProcessingException("TTS", "OPENAI_TTS_FAILED",
+			    DependencyFailures.wrap("OPENAI", "TTS", exception));
 		}
 	}
 }

@@ -55,6 +55,22 @@ class AnswerTtsProcessorTest {
 	}
 
 	@Test
+	void cleanupFailureDoesNotPreventFailedStatus() {
+		var event = new ChildAnswerSavedEvent("ans_1", "version-1");
+		byte[] audio = {1};
+		when(statusService.findSource("ans_1", "version-1")).thenReturn(new AnswerTtsSource("자녀의 답변"));
+		when(synthesizer.synthesize(any())).thenReturn(audio);
+		when(storage.storeAnswerAudio("ans_1", audio)).thenReturn("tts/ans_1/new.mp3");
+		when(statusService.markReady("ans_1", "version-1", "tts/ans_1/new.mp3"))
+		    .thenThrow(new IllegalStateException("database failure"));
+		org.mockito.Mockito.doThrow(new IllegalStateException("cleanup failure")).when(storage).delete(any());
+
+		processor.process(event);
+
+		verify(statusService).markFailed("ans_1", "version-1");
+	}
+
+	@Test
 	void discardsAudioFromStaleAnswerVersion() {
 		ChildAnswerSavedEvent event = new ChildAnswerSavedEvent("ans_1", "version-1");
 		byte[] audio = new byte[]{1};

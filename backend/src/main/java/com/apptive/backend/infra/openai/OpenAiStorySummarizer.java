@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClientException;
 
 import com.apptive.backend.domain.recording.service.AudioProcessingException;
 import com.apptive.backend.domain.recording.service.StorySummarizer;
+import com.apptive.backend.infra.diagnostics.DependencyFailures;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -48,7 +49,8 @@ public class OpenAiStorySummarizer implements StorySummarizer {
 		} catch (AudioProcessingException exception) {
 			throw exception;
 		} catch (RestClientException exception) {
-			throw new AudioProcessingException("LLM", "OPENAI_LLM_FAILED", exception);
+			throw new AudioProcessingException("LLM", "OPENAI_LLM_FAILED",
+			    DependencyFailures.wrap("OPENAI", "LLM", exception));
 		}
 	}
 

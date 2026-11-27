@@ -10,8 +10,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.apptive.backend.common.exception.ApiException;
-import com.apptive.backend.common.exception.ErrorCode;
+import com.apptive.backend.common.exception.StorageException;
+import com.apptive.backend.infra.diagnostics.DependencyFailures;
 
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -44,7 +44,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 			return objectKey;
 		} catch (IOException | SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "UPLOAD_RECORDING", exception));
 		}
 	}
 
@@ -57,7 +57,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			s3Client.putObject(request, RequestBody.fromBytes(audio));
 			return objectKey;
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "UPLOAD_TTS", exception));
 		}
 	}
 
@@ -69,7 +69,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
 			return response.asByteArray();
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "READ_AUDIO", exception));
 		}
 	}
 
@@ -84,7 +84,7 @@ public class R2RecordingStorage implements RecordingStorage {
 			OffsetDateTime expiresAt = OffsetDateTime.now(clock).plus(properties.effectiveSignedUrlDuration());
 			return Optional.of(new SignedAudioUrl(signed.url().toString(), expiresAt));
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "SIGN_READ_URL", exception));
 		}
 	}
 
@@ -96,7 +96,7 @@ public class R2RecordingStorage implements RecordingStorage {
 		try {
 			s3Client.deleteObject(builder -> builder.bucket(properties.bucketName()).key(objectKey));
 		} catch (SdkException exception) {
-			throw new ApiException(ErrorCode.STORAGE_ERROR);
+			throw new StorageException(DependencyFailures.wrap("R2", "DELETE_AUDIO", exception));
 		}
 	}
 }

@@ -7,6 +7,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.apptive.backend.common.exception.ApiException;
+import com.apptive.backend.common.exception.FailureLogger;
 import com.apptive.backend.infra.storage.RecordingStorage;
 
 @Component
@@ -49,13 +50,13 @@ public class RecordingProcessor {
 			transcript = speechTranscriber
 			    .transcribe(new AudioSource(audio, source.originalFilename(), source.contentType()));
 		} catch (ApiException exception) {
-			fail(event, "STT", "STORAGE_READ_FAILED");
+			fail(event, "STT", "STORAGE_READ_FAILED", exception);
 			return;
 		} catch (AudioProcessingException exception) {
-			fail(event, exception.failedStage(), exception.failureCode());
+			fail(event, exception.failedStage(), exception.failureCode(), exception);
 			return;
 		} catch (RuntimeException exception) {
-			fail(event, "STT", "STT_PROCESSING_FAILED");
+			fail(event, "STT", "STT_PROCESSING_FAILED", exception);
 			return;
 		}
 
@@ -76,13 +77,14 @@ public class RecordingProcessor {
 			}
 			statusService.markReady(event.recordingId(), event.processingVersion(), summary);
 		} catch (AudioProcessingException exception) {
-			fail(event, exception.failedStage(), exception.failureCode());
+			fail(event, exception.failedStage(), exception.failureCode(), exception);
 		} catch (RuntimeException exception) {
-			fail(event, "LLM", "LLM_PROCESSING_FAILED");
+			fail(event, "LLM", "LLM_PROCESSING_FAILED", exception);
 		}
 	}
 
-	private void fail(RecordingUploadedEvent event, String stage, String failureCode) {
+	private void fail(RecordingUploadedEvent event, String stage, String failureCode, Throwable exception) {
+		FailureLogger.error(stage, failureCode, exception);
 		statusService.markFailed(event.recordingId(), event.processingVersion(), stage, failureCode);
 	}
 
@@ -95,7 +97,7 @@ public class RecordingProcessor {
 			return true;
 		} catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
-			fail(event, "PROCESSING", "PROCESSING_INTERRUPTED");
+			fail(event, "PROCESSING", "PROCESSING_INTERRUPTED", exception);
 			return false;
 		}
 	}
