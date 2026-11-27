@@ -11,6 +11,37 @@ void main() {
     MockStoriesDataSource(scenario: scenario, delay: Duration.zero),
   );
 
+  for (final code in ['PAIR_NOT_FOUND', 'UNAUTHORIZED', 'STORAGE_ERROR']) {
+    test('미연결 책장·달력: $code 응답 처리', () async {
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.reject(
+            DioException(
+              requestOptions: options,
+              response: Response(
+                requestOptions: options,
+                statusCode: code == 'UNAUTHORIZED' ? 401 : 404,
+                data: {'errorCode': code},
+              ),
+            ),
+          ),
+        ),
+      );
+      final repo = StoriesRepositoryImpl(ApiStoriesDataSource(dio));
+      if (code == 'PAIR_NOT_FOUND') {
+        expect((await repo.fetchPage()).items, isEmpty);
+        expect(await repo.fetchMonth('2026-11'), isEmpty);
+      } else {
+        await expectLater(repo.fetchPage(), throwsA(isA<ApiException>()));
+        await expectLater(
+          repo.fetchMonth('2026-11'),
+          throwsA(isA<ApiException>()),
+        );
+      }
+    });
+  }
+
   test('계약 예시(first_page)를 그대로 파싱한다', () async {
     final page = await repoFor('first_page').fetchPage();
 

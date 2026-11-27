@@ -16,6 +16,8 @@ import '../../onboarding/data/auth_providers.dart';
 import '../../onboarding/domain/app_user.dart';
 import '../../onboarding/presentation/session.dart';
 import '../../onboarding/presentation/widgets/logout_button.dart';
+import '../../stories/presentation/stories_controller.dart';
+import '../../stories/presentation/stories_month_provider.dart';
 import '../data/pairing_providers.dart';
 import '../domain/pairing_repository.dart';
 import 'expiry_format.dart';
@@ -30,7 +32,20 @@ class PairingPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     return Scaffold(
-      persistentFooterButtons: logoutFooter(ref),
+      persistentFooterButtons: [
+        TextButton(
+          onPressed: user.value == null
+              ? null
+              : () {
+                  // 상대 탈퇴 전의 답변·음성 URL이 캐시에 남지 않게 다시 조회한다.
+                  ref.invalidate(storiesControllerProvider);
+                  ref.invalidate(storiesMonthProvider);
+                  context.go('/stories');
+                },
+          child: const Text('지난 이야기 보기'),
+        ),
+        ...logoutFooter(ref),
+      ],
       body: SafeArea(
         child: user.when(
           // 가입 직후 다시 읽는 동안 이전 값(null)을 쓰면 가입 화면으로 잘못 돌아간다

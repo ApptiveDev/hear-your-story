@@ -39,6 +39,7 @@ Future<void> _pump(
     routes: [
       GoRoute(path: '/pairing', builder: (_, _) => const PairingPage()),
       GoRoute(path: '/today', builder: (_, _) => const Text('오늘 화면')),
+      GoRoute(path: '/stories', builder: (_, _) => const Text('지난 이야기 화면')),
       GoRoute(path: '/onboarding', builder: (_, _) => const Text('가입 화면')),
     ],
   );
@@ -74,6 +75,20 @@ void main() {
 
     expect(find.text('가입 화면'), findsOneWidget);
   });
+
+  for (final role in UserRole.values) {
+    testWidgets('$role: 미연결 상태에서도 지난 이야기로 이동한다', (tester) async {
+      await _pump(
+        tester,
+        user: _user(role),
+        dataSource: FakePairingDataSource(pairedAfterChecks: 99),
+      );
+      await tester.tap(find.text('지난 이야기 보기'));
+      await tester.pumpAndSettle();
+      expect(find.text('지난 이야기 화면'), findsOneWidget);
+      expect(find.text('오늘 화면'), findsNothing);
+    });
+  }
 
   group('자녀', () {
     testWidgets('초대 코드를 한 칸에 한 자리씩 보여준다', (tester) async {
