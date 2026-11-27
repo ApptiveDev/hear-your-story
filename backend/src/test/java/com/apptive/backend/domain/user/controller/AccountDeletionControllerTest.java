@@ -233,7 +233,8 @@ class AccountDeletionControllerTest {
 		    {
 		      "name":"재가입 부모",
 		      "role":"PARENT",
-		      "registrationToken":"%s"
+		      "registrationToken":"%s",
+		      "age14OrOlderConfirmed":true
 		    }
 		    """.formatted(registrationToken))).andExpect(status().isConflict())
 		    .andExpect(jsonPath("$.errorCode").value("ACCOUNT_DELETION_IN_PROGRESS"));
