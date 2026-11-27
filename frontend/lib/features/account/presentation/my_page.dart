@@ -33,6 +33,27 @@ class MyPage extends ConsumerStatefulWidget {
 class _MyPageState extends ConsumerState<MyPage> {
   bool _busy = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _refreshUser();
+  }
+
+  /// 들어올 때마다 서버에서 연결 상태와 상대 이름을 다시 받는다.
+  /// 인터넷이 없거나 서버 오류면 저장된 정보를 그대로 보여준다.
+  Future<void> _refreshUser() async {
+    final cached = await ref.read(currentUserProvider.future);
+    if (cached == null || !mounted) return;
+    try {
+      await ref.read(authRepositoryProvider).restoreUser(cached: cached);
+    } on Object catch (e) {
+      // 로그인이 끝났으면(401) 가입 화면으로, 그 밖에는 저장된 정보를 그대로 둔다
+      if (mounted) await handleSessionExpired(context, ref, e);
+      return;
+    }
+    if (mounted) ref.invalidate(currentUserProvider);
+  }
+
   /// Figma `Dialog/Confirm`: 위에 실행 버튼, 아래에 취소
   Future<bool> _confirm({
     required String title,
@@ -228,7 +249,11 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isParent = user.role == UserRole.parent;
-    final partner = isParent ? '자녀와' : '부모님과';
+    final partnerName = user.partnerName;
+    // 구버전 서버·오프라인이라 상대 이름이 없으면 역할로 부른다
+    final partner = partnerName != null
+        ? '$partnerName님과'
+        : (isParent ? '자녀와' : '부모님과');
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

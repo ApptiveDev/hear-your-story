@@ -4,7 +4,8 @@
     "id": "usr_child_456",
     "name": "김민지",
     "role": "CHILD",
-    "pairingStatus": "UNPAIRED"
+    "pairingStatus": "UNPAIRED",
+    "partnerName": null
   },
   "accessToken": "eyJhbGciOiJIUzI1NiJ9.example.child.signature",
   "refreshToken": "mock-refresh-token",
